@@ -25,6 +25,8 @@ const geistMono = Geist_Mono({
 // Site-wide SEO. Pages add their own title (shown as "Page · Site name") and description.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
+  // Google AdSense site verification (a meta tag only; no ad scripts load until ads are enabled).
+  other: { "google-adsense-account": "ca-pub-5292825630246496" },
   title: { default: `${SITE.name} — ${SITE.tagline}`, template: `%s · ${SITE.name}` },
   description: SITE.description,
   applicationName: SITE.name,

@@ -57,7 +57,9 @@ export async function createPremiumCheckoutSession(startNow?: unknown): Promise<
     await db.user.update({ where: { id: user.id }, data: { stripeCustomerId: customerId } });
   }
 
-  const checkoutSession = await stripe.checkout.sessions.create({
+  let checkoutSession: Stripe.Checkout.Session;
+  try {
+  checkoutSession = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
     line_items: [
@@ -78,10 +80,17 @@ export async function createPremiumCheckoutSession(startNow?: unknown): Promise<
     cancel_url: `${origin}/premium`,
     metadata: { userId: user.id, startNowConsentAt: new Date().toISOString() },
     subscription_data: { metadata: { userId: user.id, startNowConsentAt: new Date().toISOString() } },
+    // Stripe's "Managed Payments" (Stripe as merchant of record) is on by default for this account
+    // and doesn't allow custom_text. We sell directly, so it's switched off for this checkout.
+    ...({ managed_payments: { enabled: false } } as object),
     custom_text: {
       submit: { message: "Premium starts right away. Cancel any time; you keep Premium until the end of the month you paid for." },
     },
   });
+  } catch (e) {
+    console.error("Premium checkout failed:", e);
+    return { ok: false, error: "Checkout couldn't start. Please try again in a moment.", configured: true };
+  }
 
   if (!checkoutSession.url) {
     return { ok: false, error: "Stripe didn't return a checkout URL.", configured: true };

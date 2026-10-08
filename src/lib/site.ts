@@ -10,6 +10,8 @@
 
 const name = (process.env.NEXT_PUBLIC_SITE_NAME || "Mana Forge").trim();
 const url = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").trim().replace(/\/+$/, "");
+// While the store and proxy printing are switched off, the site doesn't advertise them.
+const shop = process.env.NEXT_PUBLIC_SHOP_ENABLED === "1";
 
 export const SITE = {
   name,
@@ -23,9 +25,10 @@ export const SITE = {
     .toUpperCase()
     .slice(0, 3),
   url,
-  tagline: (process.env.NEXT_PUBLIC_SITE_TAGLINE || "Magic: The Gathering decks, tools & gear").trim(),
-  description:
-    "Everything Magic: The Gathering in one place: build and share decks, browse commanders, play online with friends, track card prices, order proxies and shop sleeves, deck boxes and playmats.",
+  tagline: (process.env.NEXT_PUBLIC_SITE_TAGLINE || (shop ? "Magic: The Gathering decks, tools & gear" : "Magic: The Gathering decks & tools")).trim(),
+  description: shop
+    ? "Everything Magic: The Gathering in one place: build and share decks, browse commanders, play online with friends, track card prices, order proxies and shop sleeves, deck boxes and playmats."
+    : "Everything Magic: The Gathering in one place: build and share Commander decks, browse commanders, play online with friends and track card prices.",
   keywords: [
     "Magic: The Gathering",
     "MTG",
@@ -33,7 +36,7 @@ export const SITE = {
     "MTG decks",
     "Commander",
     "EDH",
-    "MTG proxies",
+    ...(shop ? ["MTG proxies"] : []),
     "card prices",
     "play MTG online",
   ],
