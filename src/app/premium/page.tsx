@@ -8,8 +8,7 @@ import {
   createBillingPortalSession,
   getMyTier,
 } from "@/app/actions/premium";
-import { PREMIUM_PRICE_CENTS } from "@/lib/tier";
-import { formatCents } from "@/lib/money";
+import { PREMIUM_VAT_NOTE, premiumPrice } from "@/lib/tier";
 import { SITE } from "@/lib/site";
 
 const BENEFITS = [
@@ -65,8 +64,9 @@ export default function PremiumPage() {
       <div className="text-center">
         <h1 className="text-4xl font-bold text-foreground">{SITE.name} Premium</h1>
         <p className="mt-2 text-muted">
-          {formatCents(PREMIUM_PRICE_CENTS)}/month — unlimited decks, no ads, instant games.
+          {premiumPrice()}/month — unlimited decks, no ads, instant games.
         </p>
+        <p className="mt-1 text-xs text-muted">{PREMIUM_VAT_NOTE}</p>
       </div>
 
       <div className="card-frame mt-8 overflow-hidden">
@@ -141,7 +141,7 @@ export default function PremiumPage() {
               disabled={loading || !startNow}
               className="rounded-lg bg-gold px-8 py-3 text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-50"
             >
-              {loading ? "Redirecting to Stripe..." : `Upgrade for ${formatCents(PREMIUM_PRICE_CENTS)}/mo`}
+              {loading ? "Redirecting to Stripe..." : `Upgrade for ${premiumPrice()}/mo`}
             </button>
             </>
           )}

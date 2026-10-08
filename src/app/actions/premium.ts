@@ -3,7 +3,7 @@
 import Stripe from "stripe";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { PREMIUM_PRICE_CENTS } from "@/lib/tier";
+import { PREMIUM_CURRENCY, PREMIUM_PRICE_CENTS } from "@/lib/tier";
 import { SITE } from "@/lib/site";
 import { clientIp, hit, TOO_MANY } from "@/lib/rateLimit";
 import { randomUUID } from "node:crypto";
@@ -64,7 +64,7 @@ export async function createPremiumCheckoutSession(startNow?: unknown): Promise<
       {
         quantity: 1,
         price_data: {
-          currency: "usd",
+          currency: PREMIUM_CURRENCY,
           unit_amount: PREMIUM_PRICE_CENTS,
           recurring: { interval: "month" },
           product_data: {
