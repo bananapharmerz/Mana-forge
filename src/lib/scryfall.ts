@@ -150,24 +150,32 @@ export async function autocompleteTokenNames(query: string): Promise<string[]> {
 
 export async function getCardsByNames(names: string[]): Promise<ScryfallCard[]> {
   if (names.length === 0) return [];
-  const results: ScryfallCard[] = [];
-  for (let i = 0; i < names.length; i += 75) {
-    const batch = names.slice(i, i + 75);
-    const res = await fetch(`${SCRYFALL_API}/cards/collection`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "User-Agent": "mtg-hub/1.0",
-      },
-      body: JSON.stringify({ identifiers: batch.map((name) => ({ name })) }),
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) continue;
-    const json = await res.json();
-    results.push(...(json.data ?? []));
-  }
-  return results;
+  // Scryfall takes 75 names per request; the batches go out together (a page of 250 cards is 4
+  // requests, well inside Scryfall's ~10 requests a second) instead of one after another.
+  const batches: string[][] = [];
+  for (let i = 0; i < names.length; i += 75) batches.push(names.slice(i, i + 75));
+  const parts = await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        const res = await fetch(`${SCRYFALL_API}/cards/collection`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "User-Agent": "mtg-hub/1.0",
+          },
+          body: JSON.stringify({ identifiers: batch.map((name) => ({ name })) }),
+          next: { revalidate: 3600 },
+        });
+        if (!res.ok) return [];
+        const json = await res.json();
+        return (json.data ?? []) as ScryfallCard[];
+      } catch {
+        return [];
+      }
+    })
+  );
+  return parts.flat();
 }
 
 export async function getAllPrintings(name: string): Promise<ScryfallCard[]> {

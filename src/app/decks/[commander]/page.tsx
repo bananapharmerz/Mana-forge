@@ -98,11 +98,11 @@ export default async function CommanderDecksPage({
     getEdhrecPublicDecks(card.name, 24, 1500),
   ]);
 
-  const deckSourceEntries = await Promise.all(
-    // Credit links that aren't ready within a second fill in for the next visitor.
+  // Credit links that aren't ready within a second fill in for the next visitor. They load while
+  // the card details below are fetched, not before.
+  const deckSourcesP = Promise.all(
     (edhrecDecks ?? []).map(async (d) => [d.urlhash, await getEdhrecDeckSource(d.urlhash, 1000)] as const)
   );
-  const deckSources = new Map(deckSourceEntries);
 
   const typeSections = edhrec ? getTypeSections(edhrec) : [];
   const newCards = edhrec ? getNewCards(edhrec) : [];
@@ -111,7 +111,8 @@ export default async function CommanderDecksPage({
   const allNames = Array.from(
     new Set([...mostPlayed.map((c) => c.name), ...newCards.map((c) => c.name)])
   );
-  const scryfallCards = allNames.length > 0 ? await getCardsByNames(allNames) : [];
+  const [scryfallCards, deckSourceEntries] = await Promise.all([allNames.length > 0 ? getCardsByNames(allNames) : Promise.resolve([]), deckSourcesP]);
+  const deckSources = new Map(deckSourceEntries);
   const byName = new Map(scryfallCards.map((c) => [c.name, c]));
 
   // Play-rate-weighted mana curve: each card contributes its real play rate (num_decks /
