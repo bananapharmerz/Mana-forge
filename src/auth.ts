@@ -46,13 +46,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!user || !valid) return null;
 
         reset(`login:email:${email}`);
-        return { id: user.id, email: user.email, name: user.name ?? undefined };
+        return { id: user.id, email: user.email, name: user.name ?? undefined, sv: user.sessionVersion } as { id: string; email: string; name?: string };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        token.sv = (user as { sv?: number }).sv ?? 0;
+        return token;
+      }
+      // A password reset bumps the account's sessionVersion, which signs out every older session.
+      if (token.id) {
+        const u = await db.user.findUnique({ where: { id: token.id as string }, select: { sessionVersion: true } }).catch(() => undefined);
+        if (u === null || (u && u.sessionVersion !== ((token.sv as number | undefined) ?? 0))) return null;
+      }
       return token;
     },
     async session({ session, token }) {

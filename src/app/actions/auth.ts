@@ -3,8 +3,9 @@
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { clientIp, hit, TOO_MANY } from "@/lib/rateLimit";
-import { breachCount } from "@/lib/pwned";
-import { securityEvent } from "@/lib/securityLog";
+import { passwordProblem } from "@/lib/passwordRules";
+import { emailHtml, esc, sendEmail } from "@/lib/email";
+import { SITE } from "@/lib/site";
 
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/;
 
@@ -23,28 +24,8 @@ export async function signup(
   if (!EMAIL.test(cleanEmail)) {
     return { ok: false, error: "Enter a valid email address." };
   }
-  if (pass.length < 8) {
-    return { ok: false, error: "Password must be at least 8 characters." };
-  }
-  if (pass.length > 128) {
-    return { ok: false, error: "Password must be at most 128 characters." };
-  }
-  if (!/[A-Za-z]/.test(pass) || !/\d/.test(pass)) {
-    return { ok: false, error: "Use at least one letter and one number in your password." };
-  }
-  const local = cleanEmail.split("@")[0];
-  if (local.length >= 4 && pass.toLowerCase().includes(local)) {
-    return { ok: false, error: "Your password shouldn't contain your email name." };
-  }
-
-  // Refuse passwords that have already leaked in a data breach (they're the first ones attackers try).
-  if (((await breachCount(pass)) ?? 0) > 0) {
-    securityEvent("breached_password", "signup");
-    return {
-      ok: false,
-      error: "That password has appeared in a known data breach, so it isn't safe to use. Please pick a different one.",
-    };
-  }
+  const problem = await passwordProblem(pass, cleanEmail, "signup");
+  if (problem) return { ok: false, error: problem };
 
   const existing = await db.user.findUnique({ where: { email: cleanEmail } });
   if (existing) {
@@ -59,6 +40,18 @@ export async function signup(
       passwordHash,
       name: cleanName || undefined,
     },
+  });
+
+  // A short welcome email (not awaited: sign-up never waits on the mail service).
+  void sendEmail({
+    to: cleanEmail,
+    subject: `Welcome to ${SITE.name}`,
+    text: `Welcome${cleanName ? `, ${cleanName}` : ""}!\n\nYour ${SITE.name} account is ready. Build a deck, browse commanders or start a game with friends:\n${SITE.url}/deck-builder\n\nIf you didn't create this account, you can ignore this email.`,
+    html: emailHtml({
+      heading: `Welcome${cleanName ? `, ${esc(cleanName)}` : ""}!`,
+      body: `<p>Your ${esc(SITE.name)} account is ready. Build a Commander deck, browse every commander, or start a game with friends.</p><p style="color:#7a7488;font-size:13px">If you didn't create this account, you can ignore this email.</p>`,
+      button: { label: "Start building", url: `${SITE.url}/deck-builder` },
+    }),
   });
 
   return { ok: true };

@@ -18,6 +18,7 @@ model User {
   tier                 String   @default("free") // "free" | "premium"
   stripeCustomerId     String?
   stripeSubscriptionId String?
+  sessionVersion       Int      @default(0) // bumped on password reset: signs the account out everywhere
   createdAt            DateTime @default(now())
   decks                Deck[]
   orders               Order[]
@@ -241,4 +242,16 @@ model ContactMessage {
   createdAt DateTime @default(now())
 
   @@index([status, createdAt])
+}
+
+/// One-time password reset links. Only a hash of the token is stored; the link expires after an hour.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }

@@ -5,6 +5,8 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { text } from "@/lib/validate";
 import { clientIp, hit, TOO_MANY } from "@/lib/rateLimit";
+import { emailHtml, esc, sendEmail } from "@/lib/email";
+import { legalInfo } from "@/lib/legal";
 
 const CONTACT_TOPICS = ["general", "account", "premium", "bug", "legal"] as const;
 export type ContactTopic = (typeof CONTACT_TOPICS)[number];
@@ -45,5 +47,21 @@ export async function sendContactMessage(input: {
   await db.$executeRaw`
     INSERT INTO "ContactMessage" ("id", "name", "email", "topic", "message", "userId", "ipHash", "status", "createdAt")
     VALUES (${randomUUID()}, ${name}, ${email}, ${topic}, ${message}, ${session?.user?.id ?? null}, ${ipHash}, 'open', ${new Date().toISOString()})`;
+
+  // Tell the owner straight away (to the contact address); "Reply" in their mail app answers the sender.
+  const to = legalInfo().email;
+  if (to.includes("@")) {
+    void sendEmail({
+      to,
+      replyTo: email,
+      subject: `[Mana Forge] New ${topic} message${name ? ` from ${name}` : ""}`,
+      text: `From: ${name ? `${name} ` : ""}<${email}>\nTopic: ${topic}\n\n${message}\n\nReply to this email to answer them.`,
+      html: emailHtml({
+        heading: `New ${esc(topic)} message`,
+        body: `<p><b>From:</b> ${name ? `${esc(name)} ` : ""}&lt;${esc(email)}&gt;</p><p style="white-space:pre-wrap;background:#f4f2ee;border-radius:8px;padding:12px">${esc(message)}</p><p style="color:#7a7488;font-size:13px">Reply to this email to answer them. It's also in Nexus under Safety.</p>`,
+        footer: "Sent by the contact form on manaforgehub.com.",
+      }),
+    });
+  }
   return { ok: true };
 }

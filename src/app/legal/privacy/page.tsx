@@ -64,6 +64,7 @@ export default function PrivacyPage() {
         <li><b>Stripe</b> processes payments. Card details go straight to Stripe and never touch our server.</li>
         <li><b>Scryfall</b> serves card images, so your browser connects to their servers when you view cards.</li>
         <li><b>Our hosting provider</b> runs the server and stores the database.</li>
+        <li><b>Resend</b> delivers the emails we send (password resets, the welcome email, replies to contact messages), so it receives your email address and that email.</li>
         <li>Print and shipping partners receive your shipping address for proxy orders.</li>
       </ul>
       <p>We don&apos;t sell your data. Some of these providers may process data outside your country under standard legal safeguards.</p>
