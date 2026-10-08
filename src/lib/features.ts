@@ -8,6 +8,17 @@
 
 export const SHOP_ENABLED = process.env.NEXT_PUBLIC_SHOP_ENABLED === "1";
 
+//   NEXT_PUBLIC_ADS_ENABLED=1    → Google AdSense ads in the ad slots (never for Premium members).
+//   NEXT_PUBLIC_ADSENSE_SLOT_BANNER / NEXT_PUBLIC_ADSENSE_SLOT_SQUARE = the ad unit IDs from AdSense.
+// Off unless set to 1: turn it on once AdSense has approved the site and the consent message is set
+// up in AdSense → Privacy & messaging (Google shows the EU consent banner itself).
+export const ADS_ENABLED = process.env.NEXT_PUBLIC_ADS_ENABLED === "1";
+export const ADSENSE_CLIENT = "ca-pub-5292825630246496";
+export const ADSENSE_SLOTS = {
+  banner: process.env.NEXT_PUBLIC_ADSENSE_SLOT_BANNER ?? "",
+  square: process.env.NEXT_PUBLIC_ADSENSE_SLOT_SQUARE ?? "",
+};
+
 /** Paths that belong to the shop (store + proxies). */
 export const SHOP_PATHS = ["/store", "/proxies"] as const;
 

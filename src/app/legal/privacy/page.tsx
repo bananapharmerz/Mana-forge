@@ -1,3 +1,4 @@
+import { ADS_ENABLED } from "@/lib/features";
 import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
 import { legalInfo } from "@/lib/legal";
@@ -53,11 +54,23 @@ export default function PrivacyPage() {
 
       <h2>Cookies and browser storage</h2>
       <p>
-        We only use what the site needs to work: a sign-in cookie (secure, HttpOnly, lasts up to 14
-        days) and your browser&apos;s own storage for your cart, proxy project, intro animation and
-        your seat in a play room. There are no advertising or tracking cookies and no analytics, so
-        there&apos;s no cookie banner.
+        The site itself only uses what it needs to work: a sign-in cookie (secure, HttpOnly, lasts up
+        to 14 days) and your browser&apos;s own storage for your cart, proxy project, intro animation
+        and your seat in a play room. There are no analytics.
       </p>
+      {ADS_ENABLED ? (
+        <p>
+          <b>Advertising.</b> Free accounts and visitors see ads from Google AdSense (Google Ireland
+          Ltd.). Google and its partners may use cookies and similar technology to show ads and measure
+          them. In the EU and UK, Google&apos;s consent message asks you first, and you can choose
+          non-personalised ads or change your choice at any time with the &quot;Privacy settings&quot; link
+          it adds. Legal basis: your consent (Art. 6(1)(a) GDPR, § 25 TDDDG). Premium members see no ads.
+          See{" "}
+          <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">how Google uses data for ads</a>.
+        </p>
+      ) : (
+        <p>There are no advertising or tracking cookies, so there&apos;s no cookie banner.</p>
+      )}
 
       <h2>Who else sees data</h2>
       <ul>
