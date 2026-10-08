@@ -97,7 +97,8 @@ export default async function CommanderDecksPage({
   ]);
 
   const deckSourceEntries = await Promise.all(
-    (edhrecDecks ?? []).map(async (d) => [d.urlhash, await getEdhrecDeckSource(d.urlhash)] as const)
+    // Credit links that aren't ready within a second fill in for the next visitor.
+    (edhrecDecks ?? []).map(async (d) => [d.urlhash, await getEdhrecDeckSource(d.urlhash, 1000)] as const)
   );
   const deckSources = new Map(deckSourceEntries);
 

@@ -462,7 +462,7 @@ export async function getMixedDecksPage(
   siteExhausted: boolean,
   filters?: MixedDecksFilter
 ): Promise<MixedDecksPage> {
-  const { POPULAR_COMMANDERS, shuffled, getEdhrecPublicDecks, getEdhrecDeckSource } = await import(
+  const { POPULAR_COMMANDERS, shuffled, seededShuffle, edhrecDecksCached, getEdhrecPublicDecks, getEdhrecDeckSource } = await import(
     "@/lib/edhrec"
   );
 
@@ -478,7 +478,16 @@ export async function getMixedDecksPage(
     const matched = await commandersMatchingCategory(edhrecPool, category);
     edhrecPool = edhrecPool.filter((n) => matched.has(n));
   }
-  const chosenCommanders = shuffled(edhrecPool).slice(0, EDHREC_COMMANDERS_PER_BATCH);
+  // The first page picks from this hour's set of commanders (the same for every visitor), so their
+  // EDHREC data is usually already in memory; later pages roam the whole pool. Commanders that are
+  // already loaded go first, so a page rarely waits on EDHREC at all.
+  const firstPage = siteCursor === null && !siteExhausted;
+  const pool = firstPage ? seededShuffle(edhrecPool, Math.floor(Date.now() / 3600000)).slice(0, 12) : edhrecPool;
+  const mixed = shuffled(pool);
+  const chosenCommanders = [...mixed.filter((n) => edhrecDecksCached(n)), ...mixed.filter((n) => !edhrecDecksCached(n))].slice(
+    0,
+    EDHREC_COMMANDERS_PER_BATCH
+  );
 
   let siteCommanderNames: string[] | undefined;
   if (category) {
@@ -500,24 +509,23 @@ export async function getMixedDecksPage(
       });
   const nextSiteExhausted = siteExhausted || !sitePage.hasMore;
 
+  // EDHREC gets about a second; whatever isn't ready keeps loading for the next visitor.
   const edhrecResults = await Promise.all(
     chosenCommanders.map(async (name) => ({
       name,
-      decks: (await getEdhrecPublicDecks(name, EDHREC_DECKS_PER_COMMANDER)) ?? [],
+      decks: (await getEdhrecPublicDecks(name, EDHREC_DECKS_PER_COMMANDER, 1200)) ?? [],
     }))
   );
+  const withDecks = edhrecResults.filter((r) => r.decks.length);
+  const sources = await Promise.all(withDecks.flatMap((r) => r.decks.map((d) => getEdhrecDeckSource(d.urlhash, 700))));
   const edhrecItems: MixedDeckItem[] = [];
-  for (const r of edhrecResults) {
-    for (const d of r.decks) {
-      const source = await getEdhrecDeckSource(d.urlhash);
-      edhrecItems.push({ kind: "edhrec", deck: d, commanderName: r.name, source });
-    }
-  }
+  let si = 0;
+  for (const r of withDecks) for (const d of r.decks) edhrecItems.push({ kind: "edhrec", deck: d, commanderName: r.name, source: sources[si++] });
 
   const siteItems: MixedDeckItem[] = sitePage.decks.map((deck) => ({ kind: "site", deck }));
 
-  const extraCommanderCards =
-    chosenCommanders.length > 0 ? await getCardsByNames(chosenCommanders) : [];
+  const shownCommanders = withDecks.map((r) => r.name);
+  const extraCommanderCards = shownCommanders.length > 0 ? await getCardsByNames(shownCommanders) : [];
   const commanderImages: Record<string, string | undefined> = { ...sitePage.commanderImages };
   for (const c of extraCommanderCards) commanderImages[c.name] = cardImage(c);
 
