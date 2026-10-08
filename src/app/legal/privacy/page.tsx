@@ -3,6 +3,9 @@ import LegalPage from "@/components/LegalPage";
 import { legalInfo } from "@/lib/legal";
 import { SITE } from "@/lib/site";
 
+// Rendered on each request so the owner details come from the server settings (LEGAL_* env).
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Privacy policy",
   alternates: { canonical: "/legal/privacy" },
