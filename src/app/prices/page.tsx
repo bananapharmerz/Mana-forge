@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "Card price tracker",
   alternates: { canonical: "/prices" },
   description: "Follow Magic: The Gathering card prices: your watchlist with target prices, and the week's biggest movers in Commander decks.",
+  openGraph: { title: "Card price tracker · Mana Forge", description: "Follow Magic: The Gathering card prices: your watchlist with target prices, and the week's biggest movers in Commander decks." },
 };
 
 function MoverList({ title, rows, up }: { title: string; rows: Mover[]; up: boolean }) {

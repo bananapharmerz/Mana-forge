@@ -19,6 +19,7 @@ export const metadata: Metadata = {
   title: "Every Commander — browse by color, tribe and theme",
   description: "Browse every legal Magic: The Gathering commander. Filter by color identity, tribe, theme or set, and see what players build with each one.",
   alternates: { canonical: "/commanders" },
+  openGraph: { title: "Every Commander · Mana Forge", description: "Browse every legal Magic: The Gathering commander. Filter by color identity, tribe, theme or set, and see what players build with each one." },
 };
 
 export const revalidate = 3600;

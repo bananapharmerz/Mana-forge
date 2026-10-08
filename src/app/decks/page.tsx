@@ -21,9 +21,11 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   const { category: slug } = await searchParams;
   const category = slug ? findCategory(slug) : undefined;
   const title = category ? `${category.label} Commander decks` : "Commander decks";
+  const description = `${category ? `${category.label} decks` : "Public Commander (EDH) decks"} built by ${SITE.name} players and the community. Copy one, tweak it, make it yours.`;
   return {
     title,
-    description: `${category ? `${category.label} decks` : "Public Commander (EDH) decks"} built by ${SITE.name} players and the community. Copy one, tweak it, make it yours.`,
+    description,
+    openGraph: { title: `${title} · ${SITE.name}`, description },
     alternates: { canonical: slug ? `/decks?category=${encodeURIComponent(slug)}` : "/decks" },
   };
 }

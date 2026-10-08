@@ -19,12 +19,15 @@ export async function generateMetadata({ params }: { params: Promise<{ deckId: s
   const { deckId } = await params;
   const d = await db.deck.findUnique({ where: { id: deckId }, select: { name: true, commanderName: true, isPublic: true, owner: { select: { name: true } } } });
   if (!d || !d.isPublic) return { title: "Deck not found", robots: { index: false } };
-  const by = d.owner.name ? ` by ${d.owner.name}` : "";
+  const by = d.owner.name && d.owner.name !== SITE.name ? ` by ${d.owner.name}` : "";
+  // "Kami: Average Build" already names the commander, so don't repeat it.
+  const title = d.name.toLowerCase().includes(d.commanderName.toLowerCase()) ? `${d.name} — Commander deck` : `${d.name} — ${d.commanderName} Commander deck`;
+  const description = `${d.commanderName} Commander (EDH) decklist${by}: ${d.name}. The full 100-card list, mana curve and what the deck costs.`;
   return {
-    title: `${d.name} — ${d.commanderName} deck`,
-    description: `${d.name}, a ${d.commanderName} Commander deck${by} on ${SITE.name}. See the full list, the mana curve and what it costs.`,
+    title,
+    description,
     alternates: { canonical: `/decks/view/${deckId}` },
-    openGraph: { type: "article", title: `${d.name} · ${d.commanderName}`, url: `/decks/view/${deckId}`, images: [{ url: "/opengraph-image", width: 1200, height: 630 }] },
+    openGraph: { type: "article", title, description, url: `/decks/view/${deckId}`, images: [{ url: "/opengraph-image", width: 1200, height: 630 }] },
   };
 }
 
