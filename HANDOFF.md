@@ -83,3 +83,9 @@ admin hub that reads and edits this site's database.
 4. Hosting for launch (Coolify suggested): HTTPS, `NEXT_PUBLIC_SITE_URL`, `AUTH_SECRET`, Stripe live
    keys + webhook secret, and copy backups off the server.
 5. Social media last.
+
+## 8–9 Oct (late)
+- Email via Resend (`src/lib/email.ts`): password reset (`/forgot-password`, `/reset-password`, one-time token hashed in `PasswordReset`, 1h, bumps `User.sessionVersion` → all sessions signed out), welcome email, contact-form alert to LEGAL_EMAIL. Needs RESEND_API_KEY (runtime) — no-op without it.
+- Ads behind `NEXT_PUBLIC_ADS_ENABLED` (+ `NEXT_PUBLIC_ADSENSE_SLOT_BANNER/SQUARE`, build variables). AdSlot loads AdSense only when on, never for Premium; privacy text switches automatically.
+- Perf: EDHREC waits capped (feed 1.2s, credits 0.7–1s, commander deck file 1.5s) with in-flight dedupe; hourly commander rotation for the first feed page; Scryfall batches in parallel. /decks ~0.35s warm, commander pages ~2s cold / 0.4s warm.
+- Deploys are triggered via Coolify's queue (GitHub webhook still points at the old :8000 address).
