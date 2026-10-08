@@ -13,7 +13,7 @@ import BuyDeckPanel from "@/components/BuyDeckPanel";
 import PartnerCardStack from "@/components/PartnerCardStack";
 import type { Metadata } from "next";
 import { SITE } from "@/lib/site";
-import { authorName } from "@/lib/author";
+import { authorName, HOUSE_EMAIL } from "@/lib/author";
 
 export async function generateMetadata({ params }: { params: Promise<{ deckId: string }> }): Promise<Metadata> {
   const { deckId } = await params;
@@ -39,7 +39,7 @@ export default async function ViewDeckPage({
   const [row, session] = await Promise.all([
     db.deck.findUnique({
       where: { id: deckId },
-      include: { owner: { select: { name: true } } },
+      include: { owner: { select: { name: true, email: true } } },
     }),
     auth(),
   ]);
@@ -170,6 +170,15 @@ export default async function ViewDeckPage({
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">{deck.name}</h1>
           <p className="mt-1 text-sm text-muted">by {author}</p>
+          {row.owner.email === HOUSE_EMAIL && (
+            <p className="mt-1 text-xs text-muted">
+              Starter deck by {author}, built from community play data on{" "}
+              <a href="https://edhrec.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-gold-bright">
+                EDHREC
+              </a>
+              . Make it yours and tune it to your table.
+            </p>
+          )}
 
           <div className="mt-8 flex flex-col gap-6">
             {grouped.length === 0 && (

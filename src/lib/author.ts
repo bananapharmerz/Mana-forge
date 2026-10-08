@@ -7,3 +7,7 @@ export const maskEmail = (email: string) => {
   if (!domain) return "your email";
   return `${local.slice(0, 1)}•••@${domain}`;
 };
+
+// The site's own account that publishes the starter decks (built from community play data).
+export const HOUSE_EMAIL = "starter-decks@manaforgehub.com";
+export const HOUSE_NAME = "Mana Forge";
