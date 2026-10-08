@@ -5,8 +5,9 @@ import { SHOP_ENABLED } from "@/lib/features";
 import { colorIdentityCategories, typalCategories, themeCategories } from "@/lib/categories";
 
 // Every public page, for search engines: the main sections, browse pages, commanders with
-// public decks, the public decks themselves and the store's products. Rebuilt every 10 minutes.
-export const revalidate = 600;
+// public decks, the public decks themselves and the store's products. Always current.
+// Built fresh on each request: the build runs against an empty database, so a cached copy would miss every deck.
+export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
