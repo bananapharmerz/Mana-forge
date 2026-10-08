@@ -227,3 +227,18 @@ model SecurityEvent {
 
   @@index([createdAt])
 }
+
+/// Messages sent through the contact form (the second contact channel next to email for the Impressum).
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String
+  topic     String // "general" | "account" | "premium" | "bug" | "legal"
+  message   String
+  userId    String? // signed-in sender, if any
+  ipHash    String? // hashed IP, only to stop spam
+  status    String   @default("open") // "open" | "answered" | "spam"
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+}

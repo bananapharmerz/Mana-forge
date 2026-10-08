@@ -23,6 +23,9 @@ export default function ImpressumPage() {
         {L.address}
       </p>
       <p>Email: {L.email}</p>
+      <p>
+        Contact form: <a href="/contact">{SITE.url.replace(/^https?:\/\//, "")}/contact</a>
+      </p>
 
       <h2>Responsible for content</h2>
       <p>{L.owner}, address as above.</p>

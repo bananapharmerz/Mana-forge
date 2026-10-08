@@ -45,6 +45,10 @@ export default function PrivacyPage() {
         <li>
           <b>Reports:</b> if you report a deck, we store the reason you give and the deck it&apos;s about.
         </li>
+        <li>
+          <b>Contact form:</b> if you write to us, we store your email, your name if you give it, and your
+          message, only so we can answer you (Art. 6(1)(b) and (f) GDPR).
+        </li>
       </ul>
 
       <h2>Cookies and browser storage</h2>
@@ -69,6 +73,7 @@ export default function PrivacyPage() {
         <li>Account, decks and favourites: until you delete your account.</li>
         <li>Orders: as long as tax law requires (usually up to 10 years), then deleted.</li>
         <li>Play rooms: deleted after a few hours of inactivity.</li>
+        <li>Contact messages: deleted within 12 months of our last reply.</li>
         <li>Backups: kept for 14 days.</li>
       </ul>
 
