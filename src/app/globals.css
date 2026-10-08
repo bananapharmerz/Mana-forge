@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --background: #f8f4e9;
+  --surface: #fffdf8;
+  --surface-raised: #f0e9d6;
+  --border: #ddd0ac;
+  --foreground: #2b2416;
+  --muted: #766c53;
+  --gold: #b5872a;
+  --gold-bright: #7c5814;
+
+  --mana-w: #f8f6d8;
+  --mana-u: #0e68ab;
+  --mana-b: #6b5b95;
+  --mana-b-fg: #2b2320;
+  --mana-r: #d3202a;
+  --mana-g: #00733e;
+  --mana-c: #b7b8ba;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-cormorant), Georgia, "Times New Roman", serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.mana-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+}
+.mana-pip.mana-w { background: var(--mana-w); color: #4a3f1a; border-color: rgba(0, 0, 0, 0.6); }
+.mana-pip.mana-u { background: var(--mana-u); color: #ffffff; }
+.mana-pip.mana-b { background: #3b2f47; color: #e6dcff; }
+.mana-pip.mana-r { background: var(--mana-r); color: #ffffff; }
+.mana-pip.mana-g { background: var(--mana-g); color: #ffffff; }
+.mana-pip.mana-c { background: var(--mana-c); color: #33343a; }
+
+.card-frame {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop-in {
+  display: inline-block;
+  animation: pop-in 0.4s ease-out;
+}
+
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  display: inline-block;
+  animation: spin-slow 0.5s linear infinite;
+}
+
+@keyframes shuffle-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-3px) rotate(-4deg); }
+  40% { transform: translateX(3px) rotate(4deg); }
+  60% { transform: translateX(-2px) rotate(-3deg); }
+  80% { transform: translateX(2px) rotate(3deg); }
+}
+.animate-shuffle {
+  animation: shuffle-shake 0.6s ease-in-out;
+}
+
+/* ---- Site-wide effects (components/fx) ----------------------------------------------------- */
+
+/* Deck card fan: cards tucked behind the commander spread out on hover/focus. */
+.fan-card {
+  transform-origin: 50% 110%;
+  transform: rotate(calc(var(--fan) * 4deg)) translateX(calc(var(--fan) * 2px));
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.fan-top {
+  transform-origin: 50% 110%;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.group:hover .fan-card,
+.group:focus-visible .fan-card,
+.group\/fan:hover .fan-card {
+  transform: rotate(calc(var(--fan) * 10deg)) translateX(calc(var(--fan) * 7px)) translateY(-3px);
+}
+.group:hover .fan-top,
+.group:focus-visible .fan-top {
+  transform: translateY(-4px) scale(1.04);
+}
+
+/* Holo-foil tilt (FoilTilt). */
+.foil-tilt {
+  position: relative;
+  transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.25s ease-out;
+  transform-style: preserve-3d;
+}
+.foil-sheen {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  opacity: calc(var(--foil, 0) * 0.9);
+  transition: opacity 0.3s;
+  mix-blend-mode: color-dodge;
+  background:
+    radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.55), transparent 42%),
+    linear-gradient(115deg, transparent 20%, rgba(255, 120, 200, 0.28) 36%, rgba(120, 200, 255, 0.28) 50%, rgba(255, 230, 120, 0.28) 64%, transparent 80%);
+  background-size: 100% 100%, 220% 220%;
+  background-position: center, calc(var(--mx, 50%) * 1.2) calc(var(--my, 50%) * 1.2);
+}
+
+/* Scroll reveal: only hides content once JavaScript is running (html.js). */
+.js .reveal {
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.js .reveal:not(.reveal-in) {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+/* Add to cart sparks. */
+@keyframes spark-fly {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--sx), var(--sy)) scale(0.2); opacity: 0; }
+}
+.spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(circle, #fff7d1, #ffb020 60%, transparent);
+  animation: spark-fly 0.6s ease-out forwards;
+}
+
+/* First-visit forge intro (ForgeIntro). */
+@keyframes intro-out { to { opacity: 0; visibility: hidden; } }
+@keyframes intro-ring { from { stroke-dasharray: 0 640; } to { stroke-dasharray: 640 0; } }
+@keyframes intro-flame {
+  0% { transform: scale(0.2); opacity: 0; filter: drop-shadow(0 0 0 #ffb020); }
+  60% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 18px #ffb020); }
+  100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 10px #ff7a2e); }
+}
+@keyframes intro-word { from { opacity: 0; letter-spacing: 0.6em; } to { opacity: 1; letter-spacing: 0.35em; } }
+.forge-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: radial-gradient(60% 60% at 50% 45%, #1d1028, #07050c 70%);
+  pointer-events: none;
+  animation: intro-out 0.45s ease 1.05s forwards;
+}
+.forge-intro-sigil { width: 112px; height: 112px; }
+.forge-intro-ring { animation: intro-ring 0.9s ease-out forwards; }
+.forge-intro-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: intro-flame 0.8s ease-out 0.15s both; }
+.forge-intro-word {
+  font-family: var(--font-display);
+  color: #e0b252;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  animation: intro-word 0.8s ease-out 0.2s both;
+}
+[data-intro-seen] .forge-intro { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .forge-intro { display: none; }
+  .fan-card, .fan-top, .foil-tilt, .js .reveal { transition: none; }
+  .js .reveal:not(.reveal-in) { opacity: 1; transform: none; }
+  .spark { display: none; }
+}

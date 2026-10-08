@@ -1,0 +1,229 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  passwordHash         String
+  name                 String?
+  tier                 String   @default("free") // "free" | "premium"
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  createdAt            DateTime @default(now())
+  decks                Deck[]
+  orders               Order[]
+  proxyOrders          ProxyOrder[]
+  favorites            Favorite[]
+  priceWatches         PriceWatch[]
+
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+}
+
+model Deck {
+  id                   String   @id @default(cuid())
+  name                 String
+  commanderName        String
+  commanderData        String // JSON-encoded DeckCard for the commander
+  // A deck has at most one of these: a partner (a second commander, paired via the Partner or
+  // Partner-with mechanic) or a companion (sits in the command zone alongside the commander).
+  // Both are optional and additive — a deck with neither behaves exactly as before.
+  partnerCommanderName String?
+  partnerCommanderData String? // JSON-encoded DeckCard for the partner commander
+  companionName        String?
+  companionData        String? // JSON-encoded DeckCard for the companion
+  cards                String // JSON-encoded DeckCard[]
+  cardBackUrl          String? // built-in card-back id, or a data:/http(s) URL for custom art
+  isPublic             Boolean  @default(false)
+  ownerId              String
+  owner                User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  favorites            Favorite[]
+
+  @@index([commanderName])
+  @@index([ownerId])
+  @@index([isPublic, updatedAt])
+}
+
+model Favorite {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deckId        String? // set for a real Mana Forge deck
+  deck          Deck?    @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  edhrecUrlhash String? // set for an EDHREC-sourced deck, which has no local row to reference
+  snapshot      String? // JSON-encoded {deck, commanderName, source} for edhrec favorites, so the
+  // card can render again later without needing EDHREC's bulk feed to still contain it
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, deckId])
+  @@unique([userId, edhrecUrlhash])
+  @@index([userId])
+}
+
+// Persisted result of "which commanders match this category" (see src/lib/categories.ts).
+// This used to live only in an in-process Map, which meant every server restart — and every
+// separate instance behind a load balancer — recomputed it from scratch by re-querying Scryfall.
+// Storing it means the match set survives restarts, is shared across instances, and category
+// filtering under real concurrent traffic never has to wait on a live Scryfall round trip.
+model CategoryMatch {
+  id            String   @id @default(cuid())
+  categorySlug  String
+  commanderName String
+  updatedAt     DateTime @updatedAt
+
+  @@unique([categorySlug, commanderName])
+  @@index([categorySlug])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  priceCents  Int
+  category    String // "sleeves" | "deckbox" | "playmat" | "dice" | "life-counter"
+  icon        String // emoji or short icon key for the product card
+  stock       Int      @default(50)
+  createdAt   DateTime @default(now())
+
+  @@index([category])
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  email           String
+  items           String // JSON-encoded [{productId, name, priceCents, quantity}]
+  totalCents      Int
+  status          String   @default("pending") // "pending" | "paid" | "fulfilled"
+  stripeSessionId String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([stripeSessionId])
+}
+
+model ProxyOrder {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  email           String
+  shippingAddress String // JSON-encoded {name, line1, line2, city, state, postalCode, country}
+  cards           String // JSON-encoded [{scryfallId, name, setName, imageUrl, quantity}]
+  cardCount       Int
+  pricingMode     String   @default("per-card") // "per-card" | "bundle"
+  totalCents      Int
+  status          String   @default("pending") // "pending" | "paid" | "printing" | "shipped"
+  stripeSessionId String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([stripeSessionId])
+}
+
+// ---- Card price tracker ---------------------------------------------------------------------
+// Latest Scryfall price for every card that's in a deck or on someone's watchlist (one row per
+// printing), plus one snapshot per card per day so the site can show what moved.
+
+model CardPrice {
+  scryfallId String   @id
+  name       String
+  setName    String?
+  imageUrl   String?
+  usd        Float?
+  usdFoil    Float?
+  eur        Float?
+  updatedAt  DateTime @updatedAt
+
+  @@index([name])
+}
+
+model CardPriceHistory {
+  id         String @id @default(cuid())
+  scryfallId String
+  day        String // YYYY-MM-DD (UTC)
+  usd        Float?
+  usdFoil    Float?
+
+  @@unique([scryfallId, day])
+  @@index([day])
+}
+
+model PriceWatch {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scryfallId String
+  name       String
+  targetUsd  Float? // tell me when it drops to this
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, scryfallId])
+  @@index([userId])
+}
+
+// Someone flagged a public deck (spam, offensive name, stolen art…). Nexus shows open reports in
+// its inbox; the admin can hide the deck (make it private) or dismiss the report.
+model DeckReport {
+  id         String   @id @default(cuid())
+  deckId     String
+  reason     String // "spam" | "offensive" | "copyright" | "other"
+  details    String?
+  reporterId String? // signed-in reporter, if any
+  ipHash     String? // hashed IP, only to stop one person spamming reports
+  status     String   @default("open") // "open" | "hidden" | "dismissed"
+  createdAt  DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([deckId])
+}
+
+// Server errors, recorded by src/instrumentation.ts so Nexus can show them. No personal data:
+// just the route, the error message and the digest shown on the error page.
+model ErrorLog {
+  id        String   @id @default(cuid())
+  digest    String?
+  path      String
+  method    String
+  message   String
+  kind      String? // "render" | "route" | "action" | "proxy"
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// A "cancel my subscription" request sent from the public /cancel page by someone who wasn't
+// signed in. Nexus shows it in the inbox and cancels the matching Stripe subscription.
+model CancelRequest {
+  id        String   @id @default(cuid())
+  email     String
+  userId    String?
+  note      String?
+  status    String   @default("open") // "open" | "done" | "no_subscription"
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+}
+
+// What the site's defences stopped, counted per minute (src/lib/securityLog.ts). No personal data.
+// Nexus's Police Station reads it.
+model SecurityEvent {
+  id        String   @id @default(cuid())
+  kind      String // login_locked | rate_limited | breached_password | seat_rejected | webhook_bad_signature | payment_mismatch
+  area      String // where: login, signup, checkout, play, stripe…
+  count     Int
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

@@ -1,0 +1,207 @@
+"use client";
+
+import { useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import CardSearchBox from "@/components/CardSearchBox";
+import AdSlot from "@/components/AdSlot";
+import { autocompleteCommanderNames, getCardByName, cardImage, cardPriceUsd } from "@/lib/scryfall";
+import { createDeck, deleteDeckAction, duplicateDeck } from "@/app/actions/decks";
+import { defaultCategory, deckSize, type Deck } from "@/lib/deckTypes";
+
+const noopSubscribe = () => () => {};
+
+export default function DeckBuilderIndexClient({
+  initialDecks,
+  deckLimit,
+  tier,
+}: {
+  initialDecks: Deck[];
+  deckLimit: number | null;
+  tier: string;
+}) {
+  const router = useRouter();
+  const [decks, setDecks] = useState(initialDecks);
+  // Arriving with ?commander=… opens the new-deck form with that commander filled in.
+  const urlCommander = useSyncExternalStore(
+    noopSubscribe,
+    () => new URLSearchParams(window.location.search).get("commander"),
+    () => null
+  );
+  const [showNewChoice, setShowNew] = useState<boolean | null>(null);
+  const showNew = showNewChoice ?? !!urlCommander;
+  const [deckName, setDeckName] = useState("");
+  const [commanderChoice, setCommanderName] = useState<string | null>(null);
+  const commanderName = commanderChoice ?? urlCommander ?? "";
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const atLimit = deckLimit !== null && decks.length >= deckLimit;
+
+
+  async function handleCreate() {
+    if (!commanderName) {
+      setError("Pick a commander first.");
+      return;
+    }
+    setCreating(true);
+    setError(null);
+    try {
+      const card = await getCardByName(commanderName);
+      if (!card) {
+        setError("Couldn't find that commander on Scryfall.");
+        return;
+      }
+      const result = await createDeck(
+        {
+          name: card.name,
+          scryfallId: card.id,
+          imageUrl: cardImage(card),
+          typeLine: card.type_line,
+          manaCost: card.mana_cost,
+          cmc: card.cmc,
+          colorIdentity: card.color_identity,
+          quantity: 1,
+          category: defaultCategory(card.type_line),
+          priceUsd: cardPriceUsd(card),
+        },
+        deckName
+      );
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      router.push(`/deck-builder/${result.id}`);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    await deleteDeckAction(id);
+    setDecks((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  async function handleCopy(id: string) {
+    setError(null);
+    const result = await duplicateDeck(id);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    router.push(`/deck-builder/${result.id}`);
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Deck Builder</h1>
+          <p className="mt-1 text-muted">
+            {deckLimit !== null
+              ? `${decks.length} / ${deckLimit} decks used (${tier} account)`
+              : `${decks.length} decks (${tier} account)`}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowNew((s) => !s)}
+          disabled={atLimit}
+          className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          New Deck
+        </button>
+      </div>
+
+      <div className="mb-8">
+        <AdSlot tier={tier} />
+      </div>
+
+      {atLimit && (
+        <div className="card-frame mb-8 p-4 text-sm text-muted">
+          You&apos;ve hit the {deckLimit}-deck limit for free accounts. Delete an old deck, or{" "}
+          <Link href="/premium" className="text-gold-bright underline">
+            upgrade to Premium
+          </Link>{" "}
+          for unlimited decks.
+        </div>
+      )}
+
+      {showNew && !atLimit && (
+        <div className="card-frame mb-8 flex flex-col gap-3 p-5">
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Deck name (optional)
+          </label>
+          <input
+            value={deckName}
+            onChange={(e) => setDeckName(e.target.value)}
+            placeholder="My Deck"
+            className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+          />
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Commander
+          </label>
+          <CardSearchBox
+            placeholder="Search for a commander..."
+            fetchSuggestions={autocompleteCommanderNames}
+            onSelect={(name) => setCommanderName(name)}
+            clearOnSelect={false}
+          />
+          {commanderName && (
+            <p className="text-sm text-gold-bright">Selected: {commanderName}</p>
+          )}
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button
+            onClick={handleCreate}
+            disabled={creating}
+            className="mt-2 w-fit rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-50"
+          >
+            {creating ? "Creating..." : "Create Deck"}
+          </button>
+        </div>
+      )}
+
+      {decks.length === 0 ? (
+        <p className="text-sm text-muted">
+          No decks yet. Click &quot;New Deck&quot; to pick a commander and start building.
+        </p>
+      ) : (
+        <>
+          {error && !showNew && <p className="mb-4 text-sm text-red-600">{error}</p>}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {decks.map((deck) => (
+              <div key={deck.id} className="card-frame flex flex-col gap-2 p-4">
+                <Link href={`/deck-builder/${deck.id}`} className="hover:text-gold-bright">
+                  <h2 className="font-semibold text-foreground">{deck.name}</h2>
+                </Link>
+                <p className="text-xs text-muted">{deck.commander?.name ?? "No commander"}</p>
+                <p className="text-xs text-muted">
+                  {deckSize(deck)} / 100 cards {deck.isPublic && "· Public"}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Link
+                    href={`/deck-builder/${deck.id}`}
+                    className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-gold"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => handleCopy(deck.id)}
+                    className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-gold"
+                  >
+                    Copy Deck
+                  </button>
+                  <button
+                    onClick={() => handleDelete(deck.id)}
+                    className="rounded-md border border-border px-3 py-1.5 text-xs text-muted hover:border-red-600 hover:text-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

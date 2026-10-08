@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+dev.db*
+prisma/*.db*
+*.bak
+backups
+*.log
+.claude
+.agents
+.windsurf
+src/generated
+tsconfig.tsbuildinfo
