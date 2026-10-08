@@ -93,7 +93,9 @@ export default async function CommanderDecksPage({
       orderBy: { updatedAt: "desc" },
     }),
     getEdhrecCommanderData(card.name),
-    getEdhrecPublicDecks(card.name, 24),
+    // EDHREC's deck file for a commander can be 10MB+; on a cold start the page doesn't wait for it
+    // (the section appears for the next visitor once it's loaded).
+    getEdhrecPublicDecks(card.name, 24, 1500),
   ]);
 
   const deckSourceEntries = await Promise.all(
