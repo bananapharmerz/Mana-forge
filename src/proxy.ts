@@ -58,5 +58,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // Everything except Next's static files and images.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|robots.txt|sitemap.xml|.well-known).*)"],
+  // api/admin/media and api/media are skipped: the proxy cuts request bodies at 10 MB, which broke
+  // Nexus's video uploads, and the videos themselves needn't be counted or ban-checked.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|twitter-image|robots.txt|sitemap.xml|.well-known|api/admin/media|api/media).*)"],
 };
