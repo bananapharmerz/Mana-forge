@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { unsubscribeUrl } from "@/lib/unsubscribe";
 import { emailEnabled, emailHtml, esc, sendEmail } from "@/lib/email";
 import { inChunks, today } from "@/lib/prices";
 import { SITE } from "@/lib/site";
@@ -101,12 +102,15 @@ export async function runPriceAlerts(): Promise<{ emailed: number }> {
       ? `${hits.length === 1 ? hits[0].name : `${hits.length} cards`} hit your target price`
       : "Big price moves in your decks this week";
     const L = legalInfo();
-    const footer = `You're getting this as a Premium member with price alerts on. Turn them off on <a href="${esc(SITE.url)}/premium" style="color:#7a7488">your Premium page</a>.<br>${esc(SITE.name)} · ${esc(L.owner)} · ${esc(L.address)}`;
+    const unsub = unsubscribeUrl(u.id);
+    const footer = `You're getting this as a Premium member with price alerts on. <a href="${esc(unsub)}" style="color:#7a7488">Unsubscribe in one click</a>, or change it on <a href="${esc(SITE.url)}/premium" style="color:#7a7488">your Premium page</a>.<br>${esc(SITE.name)} · ${esc(L.owner)} · ${esc(L.address)}`;
     const ok = await sendEmail({
       to: u.email,
       subject,
       html: emailHtml({ heading: subject, body: sections.join(""), button: { label: "Open price tracker", url: `${SITE.url}/prices` }, footer }),
-      text: `${lines.join("\n")}\nPrice tracker: ${SITE.url}/prices\nTurn alerts off: ${SITE.url}/premium\n\n${SITE.name} · ${L.owner} · ${L.address}`,
+      text: `${lines.join("\n")}\nPrice tracker: ${SITE.url}/prices\nUnsubscribe: ${unsub}\n\n${SITE.name} · ${L.owner} · ${L.address}`,
+      // Gmail / Apple Mail show their own "Unsubscribe" button from these (RFC 8058 one-click).
+      headers: { "List-Unsubscribe": `<${unsub.replace("/unsubscribe?", "/api/unsubscribe?")}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
     });
     if (!ok) continue;
     emailed++;

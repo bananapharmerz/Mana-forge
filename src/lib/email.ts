@@ -29,7 +29,7 @@ ${btn}
 </td></tr></table></td></tr></table></body></html>`;
 }
 
-export async function sendEmail(msg: { to: string; subject: string; html: string; text: string; replyTo?: string }): Promise<boolean> {
+export async function sendEmail(msg: { to: string; subject: string; html: string; text: string; replyTo?: string; headers?: Record<string, string> }): Promise<boolean> {
   if (!emailEnabled()) {
     console.warn(`[email] RESEND_API_KEY isn't set, so this email wasn't sent: "${msg.subject}"`);
     return false;
@@ -38,7 +38,7 @@ export async function sendEmail(msg: { to: string; subject: string; html: string
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key()}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: from(), to: [msg.to], subject: msg.subject, html: msg.html, text: msg.text, ...(msg.replyTo ? { reply_to: msg.replyTo } : {}) }),
+      body: JSON.stringify({ from: from(), to: [msg.to], subject: msg.subject, html: msg.html, text: msg.text, ...(msg.replyTo ? { reply_to: msg.replyTo } : {}), ...(msg.headers ? { headers: msg.headers } : {}) }),
       signal: AbortSignal.timeout(10000),
       cache: "no-store",
     });
