@@ -26,7 +26,7 @@ export default function TermsPage() {
       <ul>
         <li>You need to be at least 16 years old to create an account.</li>
         <li>Keep your password to yourself. You&apos;re responsible for what happens under your account.</li>
-        <li>You can ask us to delete your account at any time by writing to {L.email}.</li>
+        <li>You can delete your account at any time on your account page, or ask us to by writing to {L.email}.</li>
       </ul>
 
       <h2>Decks, names and anything you post</h2>

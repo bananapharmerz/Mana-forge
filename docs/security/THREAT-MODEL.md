@@ -45,7 +45,7 @@ Risk = how likely × how bad. **H** = high, **M** = medium, **L** = low.
 |---|---|---|---|---|---|
 | T1 | Account takeover by guessing | Credential stuffing, brute force | M | bcrypt, lockouts (8/account, 30/IP), breached-password check, IP bans | Users have no 2FA |
 | T2 | Reading or editing someone else's deck (IDOR) | Change the deck ID in a URL or action | M | Owner check on every read and write; private decks 404 | — |
-| T3 | Session theft | Stolen cookie (malware, shared PC) | L | HttpOnly + Secure cookie, 14-day limit, no-store pages, sign-out clears the cookie, a password reset signs out everywhere | A copied cookie stays valid until it expires or the password is reset. There is no "sign out everywhere" button yet |
+| T3 | Session theft | Stolen cookie (malware, shared PC) | L | HttpOnly + Secure cookie, 14-day limit, no-store pages, sign-out clears the cookie, a password reset signs out everywhere | "Sign out everywhere" on /account ends every session, including copied cookies |
 | T4 | Payment fraud | Fake webhook, changed amount, replay | M | Stripe signature, amount and currency match, idempotency | — |
 | T5 | Free Premium | Calling Premium actions without paying | M | Tier checked on the server from the database | — |
 | T6 | SQL injection | Crafted input reaching a query | L | Prisma and parameterised raw queries only | — |
@@ -59,14 +59,14 @@ Risk = how likely × how bad. **H** = high, **M** = medium, **L** = low.
 | T14 | Server compromise | Exposed admin ports, a weak SSH setup | M | Firewall allows only Cloudflare on 80/443, SSH key, Coolify behind the firewall | No 2FA on all owner accounts yet |
 | T15 | Supply-chain attack | A malicious npm update | M | Dependabot, `npm audit`, lockfile, the Library's 7-day wait before bug-fix updates install | — |
 | T16 | Owner account takeover | Phishing GitHub, Cloudflare, Stripe or Hetzner | M | Strong unique passwords | 2FA not yet confirmed on every account |
-| T17 | Data loss | Disk failure, a bad migration | M | Nightly backups, 14 days kept, copies on the owner's PC | Restores haven't been rehearsed |
+| T17 | Data loss | Disk failure, a bad migration | M | Nightly backups, 14 days kept, copies on the owner's PC, restore rehearsed 9 Oct | — |
 | T18 | Privacy breach (GDPR) | Over-collection, leaking emails | L | Data minimisation, cookieless analytics, hashed IPs, retention limits | — |
 | T19 | Prompt injection through Nexus | Web pages telling Nexus's AI to change code | L | Web content treated as data; every code change needs the owner's OK, a snapshot and automatic rollback | — |
 
 ## Top follow-ups
 
 1. Turn on 2FA for GitHub, Cloudflare, Hetzner, Coolify, Stripe, Resend and Google (T14, T16).
-2. Add a "Sign out of all devices" button that bumps `sessionVersion` (T3).
-3. Rehearse a restore from last night's backup onto a test copy (T17).
+2. ~~Sign out of all devices~~ (done 9 Oct, `/account`).
+3. ~~Rehearse a restore~~ (done 9 Oct, see `RESTORE.md`).
 4. Tighten the CSP with `script-src` once AdSense goes live (T7).
 5. Longer room codes, or private rooms that need an invite link, if competitive play is added (T11, T12).

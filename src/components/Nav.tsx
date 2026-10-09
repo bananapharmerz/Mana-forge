@@ -78,9 +78,9 @@ export default function Nav() {
 
           {status === "authenticated" ? (
             <div className="flex items-center gap-2">
-              <span className="hidden text-xs text-muted sm:inline">
+              <Link href="/account" className="hidden text-xs text-muted hover:text-gold-bright sm:inline" title="Your account">
                 {session.user?.email}
-              </span>
+              </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="rounded-md px-2.5 py-1.5 text-sm font-medium text-muted hover:bg-surface-raised hover:text-foreground sm:px-3"
@@ -157,7 +157,7 @@ export default function Nav() {
           <div className="mt-3 border-t border-border pt-3">
             {status === "authenticated" ? (
               <div className="flex items-center justify-between gap-3">
-                <span className="truncate text-sm text-muted">{session.user?.email}</span>
+                <Link href="/account" onClick={close} className="truncate text-sm text-muted underline">{session.user?.email}</Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="shrink-0 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground"
