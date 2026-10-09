@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import OfflineNotice from "@/components/OfflineNotice";
 import BackToTop from "@/components/BackToTop";
 import { SITE } from "@/lib/site";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -78,6 +79,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <Footer />
                 <CardSelectionTray />
                 <BackToTop />
+                <OfflineNotice />
                 <SiteTracker />
               </CardSelectionProvider>
             </ProxyProjectProvider>
