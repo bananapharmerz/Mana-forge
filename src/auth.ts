@@ -1,4 +1,5 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
+import { humanCheck } from "@/lib/turnstile";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
@@ -7,6 +8,9 @@ import { hit, ipFrom, reset } from "@/lib/rateLimit";
 // Thrown when someone tries too many passwords; the login page shows a "wait a bit" message.
 class TooManyAttempts extends CredentialsSignin {
   code = "too_many";
+}
+class HumanCheckFailed extends CredentialsSignin {
+  code = "human_check";
 }
 
 // Checked against when the email has no account, so a wrong email takes as long as a wrong
@@ -26,6 +30,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: {},
         password: {},
+        turnstile: {}, // Cloudflare Turnstile token (src/lib/turnstile.ts), when it's switched on
       },
       authorize: async (credentials, request) => {
         const raw = String(credentials?.email ?? "").trim().slice(0, 254);
@@ -38,6 +43,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!hit(`login:email:${email}`, 8, WINDOW) || !hit(`login:ip:${ip}`, 30, WINDOW)) {
           throw new TooManyAttempts();
         }
+        if (!(await humanCheck(credentials?.turnstile, ip))) throw new HumanCheckFailed();
 
         const user =
           (await db.user.findUnique({ where: { email } })) ??

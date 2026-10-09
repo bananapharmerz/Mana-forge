@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Turnstile from "@/components/Turnstile";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -15,6 +16,8 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [ofAge, setOfAge] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [human, setHuman] = useState("");
+  const [humanReset, setHumanReset] = useState(0);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -22,8 +25,9 @@ export default function SignupPage() {
     setLoading(true);
     setError(null);
 
-    const result = await signup(email, password, name, ofAge);
+    const result = await signup(email, password, name, ofAge, human);
     if (!result.ok) {
+      setHumanReset((n) => n + 1); // a Turnstile token works once
       setError(result.error);
       setLoading(false);
       return;
@@ -108,6 +112,7 @@ export default function SignupPage() {
           />
           <span>I&apos;m 16 or older.</span>
         </label>
+        <Turnstile onToken={setHuman} resetKey={humanReset} />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"

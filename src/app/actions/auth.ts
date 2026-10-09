@@ -7,6 +7,12 @@ import { passwordProblem } from "@/lib/passwordRules";
 import { emailHtml, esc, sendEmail } from "@/lib/email";
 import { SITE } from "@/lib/site";
 import { verifyLink } from "@/lib/emailVerify";
+import { humanCheck, turnstileSiteKey } from "@/lib/turnstile";
+
+/** The Turnstile site key for the forms (null while Turnstile is off). */
+export async function getTurnstileSiteKey(): Promise<string | null> {
+  return turnstileSiteKey();
+}
 
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/;
 
@@ -14,7 +20,8 @@ export async function signup(
   email: unknown,
   password: unknown,
   name?: unknown,
-  ofAge?: unknown
+  ofAge?: unknown,
+  human?: unknown // Turnstile token
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   // Accounts are for people 16 and over (GDPR consent age in Germany; see the Terms).
   if (ofAge !== true) return { ok: false, error: "You need to be 16 or older to create an account." };
@@ -23,7 +30,9 @@ export async function signup(
   const cleanName = String(name ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
 
   // At most 5 new accounts per hour from one address.
-  if (!hit(`signup:${await clientIp()}`, 5, 60 * 60 * 1000)) return { ok: false, error: TOO_MANY };
+  const ip = await clientIp();
+  if (!hit(`signup:${ip}`, 5, 60 * 60 * 1000)) return { ok: false, error: TOO_MANY };
+  if (!(await humanCheck(human, ip))) return { ok: false, error: "Please confirm you're human (the check below the form), then try again." };
 
   if (!EMAIL.test(cleanEmail)) {
     return { ok: false, error: "Enter a valid email address." };

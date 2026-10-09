@@ -1,5 +1,6 @@
 "use server";
 
+import { humanCheck } from "@/lib/turnstile";
 import { createHash, randomUUID } from "node:crypto";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -20,6 +21,7 @@ export async function sendContactMessage(input: {
   topic?: unknown;
   message?: unknown;
   website?: unknown; // honeypot: hidden from people, bots fill it in
+  human?: unknown; // Turnstile token
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   // A bot filled the hidden field: pretend it worked and store nothing.
   if (text(input.website, 200)) return { ok: true };
@@ -37,6 +39,7 @@ export async function sendContactMessage(input: {
   if (message.length < 10) return { ok: false, error: "Please write a little more (at least 10 characters)." };
 
   const ip = await clientIp();
+  if (!(await humanCheck(input.human, ip))) return { ok: false, error: "Please confirm you're human (the check below the form), then try again." };
   // At most 3 messages an hour and 10 a day from one address.
   if (!hit(`contact:h:${ip}`, 3, 60 * 60 * 1000) || !hit(`contact:d:${ip}`, 10, 24 * 60 * 60 * 1000)) {
     return { ok: false, error: TOO_MANY };

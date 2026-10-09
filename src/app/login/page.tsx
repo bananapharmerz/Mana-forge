@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import Turnstile from "@/components/Turnstile";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -16,6 +17,8 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [human, setHuman] = useState("");
+  const [humanReset, setHumanReset] = useState(0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,16 +28,20 @@ function LoginForm() {
     const res = await signIn("credentials", {
       email,
       password,
+      turnstile: human,
       redirect: false,
     });
 
     setLoading(false);
 
     if (res?.error) {
+      setHumanReset((n) => n + 1); // a Turnstile token works once
       setError(
         res.code === "too_many"
           ? "Too many sign-in attempts. Please wait 15 minutes and try again."
-          : "Incorrect email or password."
+          : res.code === "human_check"
+            ? "Please confirm you're human (the check below the form), then try again."
+            : "Incorrect email or password."
       );
       return;
     }
@@ -74,6 +81,7 @@ function LoginForm() {
         <Link href="/forgot-password" className="-mt-2 self-end text-xs text-muted underline hover:text-gold-bright">
           Forgot your password?
         </Link>
+        <Turnstile onToken={setHuman} resetKey={humanReset} />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"

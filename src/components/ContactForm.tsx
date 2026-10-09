@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Turnstile from "@/components/Turnstile";
 import { sendContactMessage } from "@/app/actions/contact";
 
 const TOPICS = [
@@ -33,6 +34,8 @@ export default function ContactForm() {
     } catch {}
   }, [form.name, form.email, form.topic, form.message]);
   const [busy, setBusy] = useState(false);
+  const [human, setHuman] = useState("");
+  const [humanReset, setHumanReset] = useState(0);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -54,7 +57,7 @@ export default function ContactForm() {
         e.preventDefault();
         setBusy(true);
         setError("");
-        const r = await sendContactMessage(form);
+        const r = await sendContactMessage({ ...form, human });
         setBusy(false);
         if (r.ok) {
           setSent(true);
@@ -62,7 +65,10 @@ export default function ContactForm() {
             sessionStorage.removeItem("mf-contact-draft");
           } catch {}
         }
-        else setError(r.error);
+        else {
+          setHumanReset((n) => n + 1);
+          setError(r.error);
+        }
       }}
     >
       <label className="text-xs text-muted" htmlFor="contact-name">Name (optional)</label>
@@ -91,6 +97,7 @@ export default function ContactForm() {
         We use your email and message only to answer you. See our{" "}
         <Link href="/legal/privacy" className="underline hover:text-gold-bright">Privacy policy</Link>.
       </p>
+      <Turnstile onToken={setHuman} resetKey={humanReset} />
       {error && <p className="text-sm text-red-500">{error}</p>}
       <button
         type="submit"
