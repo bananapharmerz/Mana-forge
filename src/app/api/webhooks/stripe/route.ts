@@ -2,6 +2,8 @@ import { securityEvent } from "@/lib/securityLog";
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { SITE } from "@/lib/site";
+import { emailHtml, esc, sendEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -94,6 +96,31 @@ export async function POST(req: Request) {
           stripeSubscriptionId: active ? subscription.id : null,
         },
       });
+    }
+  }
+
+  // Stripe sends this 3 days before a trial ends. Tell the member when the first charge comes and
+  // how to cancel, as promised at checkout.
+  if (event.type === "customer.subscription.trial_will_end") {
+    const subscription = event.data.object as Stripe.Subscription;
+    const userId = subscription.metadata?.userId;
+    const user = userId ? await db.user.findUnique({ where: { id: userId }, select: { email: true } }) : null;
+    if (user && subscription.trial_end && !subscription.cancel_at_period_end) {
+      const when = new Date(subscription.trial_end * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      const item = subscription.items.data[0]?.price;
+      const amount = item?.unit_amount != null ? `€${(item.unit_amount / 100).toFixed(2)}` : "the Premium price";
+      const per = item?.recurring?.interval ?? "month";
+      const origin = (process.env.APP_URL || SITE.url).replace(/\/+$/, "");
+      await sendEmail({
+        to: user.email,
+        subject: `Your ${SITE.name} Premium trial ends on ${when}`,
+        html: emailHtml({
+          heading: "Your free trial ends soon",
+          body: `<p>Your free Premium trial ends on <b>${esc(when)}</b>. After that you'll be charged <b>${esc(amount)}</b> every ${esc(per)} until you cancel.</p><p>Want to keep it? Nothing to do. Don't want it? Cancel before ${esc(when)} and you won't pay anything.</p>`,
+          button: { label: "Cancel or manage", url: `${origin}/cancel` },
+        }),
+        text: `Your free Premium trial ends on ${when}. After that you'll be charged ${amount} every ${per} until you cancel. Cancel before then and you won't pay anything: ${origin}/cancel`,
+      }).catch(() => null);
     }
   }
 

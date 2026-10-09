@@ -59,6 +59,7 @@ export default async function PricesPage() {
     trackerStats(),
     uid ? db.priceWatch.findMany({ where: { userId: uid }, orderBy: { createdAt: "desc" } }) : Promise.resolve([]),
   ]);
+  const me = uid ? await db.user.findUnique({ where: { id: uid }, select: { tier: true } }) : null;
   const ids = watches.map((w) => w.scryfallId);
   const [prices, history, cards] = await Promise.all([
     livePrices(ids),
@@ -93,10 +94,11 @@ export default async function PricesPage() {
           )}
         </div>
         {uid ? (
-          <Watchlist rows={rows} />
+          <Watchlist rows={rows} premium={me?.tier === "premium"} />
         ) : (
           <div className="card-frame p-6 text-center text-sm text-muted">
-            <Link href="/login?callbackUrl=/prices" className="font-semibold text-gold-bright underline">Sign in</Link> to watch cards and set target prices.
+            <Link href="/signup?callbackUrl=/prices" className="font-semibold text-gold-bright underline">Create a free account</Link> to watch cards and set the price you&apos;d pay. Already have one?{" "}
+            <Link href="/login?callbackUrl=/prices" className="underline hover:text-gold-bright">Sign in</Link>.
           </div>
         )}
       </section>

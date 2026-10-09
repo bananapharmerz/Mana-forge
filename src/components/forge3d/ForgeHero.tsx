@@ -77,32 +77,39 @@ export default function ForgeHero({ stats }: { stats: { label: string; value: st
         <div aria-hidden className="absolute right-[8%] top-1/2 -z-10 hidden h-80 w-56 -translate-y-1/2 rotate-6 rounded-2xl border border-[#e0b252]/40 bg-gradient-to-b from-[#3b1d55] to-[#120a1c] shadow-[0_0_80px_-10px_rgba(255,140,40,0.6)] md:block" />
       )}
 
-      <div className="mx-auto flex min-h-[min(86vh,800px)] max-w-7xl flex-col justify-end px-4 pb-20 pt-[84vw] sm:px-6 md:justify-center md:pb-20 md:pt-20">
+      <div className="mx-auto flex min-h-[min(86vh,800px)] max-w-7xl flex-col justify-end px-4 pb-20 pt-[64vw] sm:px-6 md:justify-center md:pb-20 md:pt-20">
         <div ref={copy} className="relative z-[2] max-w-xl will-change-transform">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.32em] text-[#e0b252]">Every format, forged in one place</p>
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.32em] text-[#e0b252]">Free Commander deck builder</p>
           <h1 className="font-display text-5xl font-semibold leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
-            Everything{" "}
-            <span className="bg-gradient-to-br from-[#fff1c9] via-[#e0b252] to-[#b5652a] bg-clip-text italic text-transparent">Magic</span>
-            ,<br />
-            in one forge.
+            Forge your next{" "}
+            <span className="bg-gradient-to-br from-[#fff1c9] via-[#e0b252] to-[#b5652a] bg-clip-text italic text-transparent">Commander</span>
+            {" "}deck.
           </h1>
           <p className="mt-6 max-w-md text-base leading-relaxed text-[#d8ccb0]/85">
-            Find your next commander, see what the community is building, put together your own deck, play with friends, and gear up, all without leaving.
+            Pick a commander and see the cards other players run with it. Build your 100 cards, see what the deck costs, then play it with friends online.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             <Link
-              href="/commanders"
+              href="/deck-builder"
               className="rounded-lg bg-gradient-to-b from-[#f0c76a] to-[#b5872a] px-6 py-3 font-semibold text-[#1a1206] shadow-[0_0_40px_-8px_rgba(240,199,106,0.8)] transition-transform hover:scale-[1.03]"
             >
-              Browse Commanders
+              Start building, it&apos;s free
             </Link>
             <Link
-              href="/deck-builder"
+              href="/commanders"
               className="rounded-lg border border-[#e0b252]/40 px-6 py-3 font-semibold text-[#f3e9cf] backdrop-blur-sm transition-colors hover:border-[#e0b252] hover:bg-[#e0b252]/10"
             >
-              Start a deck
+              Browse commanders
             </Link>
           </div>
+          <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-[#d8ccb0]/80">
+            {["No sign-up to start", "Daily card prices", "Play online with friends"].map((t) => (
+              <li key={t} className="flex items-center gap-1.5">
+                <span aria-hidden className="text-[#e0b252]">✓</span>
+                {t}
+              </li>
+            ))}
+          </ul>
           {stats.length > 0 && (
             <dl className="mt-12 flex flex-wrap gap-x-10 gap-y-4">
               {stats.map((s) => (

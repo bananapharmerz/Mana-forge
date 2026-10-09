@@ -12,6 +12,9 @@ export const PREMIUM_PLANS: Record<PremiumPlan, { cents: number; interval: "mont
   year: { cents: 2900, interval: "year", label: "Yearly", per: "/year", note: "Save 39%" },
 };
 export const planPrice = (p: PremiumPlan) => `€${(PREMIUM_PLANS[p].cents / 100).toFixed(2).replace(/\.00$/, "")}`;
+// First-time subscribers get a free trial. Stripe takes the card at checkout and charges only when
+// the trial ends; cancelling before then costs nothing.
+export const TRIAL_DAYS = 7;
 export const PREMIUM_VAT_NOTE = "Final price. No VAT is charged under § 19 UStG (small business).";
 
 export function deckLimitFor(tier: string): number {

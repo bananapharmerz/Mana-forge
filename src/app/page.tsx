@@ -62,9 +62,9 @@ export default async function Home() {
     userId ? db.deck.count({ where: { ownerId: userId } }).catch(() => 0) : Promise.resolve(0),
   ]);
   const stats = [
-    ...(decks > 0 ? [{ label: "Public decks", value: decks.toLocaleString() }] : []),
-    ...(members > 0 ? [{ label: "Players", value: members.toLocaleString() }] : []),
-    { label: "Formats", value: "Commander" },
+    // Counts appear only once they're big enough to reassure; a tiny number puts people off.
+    ...(decks >= 100 ? [{ label: "Public decks", value: decks.toLocaleString() }] : []),
+    ...(members >= 250 ? [{ label: "Players", value: members.toLocaleString() }] : []),
   ];
 
   return (

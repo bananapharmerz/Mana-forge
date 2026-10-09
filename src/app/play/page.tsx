@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { getMyTier } from "@/app/actions/premium";
+import TrialNudge from "@/components/TrialNudge";
 import AdSlot from "@/components/AdSlot";
 import PageHeader from "@/components/PageHeader";
 
@@ -167,13 +167,9 @@ export default function PlayLandingPage() {
       <div className="mx-auto flex max-w-lg flex-col items-center px-4 py-24 text-center sm:px-6">
         <h1 className="text-3xl font-bold text-foreground">Starting your game...</h1>
         <p className="mt-3 text-5xl font-bold text-gold-bright">{queueSeconds}s</p>
-        <p className="mt-4 text-sm text-muted">
-          Free accounts wait {FREE_QUEUE_SECONDS}s before a game starts.{" "}
-          <Link href="/premium" className="text-gold-bright underline">
-            Upgrade to Premium
-          </Link>{" "}
-          to skip the wait.
-        </p>
+        <div className="mt-6 w-full text-left">
+          <TrialNudge>Free accounts wait {FREE_QUEUE_SECONDS}s before a game starts. Premium games start instantly.</TrialNudge>
+        </div>
       </div>
     );
   }

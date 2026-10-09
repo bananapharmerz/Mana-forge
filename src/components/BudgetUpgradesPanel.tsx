@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import TrialNudge from "@/components/TrialNudge";
 import { getBudgetUpgrades, type Upgrade } from "@/app/actions/upgrades";
 
 const CAPS = [1, 3, 5, 10];
@@ -40,12 +40,9 @@ export default function BudgetUpgradesPanel({
         Budget upgrades <span className="text-gold-bright">· Premium</span>
       </h3>
       {locked ? (
-        <p className="text-xs text-muted">
-          See the cards most decks with this commander play that you don&apos;t have yet, under a price you pick.{" "}
-          <Link href="/premium" className="text-gold-bright underline">
-            Get Premium
-          </Link>
-        </p>
+        <TrialNudge compact>
+          See the cards most decks with this commander play that you don&apos;t have yet, under a price you pick.
+        </TrialNudge>
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-1 text-xs">

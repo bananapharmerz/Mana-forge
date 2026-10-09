@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import TrialNudge from "@/components/TrialNudge";
 import CardSearchBox from "@/components/CardSearchBox";
 import AdSlot from "@/components/AdSlot";
 import PageHeader from "@/components/PageHeader";
@@ -150,13 +151,13 @@ export default function DeckBuilderIndexClient({
         <AdSlot tier={tier} />
       </div>
 
-      {atLimit && (
-        <div className="card-frame mb-8 p-4 text-sm text-muted">
-          You&apos;ve hit the {deckLimit}-deck limit for free accounts. Delete an old deck, or{" "}
-          <Link href="/premium" className="text-gold-bright underline">
-            upgrade to Premium
-          </Link>{" "}
-          for unlimited decks.
+      {!guest && deckLimit !== null && decks.length >= deckLimit - 2 && (
+        <div className="mb-8">
+          <TrialNudge>
+            {atLimit
+              ? `You've used all ${deckLimit} free deck slots. Premium gives you unlimited decks, price alerts and budget upgrade picks.`
+              : `${deckLimit - decks.length} free deck slot${deckLimit - decks.length === 1 ? "" : "s"} left. Premium gives you unlimited decks.`}
+          </TrialNudge>
         </div>
       )}
 

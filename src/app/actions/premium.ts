@@ -3,7 +3,7 @@
 import Stripe from "stripe";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { PREMIUM_CURRENCY, PREMIUM_PLANS, type PremiumPlan } from "@/lib/tier";
+import { PREMIUM_CURRENCY, PREMIUM_PLANS, TRIAL_DAYS, type PremiumPlan } from "@/lib/tier";
 import { SITE } from "@/lib/site";
 import { clientIp, hit, TOO_MANY } from "@/lib/rateLimit";
 import { randomUUID } from "node:crypto";
@@ -29,6 +29,29 @@ export async function setPriceAlerts(on: unknown): Promise<boolean | null> {
   if (!session?.user?.id) return null;
   const user = await db.user.update({ where: { id: session.user.id }, data: { priceAlerts: on === true }, select: { priceAlerts: true } });
   return user.priceAlerts;
+}
+
+// The free trial is for people who have never subscribed: no Stripe customer yet, or a customer
+// with no subscription of any status. If Stripe can't be asked, no trial (fail closed).
+async function trialEligible(stripe: Stripe, customerId: string | null | undefined): Promise<boolean> {
+  if (!customerId) return true;
+  try {
+    const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 1 });
+    return subs.data.length === 0;
+  } catch {
+    return false;
+  }
+}
+
+/** Whether the Premium page should offer the free trial. Signed-out visitors would qualify once they sign up. */
+export async function getTrialOffer(): Promise<boolean> {
+  const session = await auth();
+  if (!session?.user?.id) return true;
+  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { tier: true, stripeCustomerId: true } });
+  if (!user || user.tier === "premium") return false;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || !hit(`trialoffer:${session.user.id}`, 30, 10 * 60 * 1000)) return false;
+  return trialEligible(new Stripe(key), user.stripeCustomerId);
 }
 
 // EU consumers have a 14-day right to withdraw from online purchases. For a subscription that
@@ -69,6 +92,7 @@ export async function createPremiumCheckoutSession(startNow?: unknown, planChoic
   const stripe = new Stripe(secretKey);
   const origin = (process.env.APP_URL || SITE.url).replace(/\/+$/, "");
 
+  const trial = await trialEligible(stripe, user.stripeCustomerId);
   let customerId = user.stripeCustomerId ?? undefined;
   if (!customerId) {
     const customer = await stripe.customers.create({ email: user.email });
@@ -100,12 +124,21 @@ export async function createPremiumCheckoutSession(startNow?: unknown, planChoic
     // Promotion codes created in Stripe (e.g. a one-off 100%-off code for testing) can be entered here.
     allow_promotion_codes: true,
     metadata: { userId: user.id, plan: planKey, startNowConsentAt: new Date().toISOString() },
-    subscription_data: { metadata: { userId: user.id, startNowConsentAt: new Date().toISOString() } },
+    subscription_data: {
+      metadata: { userId: user.id, startNowConsentAt: new Date().toISOString(), trial: trial ? "yes" : "no" },
+      ...(trial ? { trial_period_days: TRIAL_DAYS, trial_settings: { end_behavior: { missing_payment_method: "cancel" as const } } } : {}),
+    },
+    // Always take the card, even for a free trial, so it continues smoothly (and to stop repeat trials).
+    payment_method_collection: "always",
     // Stripe's "Managed Payments" (Stripe as merchant of record) is on by default for this account
     // and doesn't allow custom_text. We sell directly, so it's switched off for this checkout.
     ...({ managed_payments: { enabled: false } } as object),
     custom_text: {
-      submit: { message: `Premium starts right away and renews every ${plan.interval}. Cancel any time; you keep Premium until the end of the ${plan.interval} you paid for.` },
+      submit: {
+        message: trial
+          ? `Free for ${TRIAL_DAYS} days, then €${(plan.cents / 100).toFixed(2)} every ${plan.interval}. Cancel before the trial ends and you pay nothing. We'll email you 3 days before the first charge.`
+          : `Premium starts right away and renews every ${plan.interval}. Cancel any time; you keep Premium until the end of the ${plan.interval} you paid for.`,
+      },
     },
   });
   } catch (e) {

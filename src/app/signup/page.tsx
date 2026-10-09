@@ -34,7 +34,10 @@ export default function SignupPage() {
       setError("Account created, but sign-in failed. Try signing in manually.");
       return;
     }
-    router.push("/deck-builder");
+    // Back to where they came from (e.g. the Premium page), but only ever a page on this site.
+    const wanted = new URLSearchParams(window.location.search).get("callbackUrl") || "";
+    const next = wanted.startsWith("/") && !wanted.startsWith("//") && !wanted.startsWith("/\\") ? wanted : "/deck-builder";
+    router.push(next);
     router.refresh();
   }
 

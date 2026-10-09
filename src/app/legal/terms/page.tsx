@@ -65,6 +65,7 @@ export default function TermsPage() {
       <h2>Premium</h2>
       <ul>
         <li>Premium is a monthly or yearly subscription at the price shown on the <Link href="/premium">Premium page</Link>. It renews automatically at the end of each month or year until you cancel.</li>
+        <li>First-time subscribers get a free 7-day trial. Your card is taken at checkout but not charged until the trial ends. We email you 3 days before the first charge. Cancel before the trial ends and you pay nothing. One trial per person.</li>
         <li>
           You can cancel any time with the <Link href="/cancel">Cancel subscription</Link> button
           (also in the footer). Cancelling stops the next renewal; you keep Premium until the end of

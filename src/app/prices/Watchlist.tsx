@@ -6,6 +6,7 @@ import { autocompleteCardNames } from "@/lib/scryfall";
 import { addWatch, removeWatch, setWatchTarget } from "@/app/actions/prices";
 import { signedPct, usd } from "@/lib/livePrice";
 import Sparkline from "./Sparkline";
+import TrialNudge from "@/components/TrialNudge";
 
 export interface WatchRow {
   id: string;
@@ -52,7 +53,7 @@ function TargetEditor({ row, onDone }: { row: WatchRow; onDone: (msg: string, ok
   );
 }
 
-export default function Watchlist({ rows }: { rows: WatchRow[] }) {
+export default function Watchlist({ rows, premium = false }: { rows: WatchRow[]; premium?: boolean }) {
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [pending, start] = useTransition();
   const notify = (text: string, ok: boolean) => setMsg({ text, ok });
@@ -76,6 +77,11 @@ export default function Watchlist({ rows }: { rows: WatchRow[] }) {
         {pending && <span className="text-xs text-muted">Working…</span>}
         {msg && !pending && <span className={`text-xs ${msg.ok ? "text-emerald-600" : "text-red-600"}`}>{msg.text}</span>}
       </div>
+      {!premium && rows.some((r) => r.targetUsd !== null) && (
+        <div className="border-b border-border p-3">
+          <TrialNudge compact>Don&apos;t check back every day: Premium emails you the moment a card hits your target.</TrialNudge>
+        </div>
+      )}
       {rows.length === 0 ? (
         <p className="p-6 text-center text-sm text-muted">Nothing on your watchlist yet. Search for a card above; we track its cheapest printing.</p>
       ) : (

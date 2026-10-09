@@ -9,9 +9,10 @@ import {
   createBillingPortalSession,
   getMyTier,
   getPriceAlerts,
+  getTrialOffer,
   setPriceAlerts,
 } from "@/app/actions/premium";
-import { PREMIUM_PLANS, PREMIUM_VAT_NOTE, planPrice, type PremiumPlan } from "@/lib/tier";
+import { PREMIUM_PLANS, PREMIUM_VAT_NOTE, TRIAL_DAYS, planPrice, type PremiumPlan } from "@/lib/tier";
 import { SITE } from "@/lib/site";
 
 const BENEFITS = [
@@ -35,11 +36,15 @@ export default function PremiumPage() {
   const [plan, setPlan] = useState<PremiumPlan>("year");
 
   const [alerts, setAlerts] = useState<boolean | null>(null);
+  const [fetchedTrial, setTrial] = useState(false);
+  // Everyone signing up fresh gets the trial; signed-in members only if they've never subscribed.
+  const trial = status === "unauthenticated" ? true : fetchedTrial;
 
   useEffect(() => {
     if (status !== "authenticated") return;
     getMyTier().then(setTier);
     getPriceAlerts().then(setAlerts);
+    getTrialOffer().then(setTrial);
   }, [status]);
 
   async function handleUpgrade() {
@@ -74,23 +79,56 @@ export default function PremiumPage() {
     <>
       <PageHeader
         title={`${SITE.name} Premium`}
-        description={`Unlimited decks, no ads, instant games, and tools that save you money on cards. From ${planPrice("month")} a month, or ${planPrice("year")} a year.`}
+        description={`Unlimited decks, no ads, instant games, and tools that save you money on cards. Try it free for ${TRIAL_DAYS} days, then ${planPrice("month")} a month or ${planPrice("year")} a year.`}
         width="max-w-5xl"
       />
-      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section aria-label="What Premium includes" className="min-w-0">
-          <h2 className="font-display text-2xl font-semibold text-foreground">What you get</h2>
-          <ul className="mt-4 divide-y divide-border border-y border-border">
-            {BENEFITS.map((b) => (
-              <li key={b.feature} className="grid grid-cols-[1fr_auto] items-baseline gap-4 py-4">
-                <div>
-                  <p className="font-semibold text-foreground">{b.feature}</p>
-                  <p className="mt-0.5 text-sm text-gold-bright">{b.premium}</p>
-                </div>
-                <p className="text-right text-xs text-muted">Free: {b.free === "—" ? "not included" : b.free.toLowerCase()}</p>
-              </li>
-            ))}
-          </ul>
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <section aria-label="Free and Premium compared" className="min-w-0">
+          <h2 className="font-display text-2xl font-semibold text-foreground">Free vs Premium</h2>
+          <div className="mt-4 overflow-hidden rounded-xl border border-border">
+            <table className="w-full table-fixed border-collapse text-sm">
+              <caption className="sr-only">What the free account and Premium include</caption>
+              <colgroup>
+                <col className="w-[38%]" />
+                <col className="w-[27%]" />
+                <col className="w-[35%]" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col" className="bg-surface p-3 text-left align-bottom text-xs font-semibold uppercase tracking-wide text-muted">Feature</th>
+                  <th scope="col" className="bg-surface p-3 text-left align-bottom">
+                    <span className="block text-xs font-semibold uppercase tracking-wide text-muted">Free</span>
+                    <span className="block font-display text-xl font-semibold text-foreground">€0</span>
+                  </th>
+                  <th scope="col" className="border-x-2 border-t-2 border-gold bg-gold/15 p-3 text-left align-bottom">
+                    <span className="block text-xs font-semibold uppercase tracking-wide text-gold-bright">Premium</span>
+                    <span className="block font-display text-xl font-semibold text-foreground">
+                      {planPrice("month")}<span className="text-xs font-normal text-muted">/mo</span>
+                    </span>
+                    <span className="block text-[11px] font-normal text-muted">{TRIAL_DAYS} days free</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {BENEFITS.map((b, i) => (
+                  <tr key={b.feature} className="border-t border-border">
+                    <th scope="row" className="p-3 text-left font-medium text-foreground">{b.feature}</th>
+                    <td className="p-3 text-muted">
+                      {b.free === "—" ? (
+                        <span className="text-red-700/70"><span aria-hidden>✕ </span>Not included</span>
+                      ) : (
+                        b.free
+                      )}
+                    </td>
+                    <td className={`border-x-2 border-gold bg-gold/10 p-3 font-medium text-foreground ${i === BENEFITS.length - 1 ? "border-b-2" : ""}`}>
+                      <span aria-hidden className="text-emerald-700">✓ </span>
+                      {b.premium}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <p className="mt-4 text-xs text-muted">{PREMIUM_VAT_NOTE} Card names and images stay free for everyone.</p>
         </section>
 
@@ -117,13 +155,16 @@ export default function PremiumPage() {
               ))}
             </div>
             <Link
-              href="/login?callbackUrl=/premium"
+              href="/signup?callbackUrl=/premium"
               className="block w-full rounded-lg bg-gold px-8 py-3 text-center text-sm font-semibold text-black hover:bg-[#d4a23e]"
             >
-              Sign in to upgrade
+              Start your {TRIAL_DAYS}-day free trial
             </Link>
             <p className="mt-2 text-center text-xs text-muted">
-              New here? <Link href="/signup" className="underline hover:text-gold-bright">Create a free account</Link> first.
+              Free account first, then {TRIAL_DAYS} days of Premium on us. Cancel before it ends and you pay nothing.
+            </p>
+            <p className="mt-1 text-center text-xs text-muted">
+              Already have an account? <Link href="/login?callbackUrl=/premium" className="underline hover:text-gold-bright">Sign in</Link>
             </p>
           </div>
         )}
@@ -186,6 +227,15 @@ export default function PremiumPage() {
                   onChange={(e) => setStartNow(e.target.checked)}
                   className="mt-0.5 accent-[var(--color-gold)]"
                 />
+                {trial ? (
+                <span>
+                  Start my {TRIAL_DAYS}-day free trial now. After it, Premium costs {planPrice(plan)}
+                  {PREMIUM_PLANS[plan].per} and renews every {PREMIUM_PLANS[plan].interval} until I{" "}
+                  <Link href="/cancel" className="underline hover:text-gold-bright">cancel</Link>. Cancelling before the
+                  trial ends costs nothing. I understand that my 14-day right of withdrawal ends once Premium starts. See the{" "}
+                  <Link href="/legal/terms" className="underline hover:text-gold-bright">Terms</Link>.
+                </span>
+                ) : (
                 <span>
                   Start Premium straight away. I understand that my 14-day right of withdrawal ends once
                   Premium starts. It renews every {PREMIUM_PLANS[plan].interval} and I can{" "}
@@ -193,14 +243,20 @@ export default function PremiumPage() {
                   Premium until the end of the {PREMIUM_PLANS[plan].interval} I paid for. See the{" "}
                   <Link href="/legal/terms" className="underline hover:text-gold-bright">Terms</Link>.
                 </span>
+                )}
               </label>
               <button
                 onClick={handleUpgrade}
                 disabled={loading || !startNow}
                 className="w-full rounded-lg bg-gold px-8 py-3 text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-50"
               >
-                {loading ? "Redirecting to Stripe..." : `Upgrade for ${planPrice(plan)}${PREMIUM_PLANS[plan].per}`}
+                {loading ? "Redirecting to Stripe..." : trial ? `Start ${TRIAL_DAYS}-day free trial` : `Upgrade for ${planPrice(plan)}${PREMIUM_PLANS[plan].per}`}
               </button>
+              {trial && (
+                <p className="mt-2 text-center text-xs text-muted">
+                  €0 today. Then {planPrice(plan)}{PREMIUM_PLANS[plan].per}. We email you 3 days before.
+                </p>
+              )}
               </>
             )}
           </div>
