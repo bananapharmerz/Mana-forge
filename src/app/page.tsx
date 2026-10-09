@@ -8,6 +8,7 @@ import { SHOP_ENABLED } from "@/lib/features";
 import { auth } from "@/auth";
 import WelcomeBack from "@/components/WelcomeBack";
 import StarterDecks from "@/components/StarterDecks";
+import MobileStartBar from "@/components/MobileStartBar";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
@@ -31,6 +32,12 @@ const features = [
     href: "/deck-builder",
     title: "Deck Builder",
     desc: "Build and save your own 100-card singleton deck.",
+    status: "live",
+  },
+  {
+    href: "/prices",
+    title: "Card Prices",
+    desc: "Daily prices with week, month and year graphs, and a watchlist for the cards you want.",
     status: "live",
   },
   {
@@ -71,13 +78,15 @@ export default async function Home() {
     <>
       {userId && mine > 0 && <WelcomeBack userId={userId} name={session?.user?.name} />}
       <ForgeHero stats={stats} />
+      <MobileStartBar />
       {(!userId || mine === 0) && <StarterDecks signedIn={!!userId} title={userId ? "Your first deck is one click away" : undefined} />}
       <ForgeStory />
       <ForgeTrails />
       <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6">
         <h2 className="mb-6 font-display text-3xl font-semibold text-foreground">Everything in the forge</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f, i) => (
+          {/* Things that aren't open yet (the store and proxies) stay off the home page. */}
+          {features.filter((f) => f.status !== "soon").map((f, i) => (
             <Reveal key={f.href} delay={i * 70} className="flex">
             <Link
               href={f.href}

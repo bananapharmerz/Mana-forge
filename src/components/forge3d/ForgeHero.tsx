@@ -77,7 +77,7 @@ export default function ForgeHero({ stats }: { stats: { label: string; value: st
         <div aria-hidden className="absolute right-[8%] top-1/2 -z-10 hidden h-80 w-56 -translate-y-1/2 rotate-6 rounded-2xl border border-[#e0b252]/40 bg-gradient-to-b from-[#3b1d55] to-[#120a1c] shadow-[0_0_80px_-10px_rgba(255,140,40,0.6)] md:block" />
       )}
 
-      <div className="mx-auto flex min-h-[min(86vh,800px)] max-w-7xl flex-col justify-end px-4 pb-20 pt-[64vw] sm:px-6 md:justify-center md:pb-20 md:pt-20">
+      <div className="mx-auto flex min-h-[min(86vh,800px)] max-w-7xl flex-col justify-end px-4 pb-20 pt-[70vw] sm:px-6 md:justify-center md:pb-20 md:pt-20">
         <div ref={copy} className="relative z-[2] max-w-xl will-change-transform">
           <p className="mb-4 text-xs font-semibold uppercase tracking-[0.32em] text-[#e0b252]">Free Commander deck builder</p>
           <h1 className="font-display text-5xl font-semibold leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">

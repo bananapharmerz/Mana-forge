@@ -34,7 +34,10 @@ export function createStage(
   opts: { fov?: number; bloom?: { strength: number; radius: number; threshold: number }; exposure?: number } = {}
 ): Stage {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+  // Phones get a lower render resolution: it looks the same at that size and costs far less GPU
+  // (and battery), which matters most in Instagram's and TikTok's built-in browsers.
+  const phone = window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, phone ? 1.25 : 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = opts.exposure ?? 0.95;

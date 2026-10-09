@@ -413,8 +413,9 @@ export function mountHero(host: HTMLElement, opts: { still: boolean }) {
   const place = () => {
     // Wide screens: card to the right of the headline. Narrow screens: centred, higher up.
     const wide = camera.aspect > 1.15;
-    rig.position.set(wide ? Math.min(2.6, 0.55 + camera.aspect * 0.95) : 0, wide ? 0.1 : 1.95, 0);
-    rig.scale.setScalar(wide ? 0.92 : 0.5);
+    // (Phones: a little smaller and higher, so the card clears the headline under it.)
+    rig.position.set(wide ? Math.min(2.6, 0.55 + camera.aspect * 0.95) : 0, wide ? 0.1 : 2.05, 0);
+    rig.scale.setScalar(wide ? 0.92 : 0.42);
   };
 
   const step = (t: number, dt: number) => {
