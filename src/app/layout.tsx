@@ -38,7 +38,9 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
-export const viewport: Viewport = { themeColor: SITE.themeColor };
+// interactiveWidget: when the phone keyboard opens, the page shrinks to fit above it instead of the
+// keyboard covering the field being typed in.
+export const viewport: Viewport = { themeColor: SITE.themeColor, interactiveWidget: "resizes-content" };
 
 // Tells search engines what the site is and how to search it.
 const jsonLd = {

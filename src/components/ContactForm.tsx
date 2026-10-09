@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { sendContactMessage } from "@/app/actions/contact";
 
@@ -16,6 +16,22 @@ const field = "rounded-md border border-border bg-background px-3 py-2 text-sm t
 
 export default function ContactForm() {
   const [form, setForm] = useState({ name: "", email: "", topic: "general", message: "", website: "" });
+  // Keep the draft if they go back, reload or switch tabs (this tab only; cleared once sent).
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    try {
+      const d = JSON.parse(sessionStorage.getItem("mf-contact-draft") ?? "null");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring a saved draft once, after mount
+      if (d && typeof d === "object") setForm((f) => ({ ...f, ...d, website: "" }));
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try {
+      if (form.name || form.email || form.message) sessionStorage.setItem("mf-contact-draft", JSON.stringify({ name: form.name, email: form.email, topic: form.topic, message: form.message }));
+    } catch {}
+  }, [form.name, form.email, form.topic, form.message]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
@@ -40,7 +56,12 @@ export default function ContactForm() {
         setError("");
         const r = await sendContactMessage(form);
         setBusy(false);
-        if (r.ok) setSent(true);
+        if (r.ok) {
+          setSent(true);
+          try {
+            sessionStorage.removeItem("mf-contact-draft");
+          } catch {}
+        }
         else setError(r.error);
       }}
     >
