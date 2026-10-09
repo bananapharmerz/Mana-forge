@@ -42,7 +42,29 @@ export default function SiteTracker() {
     const onHide = () => {
       if (document.visibilityState === "hidden") leave();
     };
+    // Rage clicks: three clicks within a second on the same spot means something didn't respond
+    // the way the visitor expected. Reported once per spot per page view.
+    let recent: { x: number; y: number; t: number }[] = [];
+    const raged = new Set<string>();
+    const onAnyClick = (e: MouseEvent) => {
+      const now = e.timeStamp;
+      recent = recent.filter((c) => now - c.t < 1000 && Math.abs(c.x - e.clientX) < 30 && Math.abs(c.y - e.clientY) < 30);
+      recent.push({ x: e.clientX, y: e.clientY, t: now });
+      if (recent.length < 3 || !page.current) return;
+      const target = e.target as HTMLElement | null;
+      const el = (target?.closest?.("a, button, [data-track], img, h1, h2, h3, label, li, td, p, div") as HTMLElement | null) ?? target;
+      const label = (el?.dataset?.track || el?.getAttribute?.("aria-label") || el?.getAttribute?.("alt") || el?.textContent || el?.tagName || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 50);
+      const key = `${page.current.path}|${label}`;
+      if (!label || raged.has(key)) return;
+      raged.add(key);
+      recent = [];
+      send({ k: "click", p: page.current.path, t: `rage: ${label}` });
+    };
     const onClick = (e: MouseEvent) => {
+      onAnyClick(e);
       const el = (e.target as Element | null)?.closest?.("a, button, [data-track]") as HTMLElement | null;
       if (!el || !page.current) return;
       let t = el.dataset.track ?? "";
