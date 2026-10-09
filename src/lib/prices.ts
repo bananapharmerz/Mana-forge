@@ -330,3 +330,64 @@ export async function deckValueHistory(entries: { id: string; qty: number }[], d
   }
   return { history, current: Math.round(current * 100) / 100 };
 }
+
+export interface PriceHit {
+  scryfallId: string;
+  name: string;
+  setName: string | null;
+  imageUrl: string | null;
+  usd: number | null;
+  usdFoil: number | null;
+}
+
+const gs = globalThis as unknown as { __priceSearch?: Map<string, { at: number; hits: PriceHit[] }> };
+const SEARCH_TTL = 10 * 60000;
+
+/**
+ * Card lookup for the prices page: every paper printing whose name matches, priciest first.
+ * Asks Scryfall (cached 10 minutes per query) and saves what it finds, so each result has a
+ * price page; if Scryfall can't be reached it falls back to the printings already tracked.
+ */
+export async function searchCardPrices(raw: string, limit = 24): Promise<PriceHit[]> {
+  const q = raw.replace(/[\u0000-\u001f"]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+  if (q.length < 2) return [];
+  const key = q.toLowerCase();
+  const cache = (gs.__priceSearch ??= new Map());
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < SEARCH_TTL) return hit.hits;
+
+  let found: ScryfallPriced[] | null = null;
+  try {
+    const url = `${SCRYFALL}/cards/search?unique=prints&order=usd&dir=desc&q=${encodeURIComponent(`name:"${q}" game:paper`)}`;
+    const res = await sfetch(url, { headers: { Accept: "application/json", "User-Agent": "mtg-hub/1.0" }, cache: "no-store", signal: AbortSignal.timeout(10000) });
+    if (res.status === 404) found = [];
+    else if (res.ok) {
+      // Scryfall's usd order puts foil-only printings (no plain price) on top, so sort here.
+      const val = (c: ScryfallPriced) => num(c.prices?.usd) ?? num(c.prices?.usd_foil) ?? num(c.prices?.usd_etched) ?? -1;
+      found = (((await res.json()) as { data?: ScryfallPriced[] }).data ?? []).sort((a, b) => val(b) - val(a)).slice(0, limit);
+    }
+  } catch {
+    found = null;
+  }
+
+  let hits: PriceHit[];
+  if (found) {
+    await save(found).catch(() => null);
+    hits = found.map((c) => ({
+      scryfallId: c.id,
+      name: c.name,
+      setName: c.set_name ?? null,
+      imageUrl: c.image_uris?.normal ?? c.card_faces?.[0]?.image_uris?.normal ?? null,
+      usd: num(c.prices?.usd),
+      usdFoil: num(c.prices?.usd_foil) ?? num(c.prices?.usd_etched),
+    }));
+  } else {
+    hits = (await db.cardPrice.findMany({ where: { name: { contains: q } }, orderBy: { usd: "desc" }, take: limit })).map((c) => ({
+      scryfallId: c.scryfallId, name: c.name, setName: c.setName, imageUrl: c.imageUrl, usd: c.usd, usdFoil: c.usdFoil,
+    }));
+    return hits; // not cached: try Scryfall again next time
+  }
+  if (cache.size > 500) cache.clear();
+  cache.set(key, { at: Date.now(), hits });
+  return hits;
+}

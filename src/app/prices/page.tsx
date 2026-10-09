@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { livePrices, mostValuable, priceHistory, trackerStats, weeklyMovers, type Mover } from "@/lib/prices";
+import { livePrices, mostValuable, priceHistory, searchCardPrices, trackerStats, weeklyMovers, type Mover, type PriceHit } from "@/lib/prices";
 import { signedPct, usd } from "@/lib/livePrice";
 import Watchlist, { type WatchRow } from "./Watchlist";
 import { SITE } from "@/lib/site";
@@ -50,10 +50,46 @@ function MoverList({ title, rows, up }: { title: string; rows: Mover[]; up: bool
   );
 }
 
-export default async function PricesPage() {
+function SearchResults({ q, hits }: { q: string; hits: PriceHit[] }) {
+  return (
+    <section className="mb-10" aria-live="polite">
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
+        {hits.length ? `${hits.length === 24 ? "Top 24" : hits.length} printing${hits.length === 1 ? "" : "s"} matching “${q}”, priciest first` : `No paper cards match “${q}”. Check the spelling, or try part of the name.`}
+      </h2>
+      {hits.length > 0 && (
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {hits.map((c) => (
+            <li key={c.scryfallId}>
+              <Link href={`/prices/card/${c.scryfallId}`} className="card-frame flex items-center gap-3 p-2.5 text-sm transition-colors hover:border-gold">
+                {c.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.imageUrl} alt="" className="h-14 w-10 shrink-0 rounded-sm object-cover object-top" loading="lazy" />
+                ) : (
+                  <span className="h-14 w-10 shrink-0 rounded-sm bg-surface-raised" />
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium text-foreground">{c.name}</span>
+                  <span className="block truncate text-[11px] text-muted">{c.setName}</span>
+                </span>
+                <span className="shrink-0 text-right">
+                  <span className="block font-mono text-gold-bright">{c.usd !== null ? usd(c.usd) : "—"}</span>
+                  {c.usdFoil !== null && <span className="block text-[11px] text-muted">foil {usd(c.usdFoil)}</span>}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+export default async function PricesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const q = ((await searchParams).q ?? "").trim().slice(0, 80);
   const session = await auth();
   const uid = session?.user?.id;
-  const [movers, valuable, stats, watches] = await Promise.all([
+  const [found, movers, valuable, stats, watches] = await Promise.all([
+    q ? searchCardPrices(q) : Promise.resolve([] as PriceHit[]),
     weeklyMovers(6),
     mostValuable(8),
     trackerStats(),
@@ -83,7 +119,29 @@ export default async function PricesPage() {
   return (
     <>
       <PageHeader title="Know what your cards are worth" description={`Daily Scryfall prices for ${stats.cards.toLocaleString("en-US")} printings in ${SITE.name} decks and watchlists. Watch a card, set the price you'd pay, and see it flagged when it drops there.`} width="max-w-6xl" />
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+      <form action="/prices" method="GET" role="search" className="mb-6 flex gap-2">
+        <input
+          type="search"
+          name="q"
+          defaultValue={q}
+          placeholder="Look up any card's price…"
+          aria-label="Card name"
+          autoComplete="off"
+          enterKeyHint="search"
+          className="w-full max-w-md rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground placeholder:text-muted focus:border-gold focus:outline-none sm:text-sm"
+        />
+        <button type="submit" className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright">
+          Search
+        </button>
+        {q && (
+          <Link href="/prices" className="flex items-center rounded-md border border-border px-4 py-2 text-sm text-muted hover:border-gold hover:text-foreground">
+            Clear
+          </Link>
+        )}
+      </form>
+      {q && <SearchResults q={q} hits={found} />}
+      {uid && (
       <section className="mb-10">
         <div className="mb-3 flex items-end justify-between gap-3">
           <h2 className="font-display text-2xl font-semibold text-foreground">Your watchlist</h2>
@@ -103,6 +161,7 @@ export default async function PricesPage() {
         )}
       </section>
 
+      )}
       <section className="grid gap-4 md:grid-cols-3">
         <MoverList title="Up this week" rows={movers.up} up />
         <MoverList title="Down this week" rows={movers.down} up={false} />
@@ -123,6 +182,16 @@ export default async function PricesPage() {
           )}
         </div>
       </section>
+
+      {!uid && (
+        <section className="mt-10">
+          <h2 className="mb-3 font-display text-2xl font-semibold text-foreground">Your watchlist</h2>
+          <div className="card-frame p-6 text-center text-sm text-muted">
+            <Link href="/signup?callbackUrl=/prices" className="font-semibold text-gold-bright underline">Create a free account</Link> to watch cards and set the price you&apos;d pay. Already have one?{" "}
+            <Link href="/login?callbackUrl=/prices" className="underline hover:text-gold-bright">Sign in</Link>.
+          </div>
+        </section>
+      )}
 
       <p className="mt-8 text-center text-[11px] text-muted">
         {stats.updatedAt ? `Last updated ${new Date(stats.updatedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}. ` : ""}
