@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { deckLimitFor } from "@/lib/tier";
@@ -10,7 +9,8 @@ export const metadata: Metadata = { title: "My decks", robots: { index: false, f
 
 export default async function DeckBuilderIndexPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login?callbackUrl=/deck-builder");
+  // No account yet: they can still build one deck in their browser and save it after signing up.
+  if (!session?.user?.id) return <DeckBuilderIndexClient initialDecks={[]} deckLimit={null} tier="free" guest />;
 
   const user = await db.user.findUnique({ where: { id: session.user.id } });
   const rows = await db.deck.findMany({

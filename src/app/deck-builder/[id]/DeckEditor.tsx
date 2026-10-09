@@ -31,6 +31,8 @@ import {
   setDeckPublic,
 } from "@/app/actions/decks";
 import { hasSecondCommanderMechanic } from "@/lib/partnerMechanics";
+import { saveGuestDeck } from "@/lib/guestDeck";
+import GuestSaveBanner from "@/components/GuestSaveBanner";
 import {
   CATEGORY_ORDER,
   defaultCategory,
@@ -42,8 +44,12 @@ import {
 
 const BASIC_LANDS = ["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"];
 
-export default function DeckEditor({ initialDeck }: { initialDeck: Deck }) {
+export default function DeckEditor({ initialDeck, guest = false }: { initialDeck: Deck; guest?: boolean }) {
   const [deck, setDeck] = useState<Deck>(initialDeck);
+  // A guest deck lives only in this browser until the visitor signs up and saves it.
+  useEffect(() => {
+    if (guest) saveGuestDeck(deck);
+  }, [guest, deck]);
   const [addError, setAddError] = useState<string | null>(null);
   const [pickerCardName, setPickerCardName] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState(initialDeck.name);
@@ -79,7 +85,7 @@ export default function DeckEditor({ initialDeck }: { initialDeck: Deck }) {
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
-      await updateDeckCards(deck.id, deck.cards);
+      if (!guest) await updateDeckCards(deck.id, deck.cards);
       setSaveState("saved");
     }, 600);
     return () => {
@@ -91,7 +97,7 @@ export default function DeckEditor({ initialDeck }: { initialDeck: Deck }) {
   async function saveNow() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaveState("saving");
-    await updateDeckCards(deck.id, deck.cards);
+    if (!guest) await updateDeckCards(deck.id, deck.cards);
     setSaveState("saved");
   }
 
@@ -164,12 +170,12 @@ export default function DeckEditor({ initialDeck }: { initialDeck: Deck }) {
     const partner = cardToDeckCard(card);
     setDeck((d) => ({ ...d, partner, companion: undefined }));
     setShowPartnerSearch(false);
-    await updateDeckPartner(deck.id, partner);
+    if (!guest) await updateDeckPartner(deck.id, partner);
   }
 
   async function removePartner() {
     setDeck((d) => ({ ...d, partner: undefined }));
-    await updateDeckPartner(deck.id, null);
+    if (!guest) await updateDeckPartner(deck.id, null);
   }
 
   async function addCompanion(name: string) {
@@ -184,12 +190,12 @@ export default function DeckEditor({ initialDeck }: { initialDeck: Deck }) {
     const companion = cardToDeckCard(card);
     setDeck((d) => ({ ...d, companion, partner: undefined }));
     setShowCompanionSearch(false);
-    await updateDeckCompanion(deck.id, companion);
+    if (!guest) await updateDeckCompanion(deck.id, companion);
   }
 
   async function removeCompanion() {
     setDeck((d) => ({ ...d, companion: undefined }));
-    await updateDeckCompanion(deck.id, null);
+    if (!guest) await updateDeckCompanion(deck.id, null);
   }
 
   // Search box goes through the printing/art picker instead of adding the default printing
@@ -236,12 +242,12 @@ export default function DeckEditor({ initialDeck }: { initialDeck: Deck }) {
   async function commitName() {
     const name = nameDraft.trim() || deck.name;
     setDeck((d) => ({ ...d, name }));
-    await updateDeckName(deck.id, name);
+    if (!guest) await updateDeckName(deck.id, name);
   }
 
   async function changeCardBack(next: string) {
     setDeck((d) => ({ ...d, cardBackUrl: next }));
-    await updateDeckCardBack(deck.id, next);
+    if (!guest) await updateDeckCardBack(deck.id, next);
   }
 
   async function togglePublic() {
@@ -271,11 +277,11 @@ export default function DeckEditor({ initialDeck }: { initialDeck: Deck }) {
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="flex items-center justify-between">
         <Link href="/deck-builder" className="text-xs text-muted underline hover:text-gold-bright">
-          ← All decks
+          {guest ? "← Deck builder" : "← All decks"}
         </Link>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted">
-            {saveState === "saving" ? "Saving..." : saveState === "saved" ? "Saved" : ""}
+            {saveState === "saving" ? "Saving..." : saveState === "saved" ? (guest ? "Saved in this browser" : "Saved") : ""}
           </span>
           <button
             onClick={saveNow}
@@ -399,6 +405,9 @@ export default function DeckEditor({ initialDeck }: { initialDeck: Deck }) {
             </div>
           )}
 
+          {guest ? (
+            <GuestSaveBanner />
+          ) : (
           <button
             onClick={togglePublic}
             disabled={publicBusy}
@@ -410,6 +419,7 @@ export default function DeckEditor({ initialDeck }: { initialDeck: Deck }) {
           >
             {deck.isPublic ? "Public — visible on commander page" : "Make Public"}
           </button>
+          )}
 
           <div className="card-frame mt-6 p-4">
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">

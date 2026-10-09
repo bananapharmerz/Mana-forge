@@ -7,7 +7,9 @@ import CardSearchBox from "@/components/CardSearchBox";
 import AdSlot from "@/components/AdSlot";
 import { autocompleteCommanderNames, getCardByName, cardImage, cardPriceUsd } from "@/lib/scryfall";
 import { createDeck, deleteDeckAction, duplicateDeck } from "@/app/actions/decks";
-import { defaultCategory, deckSize, type Deck } from "@/lib/deckTypes";
+import { defaultCategory, deckSize, type Deck, type DeckCard } from "@/lib/deckTypes";
+import { GUEST_DECK_ID, loadGuestDeck, saveGuestDeck } from "@/lib/guestDeck";
+import GuestSaveBanner from "@/components/GuestSaveBanner";
 
 const noopSubscribe = () => () => {};
 
@@ -15,10 +17,12 @@ export default function DeckBuilderIndexClient({
   initialDecks,
   deckLimit,
   tier,
+  guest = false,
 }: {
   initialDecks: Deck[];
   deckLimit: number | null;
   tier: string;
+  guest?: boolean;
 }) {
   const router = useRouter();
   const [decks, setDecks] = useState(initialDecks);
@@ -37,6 +41,9 @@ export default function DeckBuilderIndexClient({
   const [error, setError] = useState<string | null>(null);
 
   const atLimit = deckLimit !== null && decks.length >= deckLimit;
+  // A deck built before signing up, still waiting in this browser.
+  const draft = useSyncExternalStore(noopSubscribe, () => guestDraftKey(), () => "");
+  const draftDeck = draft ? loadGuestDeck() : null;
 
 
   async function handleCreate() {
@@ -52,8 +59,7 @@ export default function DeckBuilderIndexClient({
         setError("Couldn't find that commander on Scryfall.");
         return;
       }
-      const result = await createDeck(
-        {
+      const commander: DeckCard = {
           name: card.name,
           scryfallId: card.id,
           imageUrl: cardImage(card),
@@ -64,9 +70,24 @@ export default function DeckBuilderIndexClient({
           quantity: 1,
           category: defaultCategory(card.type_line),
           priceUsd: cardPriceUsd(card),
-        },
-        deckName
-      );
+      };
+      if (guest) {
+        if (draftDeck && !window.confirm("Start a new deck? Your current guest draft will be replaced.")) return;
+        const now = new Date().toISOString();
+        saveGuestDeck({
+          id: GUEST_DECK_ID,
+          name: deckName.trim() || `${card.name} Commander Deck`,
+          commander,
+          cards: [],
+          cardBackUrl: null,
+          isPublic: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+        router.push(`/deck-builder/${GUEST_DECK_ID}`);
+        return;
+      }
+      const result = await createDeck(commander, deckName);
       if (!result.ok) {
         setError(result.error);
         return;
@@ -98,7 +119,9 @@ export default function DeckBuilderIndexClient({
         <div>
           <h1 className="text-3xl font-bold text-foreground">Deck Builder</h1>
           <p className="mt-1 text-muted">
-            {deckLimit !== null
+            {guest
+              ? "Build a Commander deck right now, no account needed."
+              : deckLimit !== null
               ? `${decks.length} / ${deckLimit} decks used (${tier} account)`
               : `${decks.length} decks (${tier} account)`}
           </p>
@@ -160,7 +183,36 @@ export default function DeckBuilderIndexClient({
         </div>
       )}
 
-      {decks.length === 0 ? (
+      {draftDeck && (
+        <div className="card-frame mb-8 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gold-bright">Unsaved draft</p>
+            <Link href={`/deck-builder/${GUEST_DECK_ID}`} className="font-semibold text-foreground hover:text-gold-bright">
+              {draftDeck.name}
+            </Link>
+            <p className="text-xs text-muted">
+              {draftDeck.commander?.name} · {deckSize(draftDeck)} / 100 cards
+            </p>
+            <Link
+              href={`/deck-builder/${GUEST_DECK_ID}`}
+              className="mt-2 inline-block rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-gold"
+            >
+              Keep building
+            </Link>
+          </div>
+          <div className="sm:w-72">
+            <GuestSaveBanner compact />
+          </div>
+        </div>
+      )}
+
+      {guest ? (
+        !draftDeck && (
+          <p className="text-sm text-muted">
+            Click &quot;New Deck&quot;, pick a commander and start adding cards. Sign up any time to keep it.
+          </p>
+        )
+      ) : decks.length === 0 ? (
         <p className="text-sm text-muted">
           No decks yet. Click &quot;New Deck&quot; to pick a commander and start building.
         </p>
@@ -204,4 +256,9 @@ export default function DeckBuilderIndexClient({
       )}
     </div>
   );
+}
+
+function guestDraftKey(): string {
+  const d = loadGuestDeck();
+  return d ? `${d.updatedAt}|${d.cards.length}` : "";
 }

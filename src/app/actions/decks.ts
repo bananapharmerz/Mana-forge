@@ -7,7 +7,7 @@ import { deckLimitFor } from "@/lib/tier";
 import { cardImage, getCardByName, getCardsByNames } from "@/lib/scryfall";
 import { extractPartnerWithName } from "@/lib/partnerMechanics";
 import { findCategory, commandersMatchingCategory } from "@/lib/categories";
-import type { DeckCard } from "@/lib/deckTypes";
+import type { Deck, DeckCard } from "@/lib/deckTypes";
 import { cleanCardBack, cleanDeckCard, cleanDeckCards, text } from "@/lib/validate";
 import { hit } from "@/lib/rateLimit";
 
@@ -252,6 +252,51 @@ export async function createDeck(
       commanderName: commander.name,
       commanderData: JSON.stringify(commander),
       cards: JSON.stringify([]),
+      ownerId: userId,
+    },
+  });
+
+  revalidatePath("/deck-builder");
+  return { ok: true, id: deck.id };
+}
+
+// Moves a deck built without an account (kept in the visitor's browser) into their account
+// once they've signed up or logged in. Same checks as creating a deck from scratch.
+export async function importGuestDeck(
+  draft: Deck
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+  if (!canCreate(userId)) return { ok: false, error: TOO_FAST };
+  const commander = cleanDeckCard(draft?.commander);
+  if (!commander) return { ok: false, error: "That draft's commander couldn't be read." };
+  const cards = cleanDeckCards(draft?.cards ?? []);
+  if (!cards) return { ok: false, error: "That draft has too many or unreadable cards." };
+  const partner = draft?.partner ? cleanDeckCard(draft.partner) : null;
+  const companion = !partner && draft?.companion ? cleanDeckCard(draft.companion) : null;
+  const back = draft?.cardBackUrl ? cleanCardBack(draft.cardBackUrl, CARD_BACK_PRESETS) : null;
+
+  const user = await db.user.findUnique({ where: { id: userId } });
+  if (!user) return { ok: false, error: "Account not found." };
+  const count = await db.deck.count({ where: { ownerId: userId } });
+  const limit = deckLimitFor(user.tier);
+  if (count >= limit) {
+    return {
+      ok: false,
+      error: `Free accounts are limited to ${limit} decks. Delete one or upgrade to Premium for unlimited decks.`,
+    };
+  }
+
+  const deck = await db.deck.create({
+    data: {
+      name: text(draft?.name, 80) || `${commander.name} Commander Deck`,
+      commanderName: commander.name,
+      commanderData: JSON.stringify(commander),
+      cards: JSON.stringify(cards),
+      partnerCommanderName: partner?.name ?? null,
+      partnerCommanderData: partner ? JSON.stringify(partner) : null,
+      companionName: companion?.name ?? null,
+      companionData: companion ? JSON.stringify(companion) : null,
+      ...(back ? { cardBackUrl: back } : {}),
       ownerId: userId,
     },
   });
