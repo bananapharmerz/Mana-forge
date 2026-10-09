@@ -31,7 +31,7 @@ function MoverList({ title, rows, up }: { title: string; rows: Mover[]; up: bool
                 <span className="h-10 w-7 shrink-0 rounded-sm bg-surface-raised" />
               )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-foreground">{m.name}</span>
+                <Link href={`/prices/card/${m.scryfallId}`} className="block truncate text-foreground hover:text-gold-bright hover:underline">{m.name}</Link>
                 <span className="block truncate text-[11px] text-muted">{m.setName}</span>
               </span>
               <span className="shrink-0 text-right">
@@ -113,7 +113,7 @@ export default async function PricesPage() {
               {valuable.map((c, i) => (
                 <li key={c.scryfallId} className="flex items-center gap-2">
                   <span className="w-4 text-right text-[11px] text-muted">{i + 1}</span>
-                  <span className="min-w-0 flex-1 truncate text-foreground" title={c.setName ?? undefined}>{c.name}</span>
+                  <Link href={`/prices/card/${c.scryfallId}`} className="min-w-0 flex-1 truncate text-foreground hover:text-gold-bright hover:underline" title={c.setName ?? undefined}>{c.name}</Link>
                   <span className="font-mono text-gold-bright">{usd(c.usd ?? 0)}</span>
                 </li>
               ))}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { adminAllowed as allowed } from "@/lib/adminKey";
 import { db } from "@/lib/db";
 import { liftBan } from "@/lib/bans";
 import { hit, ipFrom } from "@/lib/rateLimit";
@@ -8,15 +8,6 @@ import { hit, ipFrom } from "@/lib/rateLimit";
 // `x-admin-key` header to match ADMIN_API_KEY (at least 32 characters). Without that key set,
 // this route doesn't exist.
 export const dynamic = "force-dynamic";
-
-function allowed(req: Request): boolean {
-  const key = process.env.ADMIN_API_KEY?.trim() ?? "";
-  if (key.length < 32) return false;
-  const given = req.headers.get("x-admin-key") ?? "";
-  const a = createHash("sha256").update(given).digest();
-  const b = createHash("sha256").update(key).digest();
-  return timingSafeEqual(a, b);
-}
 
 const notFound = () => new NextResponse("Not found", { status: 404 });
 

@@ -98,13 +98,13 @@ export default function Watchlist({ rows, premium = false }: { rows: WatchRow[];
                   <span className="h-12 w-[34px] shrink-0 rounded-sm bg-surface-raised" />
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-foreground">{r.name}</span>
+                  <a href={`/prices/card/${r.scryfallId}`} className="block truncate text-sm font-medium text-foreground hover:text-gold-bright hover:underline">{r.name}</a>
                   <span className="block truncate text-[11px] text-muted">{r.setName}</span>
                   {hit && <span className="mt-0.5 inline-block rounded bg-emerald-600/15 px-1.5 text-[10px] font-semibold text-emerald-700">At your target: time to buy</span>}
                 </span>
-                <span className="hidden shrink-0 text-gold-bright sm:block">
+                <a href={`/prices/card/${r.scryfallId}`} className="hidden shrink-0 text-gold-bright sm:block" title="Open the price chart">
                   <Sparkline values={r.history} target={r.targetUsd} />
-                </span>
+                </a>
                 <span className="w-20 shrink-0 text-right">
                   <span className="block font-mono text-sm text-foreground">{r.usd === null ? "—" : usd(r.usd)}</span>
                   {change !== null && Math.abs(change) >= 0.005 && (

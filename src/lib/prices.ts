@@ -262,3 +262,15 @@ export async function trackerStats() {
   const [cards, newest] = await Promise.all([db.cardPrice.count(), db.cardPrice.findFirst({ orderBy: { updatedAt: "desc" }, select: { updatedAt: true } })]);
   return { cards, updatedAt: newest?.updatedAt.getTime() ?? 0 };
 }
+
+/** One printing with up to a year of daily prices, oldest first (for its price page). */
+export async function cardPriceDetail(scryfallId: string) {
+  const card = await db.cardPrice.findUnique({ where: { scryfallId } });
+  if (!card) return null;
+  const history = await db.cardPriceHistory.findMany({
+    where: { scryfallId, day: { gte: today(Date.now() - 366 * 86400000) } },
+    orderBy: { day: "asc" },
+    select: { day: true, usd: true, usdFoil: true },
+  });
+  return { card, history };
+}
