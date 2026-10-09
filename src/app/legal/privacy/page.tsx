@@ -69,8 +69,9 @@ export default function PrivacyPage() {
       <p>
         The site itself only uses what it needs to work: a sign-in cookie (secure, HttpOnly, lasts up
         to 14 days) and your browser&apos;s own storage for your cart, proxy project, intro animation,
-        your seat in a play room, and a deck you build before creating an account (it stays in your
-        browser until you save it to an account or clear it). The visitor statistics described on this
+        your seat in a play room, a deck you build before creating an account (it stays in your
+        browser until you save it to an account or clear it), and an unsent contact message (kept only
+        in that browser tab, deleted once it&apos;s sent). The visitor statistics described on this
         page use no cookies or browser storage.
       </p>
       {ADS_ENABLED ? (
@@ -92,7 +93,7 @@ export default function PrivacyPage() {
         <li><b>Stripe</b> processes payments. Card details go straight to Stripe and never touch our server.</li>
         <li><b>Scryfall</b> serves card images, so your browser connects to their servers when you view cards.</li>
         <li><b>Our hosting provider</b> runs the server and stores the database.</li>
-        <li><b>Resend</b> delivers the emails we send (password resets, the welcome email, replies to contact messages), so it receives your email address and that email.</li>
+        <li><b>Resend</b> delivers the emails we send (the welcome email with its link to confirm your address, password resets, price alerts, replies to contact messages), so it receives your email address and that email.</li>
         <li>Print and shipping partners receive your shipping address for proxy orders.</li>
       </ul>
       <p>We don&apos;t sell your data. Some of these providers may process data outside your country under standard legal safeguards.</p>
