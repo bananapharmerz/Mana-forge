@@ -13,6 +13,8 @@ import MakeItMineButton from "@/components/MakeItMineButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import ReportDeckButton from "@/components/ReportDeckButton";
 import BuyDeckPanel from "@/components/BuyDeckPanel";
+import PriceChart from "@/app/prices/PriceChart";
+import { deckValueHistory } from "@/lib/prices";
 import PartnerCardStack from "@/components/PartnerCardStack";
 import type { Metadata } from "next";
 import { SITE } from "@/lib/site";
@@ -69,6 +71,12 @@ export default async function ViewDeckPage({
     : null;
 
   const deck = rowToDeck(row);
+  // The deck's value over time (commander and partner included).
+  const value = await deckValueHistory(
+    [deck.commander, deck.partner, deck.companion, ...deck.cards]
+      .filter((c): c is NonNullable<typeof c> => !!c?.scryfallId)
+      .map((c) => ({ id: c.scryfallId, qty: c.quantity ?? 1 }))
+  ).catch(() => null);
   const author = authorName(row.owner.name);
   const size = deckSize(deck);
   const curve = manaCurve(deck);
@@ -226,6 +234,13 @@ export default async function ViewDeckPage({
         </div>
 
         <div className="flex-1">
+          {value && value.current !== null && (
+            <section className="mb-2">
+              <h2 className="mb-2 font-display text-2xl font-semibold text-foreground">What the deck is worth</h2>
+              <PriceChart history={value.history} current={value.current} currentFoil={null} today={new Date().toISOString().slice(0, 10)} />
+              <p className="mt-1.5 text-[11px] text-muted">Sum of each card&apos;s cheapest market price (TCGplayer, USD) per day.</p>
+            </section>
+          )}
 
           <div className="mt-8 flex flex-col gap-6">
             {grouped.length === 0 && (

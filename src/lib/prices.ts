@@ -274,3 +274,50 @@ export async function cardPriceDetail(scryfallId: string) {
   });
   return { card, history };
 }
+
+/**
+ * A deck's total value per day for up to a year: each card's price that day (or its last known
+ * price) times how many copies. Starts on the first day at least 90% of the cards had a price,
+ * so the line doesn't jump while prices were still being collected.
+ */
+export async function deckValueHistory(entries: { id: string; qty: number }[], days = 366) {
+  const qty = new Map<string, number>();
+  for (const e of entries) if (e.id) qty.set(e.id, (qty.get(e.id) ?? 0) + Math.max(1, e.qty));
+  const ids = [...qty.keys()];
+  if (!ids.length) return { history: [] as { day: string; usd: number | null; usdFoil: number | null }[], current: null as number | null };
+  const since = today(Date.now() - days * 86400000);
+  const [rows, now] = await Promise.all([
+    inChunks(ids, (part) =>
+      db.cardPriceHistory.findMany({ where: { scryfallId: { in: part }, day: { gte: since } }, orderBy: { day: "asc" }, select: { scryfallId: true, day: true, usd: true, usdFoil: true } })
+    ),
+    inChunks(ids, (part) => db.cardPrice.findMany({ where: { scryfallId: { in: part } }, select: { scryfallId: true, usd: true, usdFoil: true } })),
+  ]);
+  const totalQty = [...qty.values()].reduce((a, b) => a + b, 0);
+  const byDay = new Map<string, { id: string; v: number }[]>();
+  for (const r of rows) {
+    const v = r.usd ?? r.usdFoil;
+    if (v === null) continue;
+    (byDay.get(r.day) ?? byDay.set(r.day, []).get(r.day)!).push({ id: r.scryfallId, v });
+  }
+  const last = new Map<string, number>();
+  const history: { day: string; usd: number | null; usdFoil: number | null }[] = [];
+  for (const day of [...byDay.keys()].sort()) {
+    for (const { id, v } of byDay.get(day)!) last.set(id, v);
+    let covered = 0;
+    let sum = 0;
+    for (const [id, v] of last) {
+      covered += qty.get(id) ?? 0;
+      sum += v * (qty.get(id) ?? 0);
+    }
+    if (history.length || covered >= totalQty * 0.9) history.push({ day, usd: Math.round(sum * 100) / 100, usdFoil: null });
+  }
+  let current = 0;
+  let any = false;
+  for (const p of now) {
+    const v = p.usd ?? p.usdFoil ?? last.get(p.scryfallId) ?? null;
+    if (v === null) continue;
+    any = true;
+    current += v * (qty.get(p.scryfallId) ?? 0);
+  }
+  return { history, current: any ? Math.round(current * 100) / 100 : null };
+}
