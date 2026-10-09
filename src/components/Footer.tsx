@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { SITE } from "@/lib/site";
 import { LEGAL_LINKS } from "@/lib/legal";
+import { SOCIALS } from "@/lib/socials";
 
 export default function Footer() {
   const pathname = usePathname();
@@ -13,6 +14,13 @@ export default function Footer() {
 
   return (
     <footer className="border-t border-border px-4 py-6 text-center text-[11px] text-muted sm:px-6">
+      <nav aria-label="Social media" className="mb-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
+        {SOCIALS.map((s) => (
+          <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-gold-bright">
+            {s.label}
+          </a>
+        ))}
+      </nav>
       <p>
         Card images and data provided by{" "}
         <a

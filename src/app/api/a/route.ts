@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hit, ipFrom } from "@/lib/rateLimit";
 import { SITE } from "@/lib/site";
+import { isIgnored, isNexus } from "@/lib/ignoreMe";
 
 // Anonymous visitor statistics, sent by the browser (src/components/SiteTracker.tsx).
 // No cookies and nothing stored in the browser; the IP address is only used, together with a secret
@@ -19,6 +20,8 @@ export async function POST(req: Request) {
   const h = req.headers;
   const ua = h.get("user-agent") ?? "";
   if (!ua || BOTS.test(ua) || h.get("dnt") === "1" || h.get("sec-gpc") === "1") return ok;
+  // The owner's own browser (see src/lib/ignoreMe.ts) and Nexus aren't visitors.
+  if (isNexus(ua) || isIgnored(h.get("cookie"))) return ok;
   // Only our own pages may report (a beacon from elsewhere is ignored).
   const origin = h.get("origin") ?? "";
   if (origin && !origin.endsWith(host) && !origin.includes("localhost")) return ok;

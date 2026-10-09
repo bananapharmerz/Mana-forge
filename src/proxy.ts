@@ -3,6 +3,7 @@ import { readFileSync, statSync } from "node:fs";
 import { bansFile, hashIp, type BansFile } from "@/lib/banHash";
 import { ipFrom } from "@/lib/ipFrom";
 import { countPage } from "@/lib/traffic";
+import { isIgnored, isNexus } from "@/lib/ignoreMe";
 
 // 1. Banned IPs (src/lib/bans.ts) see /banned instead of the site. The list is a small JSON file
 //    re-read at most every 10 seconds, and only when it changed.
@@ -34,8 +35,10 @@ const OPEN_PATHS = ["/banned", "/legal", "/api/webhooks", "/api/admin"];
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   // Page loads, split into browsers and bots (src/lib/traffic.ts). Totals only.
-  if (request.method === "GET" && !pathname.startsWith("/api/") && (request.headers.get("accept") ?? "").includes("text/html")) {
-    countPage(request.headers.get("user-agent"));
+  // The owner's own browser (cookie from Nexus) and Nexus itself aren't counted at all.
+  const ua = request.headers.get("user-agent");
+  if (request.method === "GET" && !pathname.startsWith("/api/") && (request.headers.get("accept") ?? "").includes("text/html") && !isNexus(ua) && !isIgnored(request.headers.get("cookie"))) {
+    countPage(ua);
   }
   const list = bans();
   if (Object.keys(list).length && !OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {

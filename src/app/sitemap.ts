@@ -22,6 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(SHOP_ENABLED ? [{ url: u("/proxies"), changeFrequency: "monthly" as const, priority: 0.7 }] : []),
     { url: u("/play"), changeFrequency: "monthly", priority: 0.6 },
     { url: u("/premium"), changeFrequency: "monthly", priority: 0.5 },
+    { url: u("/links"), changeFrequency: "monthly", priority: 0.3 },
     { url: u("/contact"), changeFrequency: "yearly", priority: 0.3 },
     ...["terms", "privacy", "copyright", "impressum"].map((p) => ({ url: u(`/legal/${p}`), changeFrequency: "yearly" as const, priority: 0.2 })),
     ...["colors", "typal", "themes", "multi-commander", "sets"].map((d) => ({ url: u(`/commanders/browse/${d}`), changeFrequency: "weekly" as const, priority: 0.6 })),
