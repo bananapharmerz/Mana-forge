@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { ADS_ENABLED, ADSENSE_CLIENT, ADSENSE_SLOTS } from "@/lib/features";
 
-// An ad space. With ads off (the default) it shows a quiet placeholder; with NEXT_PUBLIC_ADS_ENABLED=1
+// An ad space. With ads off (the default) it renders nothing; with NEXT_PUBLIC_ADS_ENABLED=1
 // and an ad unit ID it shows a Google AdSense unit. Premium members never see either.
 // Google's own consent message (AdSense → Privacy & messaging) asks EU visitors first.
 
@@ -62,13 +62,6 @@ export default function AdSlot({
     );
   }
 
-  return (
-    <div
-      className={`card-frame flex items-center justify-center border-dashed p-4 text-center text-xs text-muted ${
-        variant === "banner" ? "min-h-16" : "aspect-square"
-      }`}
-    >
-      Advertisement — Premium removes ads across the whole site.
-    </div>
-  );
+  // Ads switched off (or no ad unit yet): take no space at all.
+  return null;
 }

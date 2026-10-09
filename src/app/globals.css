@@ -206,3 +206,34 @@ body {
   .js .reveal:not(.reveal-in) { opacity: 1; transform: none; }
   .spark { display: none; }
 }
+
+/* Inner page header (components/PageHeader.tsx): forge iron with a hearth glow rising from below. */
+.forge-band {
+  background:
+    radial-gradient(120% 140% at 50% 135%, rgba(224, 150, 58, 0.34), rgba(224, 150, 58, 0) 58%),
+    linear-gradient(180deg, #141009 0%, #1d170e 100%);
+}
+.forge-band::before {
+  /* hammered-metal texture: two faint offset dot grids */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(255, 236, 200, 0.05) 1px, transparent 1.4px),
+    radial-gradient(rgba(0, 0, 0, 0.25) 1px, transparent 1.4px);
+  background-size: 22px 22px, 22px 22px;
+  background-position: 0 0, 11px 11px;
+  pointer-events: none;
+}
+/* The five colours of Magic, in colour-pie order, as the band's foot. */
+.mana-strip {
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    #efe6c0 0 20%,
+    var(--mana-u) 20% 40%,
+    #3b2f47 40% 60%,
+    var(--mana-r) 60% 80%,
+    var(--mana-g) 80% 100%
+  );
+}

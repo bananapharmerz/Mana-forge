@@ -168,7 +168,7 @@ export default function DecksFeed({
         {displayItems.map((item, i) => (
           <Fragment key={itemKey(item)}>
             {i > 0 && i % AD_EVERY_N === 0 && (
-              <div className="col-span-full">
+              <div className="empty:hidden col-span-full">
                 <AdSlot tier={tier} />
               </div>
             )}

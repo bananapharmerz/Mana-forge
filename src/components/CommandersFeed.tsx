@@ -53,7 +53,7 @@ export default function CommandersFeed({
         {cards.map((card, i) => (
           <Fragment key={card.id}>
             {i > 0 && i % AD_EVERY_N === 0 && (
-              <div className="col-span-full">
+              <div className="empty:hidden col-span-full">
                 <AdSlot tier={tier} />
               </div>
             )}

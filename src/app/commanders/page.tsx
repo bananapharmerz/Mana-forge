@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import Link from "next/link";
 import CommandersFeed from "@/components/CommandersFeed";
 import CategoryFilterGroup from "@/components/CategoryFilterGroup";
@@ -48,15 +49,9 @@ export default async function CommandersPage({
     : null;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Commanders</h1>
-        <p className="mt-1 text-muted">
-          {activeLabel ?? "All commanders"}, from every set ever printed, sorted by all-time
-          EDHREC popularity.
-        </p>
-      </div>
-
+    <>
+      <PageHeader title={activeLabel ?? "Commanders"} description="Every legendary commander ever printed, most played first. Pick one to see its best cards and the decks built around it." width="max-w-7xl" />
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <form action="/commanders" method="GET" className="mb-6 flex gap-2">
         {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
         {setCode && <input type="hidden" name="set" value={setCode} />}
@@ -152,5 +147,6 @@ export default async function CommandersPage({
         tier={user?.tier}
       />
     </div>
+    </>
   );
 }

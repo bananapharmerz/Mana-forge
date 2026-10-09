@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
@@ -79,16 +80,9 @@ export default async function PricesPage() {
   const hits = rows.filter((r) => r.targetUsd !== null && r.usd !== null && r.usd <= r.targetUsd);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <header className="mb-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">Price tracker</p>
-        <h1 className="mt-1 font-display text-4xl font-semibold text-foreground sm:text-5xl">Know what your cards are worth.</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted">
-          Prices from Scryfall, recorded every day for {stats.cards.toLocaleString("en-US")} printings across {SITE.name} decks and watchlists. Watch a card,
-          set the price you&apos;d pay, and see it flagged when it drops there.
-        </p>
-      </header>
-
+    <>
+      <PageHeader title="Know what your cards are worth" description={`Daily Scryfall prices for ${stats.cards.toLocaleString("en-US")} printings in ${SITE.name} decks and watchlists. Watch a card, set the price you'd pay, and see it flagged when it drops there.`} width="max-w-6xl" />
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <section className="mb-10">
         <div className="mb-3 flex items-end justify-between gap-3">
           <h2 className="font-display text-2xl font-semibold text-foreground">Your watchlist</h2>
@@ -133,5 +127,6 @@ export default async function PricesPage() {
         Prices are Scryfall&apos;s daily market prices (TCGplayer, USD) and may differ from what stores charge.
       </p>
     </div>
+    </>
   );
 }

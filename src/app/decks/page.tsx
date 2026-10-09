@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -53,15 +54,9 @@ export default async function DecksIndexPage({
     : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Public Decks</h1>
-        <p className="mt-1 text-muted">
-          {category ? `${category.label} decks` : "Every public deck"}, real {SITE.name} decks
-          mixed with real decks from EDHREC — publish a deck and it lands right at the top.
-        </p>
-      </div>
-
+    <>
+      <PageHeader title={category ? `${category.label} decks` : "Public decks"} description={`Decks people are playing: ${SITE.name} players' decks first, then fresh lists from EDHREC. Publish yours and it shows up at the top.`} width="max-w-6xl" />
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <FavoritesSection currentUserId={session?.user?.id} />
 
       <form action="/decks" method="GET" className="mb-6 flex gap-2">
@@ -145,5 +140,6 @@ export default async function DecksIndexPage({
         favoritedKeys={favoritedKeys}
       />
     </div>
+    </>
   );
 }

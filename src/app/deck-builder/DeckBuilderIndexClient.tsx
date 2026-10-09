@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import CardSearchBox from "@/components/CardSearchBox";
 import AdSlot from "@/components/AdSlot";
+import PageHeader from "@/components/PageHeader";
 import { autocompleteCommanderNames, getCardByName, cardImage, cardPriceUsd } from "@/lib/scryfall";
 import { createDeck, deleteDeckAction, duplicateDeck } from "@/app/actions/decks";
 import { defaultCategory, deckSize, type Deck, type DeckCard } from "@/lib/deckTypes";
@@ -12,6 +13,16 @@ import { GUEST_DECK_ID, loadGuestDeck, saveGuestDeck } from "@/lib/guestDeck";
 import GuestSaveBanner from "@/components/GuestSaveBanner";
 
 const noopSubscribe = () => () => {};
+
+// Well-loved commanders across all five colours, for starting a deck in one click.
+const STARTER_COMMANDERS = [
+  "Atraxa, Praetors' Voice",
+  "Edgar Markov",
+  "The Ur-Dragon",
+  "Krenko, Mob Boss",
+  "Lathril, Blade of the Elves",
+  "Talrand, Sky Summoner",
+];
 
 export default function DeckBuilderIndexClient({
   initialDecks,
@@ -114,28 +125,28 @@ export default function DeckBuilderIndexClient({
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Deck Builder</h1>
-          <p className="mt-1 text-muted">
-            {guest
-              ? "Build a Commander deck right now, no account needed."
-              : deckLimit !== null
-              ? `${decks.length} / ${deckLimit} decks used (${tier} account)`
-              : `${decks.length} decks (${tier} account)`}
-          </p>
-        </div>
+    <>
+      <PageHeader
+        title="Deck builder"
+        description={
+          guest
+            ? "Pick a commander and start adding cards. No account needed; sign up any time to keep the deck."
+            : deckLimit !== null
+            ? `${decks.length} of ${deckLimit} decks used on your ${tier} account.`
+            : `${decks.length} decks on your ${tier} account.`
+        }
+        width="max-w-5xl"
+      >
         <button
           onClick={() => setShowNew((s) => !s)}
           disabled={atLimit}
-          className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-[#d4a23e] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          New Deck
+          New deck
         </button>
-      </div>
-
-      <div className="mb-8">
+      </PageHeader>
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <div className="empty:hidden mb-8">
         <AdSlot tier={tier} />
       </div>
 
@@ -208,9 +219,26 @@ export default function DeckBuilderIndexClient({
 
       {guest ? (
         !draftDeck && (
-          <p className="text-sm text-muted">
-            Click &quot;New Deck&quot;, pick a commander and start adding cards. Sign up any time to keep it.
-          </p>
+          <section aria-label="Start from a popular commander">
+            <h2 className="font-display text-2xl font-semibold text-foreground">Start from a popular commander</h2>
+            <p className="mt-1 text-sm text-muted">Pick one to start a deck with it, or use New deck to search any commander.</p>
+            <ul className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
+              {STARTER_COMMANDERS.map((name) => (
+                <li key={name}>
+                  <a href={`/deck-builder?commander=${encodeURIComponent(name)}`} className="group block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image&version=normal`}
+                      alt={name}
+                      loading="lazy"
+                      className="aspect-[5/7] w-full rounded-[4.5%] shadow-sm transition-transform group-hover:-translate-y-1"
+                    />
+                    <span className="mt-2 block text-xs font-medium text-foreground group-hover:text-gold-bright">{name}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
         )
       ) : decks.length === 0 ? (
         <p className="text-sm text-muted">
@@ -255,6 +283,7 @@ export default function DeckBuilderIndexClient({
         </>
       )}
     </div>
+    </>
   );
 }
 

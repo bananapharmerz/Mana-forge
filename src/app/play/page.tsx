@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getMyTier } from "@/app/actions/premium";
 import AdSlot from "@/components/AdSlot";
+import PageHeader from "@/components/PageHeader";
 
 const FREE_QUEUE_SECONDS = 30;
 
@@ -178,19 +179,21 @@ export default function PlayLandingPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col items-center px-4 py-24 text-center sm:px-6">
-      <h1 className="text-3xl font-bold text-foreground">Play with Friends</h1>
-      <p className="mt-3 text-muted">
-        A shared virtual tabletop for Commander games — life totals, hand, battlefield,
-        synced in real time. Inspired by Untap.in.
-      </p>
+    <>
+    <PageHeader
+      title="Play with friends"
+      description="A shared tabletop for Commander games in your browser: life totals, hands and the battlefield stay in sync for everyone at the table."
+      width="max-w-5xl"
+    />
+    <div className="mx-auto grid max-w-5xl gap-10 px-4 py-10 sm:px-6 md:grid-cols-[minmax(0,420px)_1fr]">
+    <div className="flex flex-col">
 
       <button
         onClick={openOptionsModal}
         disabled={creating}
-        className="mt-8 w-full rounded-lg bg-gold px-5 py-3 text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-50"
+        className="w-full rounded-lg bg-gold px-5 py-3 text-sm font-semibold text-black hover:bg-[#d4a23e] disabled:opacity-50"
       >
-        {creating ? "Starting..." : "Create a Room"}
+        {creating ? "Starting..." : "Create a room"}
       </button>
 
       <div className="mt-6 flex w-full items-center gap-2">
@@ -240,13 +243,33 @@ export default function PlayLandingPage() {
         </div>
       )}
 
-      <p className="mt-8 text-xs text-muted">
-        Rooms live in server memory for this session — they reset if the server restarts.
+      <p className="mt-6 text-xs text-muted">
+        Rooms close if the server restarts, so finish your game in one sitting.
       </p>
 
-      <div className="mt-10 w-full">
+      <div className="empty:hidden mt-6 w-full">
         <AdSlot tier={tier} />
       </div>
+    </div>
+
+    <section aria-label="How a game works" className="md:pt-1">
+      <h2 className="font-display text-2xl font-semibold text-foreground">How a game works</h2>
+      <ol className="mt-4 space-y-5">
+        {[
+          ["Create a room", "Choose how many players and whether strangers can join from the open games list."],
+          ["Share the code", "Send your friends the five-letter room code. They enter it here to sit down."],
+          ["Bring a deck and play", "Everyone picks one of their decks. Draw, play cards and track life; every move shows up for the whole table at once."],
+        ].map(([t, d], i) => (
+          <li key={t} className="grid grid-cols-[2.25rem_1fr] gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/60 font-display text-lg font-semibold text-gold-bright">{i + 1}</span>
+            <div>
+              <p className="font-semibold text-foreground">{t}</p>
+              <p className="mt-0.5 text-sm text-muted">{d}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
 
       {showOptions && (
         <div
@@ -325,5 +348,6 @@ export default function PlayLandingPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

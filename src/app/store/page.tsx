@@ -65,7 +65,7 @@ export default async function StorePage() {
         </Link>
       </div>
 
-      <div className="mb-8">
+      <div className="empty:hidden mb-8">
         <AdSlot tier={user?.tier} />
       </div>
 
