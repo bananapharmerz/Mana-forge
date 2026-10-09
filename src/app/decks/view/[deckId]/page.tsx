@@ -20,17 +20,27 @@ import { authorName, HOUSE_EMAIL } from "@/lib/author";
 
 export async function generateMetadata({ params }: { params: Promise<{ deckId: string }> }): Promise<Metadata> {
   const { deckId } = await params;
-  const d = await db.deck.findUnique({ where: { id: deckId }, select: { name: true, commanderName: true, isPublic: true, owner: { select: { name: true } } } });
+  const d = await db.deck.findUnique({ where: { id: deckId }, select: { name: true, commanderName: true, commanderData: true, isPublic: true, owner: { select: { name: true } } } });
   if (!d || !d.isPublic) return { title: "Deck not found", robots: { index: false } };
   const by = d.owner.name && d.owner.name !== SITE.name ? ` by ${d.owner.name}` : "";
   // "Kami: Average Build" already names the commander, so don't repeat it.
   const title = d.name.toLowerCase().includes(d.commanderName.toLowerCase()) ? `${d.name} — Commander deck` : `${d.name} — ${d.commanderName} Commander deck`;
   const description = `${d.commanderName} Commander (EDH) decklist${by}: ${d.name}. The full 100-card list, mana curve and what the deck costs.`;
+  // The commander's art for link previews (Scryfall's art crop of the card image).
+  const art = (() => {
+    try {
+      const url = (JSON.parse(d.commanderData) as { imageUrl?: string }).imageUrl;
+      return url?.includes("cards.scryfall.io") ? url.replace("/normal/", "/art_crop/").replace("/large/", "/art_crop/") : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
   return {
     title,
     description,
     alternates: { canonical: `/decks/view/${deckId}` },
-    openGraph: { type: "article", title, description, url: `/decks/view/${deckId}`, images: [{ url: "/opengraph-image", width: 1200, height: 630 }] },
+    openGraph: { type: "article", title, description, url: `/decks/view/${deckId}`, images: art ? [{ url: art, alt: `${d.commanderName} card art` }] : [{ url: "/opengraph-image", width: 1200, height: 630 }] },
+    twitter: { card: "summary_large_image", images: art ? [art] : undefined },
   };
 }
 
@@ -105,6 +115,21 @@ export default async function ViewDeckPage({
       </div>
     </ArtBand>
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: SITE.url },
+              { "@type": "ListItem", position: 2, name: "Commanders", item: `${SITE.url}/commanders` },
+              { "@type": "ListItem", position: 3, name: deck.commander?.name ?? row.commanderName, item: `${SITE.url}/decks/${encodeURIComponent(deck.commander?.name ?? row.commanderName)}` },
+              { "@type": "ListItem", position: 4, name: deck.name, item: `${SITE.url}/decks/view/${row.id}` },
+            ],
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="w-full lg:w-64 shrink-0">
           {deck.commander?.imageUrl && deck.partner?.imageUrl ? (
