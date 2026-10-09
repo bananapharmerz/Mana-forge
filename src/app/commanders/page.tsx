@@ -40,6 +40,7 @@ export default async function CommandersPage({
   const baseQuery = category?.query ?? (setCode ? `is:commander e:${setCode}` : "is:commander");
   const query = q ? `${baseQuery} ${q}` : baseQuery;
 
+  const moreOpen = Boolean(setCode) || [...typalCategories, ...themeCategories, ...multiCommanderCategories, ...companionCategories, ...productCategories].some((c) => c.slug === categorySlug);
   const activeLabel = category?.label ?? (setCode ? setName ?? setCode.toUpperCase() : undefined);
 
   const [firstPage, session] = await Promise.all([searchCommandersPage(query, 1), auth()]);
@@ -51,7 +52,7 @@ export default async function CommandersPage({
   return (
     <>
       <PageHeader title={activeLabel ?? "Commanders"} description="Every legendary commander ever printed, most played first. Pick one to see its best cards and the decks built around it." width="max-w-7xl" />
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
       <form action="/commanders" method="GET" className="mb-6 flex gap-2">
         {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
         {setCode && <input type="hidden" name="set" value={setCode} />}
@@ -79,7 +80,8 @@ export default async function CommandersPage({
         )}
       </form>
 
-      <div className="mb-8 flex flex-col gap-4">
+      {/* Commanders first: colour filter stays up top, the rest folds away so the cards are on the first screen. */}
+      <div className="mb-6 flex flex-col gap-3">
         <CategoryFilterGroup
           title="Color Identity"
           basePath="/commanders"
@@ -88,6 +90,11 @@ export default async function CommandersPage({
           activeSlug={categorySlug}
           q={q}
         />
+        <details className="group rounded-md border border-border/60 px-3 py-2" open={moreOpen}>
+          <summary className="cursor-pointer select-none text-xs font-semibold uppercase tracking-wide text-muted hover:text-foreground">
+            More filters <span className="normal-case tracking-normal">(tribe, theme, partners, product, set)</span>
+          </summary>
+          <div className="mt-3 flex flex-col gap-4">
         <CategoryFilterGroup
           title="Typal"
           basePath="/commanders"
@@ -135,6 +142,8 @@ export default async function CommandersPage({
             </Link>
           </div>
         </div>
+          </div>
+        </details>
       </div>
 
       <CommandersFeed
