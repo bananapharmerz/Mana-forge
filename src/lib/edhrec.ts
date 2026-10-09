@@ -49,6 +49,7 @@ export async function getEdhrecCommanderData(name: string): Promise<EdhrecComman
     const res = await fetch(`https://json.edhrec.com/pages/commanders/${slug}.json`, {
       headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" },
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return null;
     const data = await res.json();

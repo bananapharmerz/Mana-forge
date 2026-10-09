@@ -73,7 +73,17 @@ export async function sfetch(url: string, init: RequestInit = {}): Promise<Respo
     const at = Math.max(now, sq.__scryfallNext ?? 0);
     sq.__scryfallNext = at + 110;
     if (at > now) await pause(at - now);
-    const res = await fetch(url, init);
+    // Every Scryfall call gives up after 20s unless the caller set its own limit, so a slow
+    // Scryfall can't leave a page hanging.
+    // A timeout comes back as a 504 (not retried), so callers' "Scryfall is busy" handling and
+    // cached fallbacks apply instead of an unexpected crash.
+    let res: Response;
+    try {
+      res = await fetch(url, init.signal ? init : { ...init, signal: AbortSignal.timeout(20000) });
+    } catch (e) {
+      if (!init.signal && e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) return new Response(null, { status: 504 });
+      throw e;
+    }
     if (res.status !== 429 && res.status < 500) return res;
     if (attempt >= 3) return res;
     const ra = Number(res.headers.get("retry-after"));
