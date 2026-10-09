@@ -1,10 +1,12 @@
 import Link from "next/link";
+import Ember from "@/components/Ember";
 
 export const metadata = { title: "Page not found", robots: { index: false } };
 
 export default function NotFound() {
   return (
-    <div className="mx-auto max-w-md px-4 py-24 text-center">
+    <div className="mx-auto max-w-md px-4 py-16 text-center">
+      <Ember mood="oops" size={150} className="mx-auto" title="Ember, the Mana Forge mascot, looking puzzled" />
       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">404</p>
       <h1 className="mt-3 text-3xl font-bold text-foreground">This card isn&apos;t in the deck.</h1>
       <p className="mt-3 text-sm text-muted">The page you were looking for doesn&apos;t exist, or it was made private.</p>

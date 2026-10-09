@@ -1,10 +1,13 @@
 "use client";
 
+import Ember from "@/components/Ember";
+
 // Shown when a page hits an unexpected error. Visitors get a friendly message and a short
 // reference code; the technical details only ever go to the server log.
 export default function Error({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   return (
-    <div className="mx-auto max-w-md px-4 py-24 text-center">
+    <div className="mx-auto max-w-md px-4 py-16 text-center">
+      <Ember mood="oops" size={150} className="mx-auto" title="Ember, the Mana Forge mascot, looking worried" />
       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">Something misfired</p>
       <h1 className="mt-3 text-3xl font-bold text-foreground">That didn&apos;t work.</h1>
       <p className="mt-3 text-sm text-muted">

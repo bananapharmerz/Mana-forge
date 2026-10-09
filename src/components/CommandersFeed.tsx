@@ -1,5 +1,6 @@
 "use client";
 
+import Ember from "@/components/Ember";
 import { Fragment, useState } from "react";
 import type { ScryfallCard } from "@/lib/scryfall";
 import type { DeckCard } from "@/lib/deckTypes";
@@ -44,7 +45,12 @@ export default function CommandersFeed({
   }
 
   if (cards.length === 0) {
-    return <p className="text-sm text-muted">No commanders found. Try a different search or category.</p>;
+    return (
+      <div className="flex flex-col items-center py-10 text-center">
+        <Ember mood="thinking" size={130} title="Ember, the Mana Forge mascot, thinking" />
+        <p className="text-sm text-muted">No commanders found. Try a different search or category.</p>
+      </div>
+    );
   }
 
   return (
