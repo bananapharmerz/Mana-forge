@@ -7,6 +7,7 @@ import { PREMIUM_CURRENCY, PREMIUM_PLANS, type PremiumPlan } from "@/lib/tier";
 import { SITE } from "@/lib/site";
 import { clientIp, hit, TOO_MANY } from "@/lib/rateLimit";
 import { randomUUID } from "node:crypto";
+import { emailHtml, esc, sendEmail } from "@/lib/email";
 
 export async function getMyTier(): Promise<string | null> {
   const session = await auth();
@@ -185,7 +186,18 @@ export async function cancelMySubscription(): Promise<{ ok: true; endsOn: string
   if (!key) return { ok: false, error: "Payments aren't set up yet." };
   try {
     const sub = await new Stripe(key).subscriptions.update(user.stripeSubscriptionId, { cancel_at_period_end: true });
-    return { ok: true, endsOn: fmtDate(sub.cancel_at ?? sub.items.data[0]?.current_period_end) };
+    const endsOn = fmtDate(sub.cancel_at ?? sub.items.data[0]?.current_period_end);
+    // § 312k BGB: confirm the cancellation in text form.
+    void sendEmail({
+      to: user.email,
+      subject: `Your ${SITE.name} Premium is cancelled`,
+      html: emailHtml({
+        heading: "Cancellation confirmed",
+        body: `<p>We received your cancellation on ${esc(new Date().toLocaleDateString("en-GB", { dateStyle: "long" }))}. Your Premium subscription won't renew${endsOn ? ` and stays active until <b>${esc(endsOn)}</b>` : ""}. You won't be charged again.</p><p>Changed your mind? You can subscribe again any time on the Premium page.</p>`,
+      }),
+      text: `We received your cancellation on ${new Date().toLocaleDateString("en-GB", { dateStyle: "long" })}. Your Premium subscription won't renew${endsOn ? ` and stays active until ${endsOn}` : ""}. You won't be charged again.`,
+    }).catch(() => null);
+    return { ok: true, endsOn };
   } catch {
     return { ok: false, error: `That didn't go through. Please try again, or email us and we'll cancel it for you.` };
   }
@@ -203,6 +215,19 @@ export async function requestCancellation(email: unknown, note?: unknown): Promi
   await db.$executeRaw`
     INSERT INTO "CancelRequest" ("id", "email", "userId", "note", "status", "createdAt")
     VALUES (${randomUUID()}, ${clean}, ${user?.id ?? null}, ${text}, 'open', ${new Date().toISOString()})`;
+  // § 312k BGB: confirm receipt in text form. Only to an address that has an account, so the form
+  // can't be used to send mail to strangers.
+  if (user) {
+    void sendEmail({
+      to: clean,
+      subject: `We received your ${SITE.name} cancellation request`,
+      html: emailHtml({
+        heading: "Cancellation request received",
+        body: `<p>We received your request to cancel Premium on ${esc(new Date().toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Berlin" }))} (Berlin time). We'll cancel it and confirm by email. Your subscription won't renew after the cancellation.</p>`,
+      }),
+      text: `We received your request to cancel Premium on ${new Date().toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Berlin" })} (Berlin time). We'll cancel it and confirm by email.`,
+    }).catch(() => null);
+  }
   // Same answer whether or not the email has an account, so the form can't be used to look people up.
   return { ok: true };
 }

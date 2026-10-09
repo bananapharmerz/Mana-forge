@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { emailEnabled, emailHtml, esc, sendEmail } from "@/lib/email";
 import { inChunks, today } from "@/lib/prices";
 import { SITE } from "@/lib/site";
+import { legalInfo } from "@/lib/legal";
 
 // Premium perk: after each price refresh, email Premium members (who haven't turned it off)
 //  - when a card on their watchlist drops to the target price they set (once, until it climbs back), and
@@ -99,12 +100,13 @@ export async function runPriceAlerts(): Promise<{ emailed: number }> {
     const subject = hits.length
       ? `${hits.length === 1 ? hits[0].name : `${hits.length} cards`} hit your target price`
       : "Big price moves in your decks this week";
-    const footer = `You're getting this as a Premium member with price alerts on. Turn them off on <a href="${esc(SITE.url)}/premium" style="color:#7a7488">your Premium page</a>.`;
+    const L = legalInfo();
+    const footer = `You're getting this as a Premium member with price alerts on. Turn them off on <a href="${esc(SITE.url)}/premium" style="color:#7a7488">your Premium page</a>.<br>${esc(SITE.name)} · ${esc(L.owner)} · ${esc(L.address)}`;
     const ok = await sendEmail({
       to: u.email,
       subject,
       html: emailHtml({ heading: subject, body: sections.join(""), button: { label: "Open price tracker", url: `${SITE.url}/prices` }, footer }),
-      text: `${lines.join("\n")}\nPrice tracker: ${SITE.url}/prices\nTurn alerts off: ${SITE.url}/premium`,
+      text: `${lines.join("\n")}\nPrice tracker: ${SITE.url}/prices\nTurn alerts off: ${SITE.url}/premium\n\n${SITE.name} · ${L.owner} · ${L.address}`,
     });
     if (!ok) continue;
     emailed++;
