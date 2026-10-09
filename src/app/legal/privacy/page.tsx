@@ -40,8 +40,11 @@ export default function PrivacyPage() {
         </li>
         <li>
           <b>Security logs:</b> your IP address is used briefly in memory to limit login attempts and
-          abuse, and errors are logged without personal details. Legitimate interest in keeping the
-          site safe.
+          abuse, and errors are logged without personal details. If one connection keeps getting blocked
+          (15 blocked requests within an hour), it is paused for 24 hours (7 days if it happens again
+          within a month). For that we store a one-way hash of the IP address (not the address itself),
+          the reason, an appeal code and, only if you were signed in, your email address so we can tell
+          you why and how to appeal. Legitimate interest in keeping the site safe.
         </li>
         <li>
           <b>Reports:</b> if you report a deck, we store the reason you give and the deck it&apos;s about.
@@ -101,6 +104,7 @@ export default function PrivacyPage() {
         <li>Play rooms: deleted after a few hours of inactivity.</li>
         <li>Contact messages: deleted within 12 months of our last reply.</li>
         <li>Visitor statistics: 90 days.</li>
+        <li>Connection pauses (IP bans): deleted 90 days after the pause ends.</li>
         <li>Backups: kept for 14 days.</li>
       </ul>
 

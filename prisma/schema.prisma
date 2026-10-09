@@ -278,3 +278,22 @@ model Hit {
   @@index([at])
   @@index([path, at])
 }
+
+/// Temporary IP bans for repeated abuse (src/lib/bans.ts). Stores a keyed hash of the IP, never the IP itself.
+model IpBan {
+  id        String    @id @default(cuid())
+  ipHash    String
+  code      String    @unique // appeal code shown on the ban page and in the email
+  reason    String
+  area      String // what kept getting blocked: login, signup, checkout, play…
+  strikes   Int
+  email     String? // only when the requests came from a signed-in account (we email them)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  liftedAt  DateTime?
+  liftNote  String?
+
+  @@index([ipHash])
+  @@index([expiresAt])
+}
+

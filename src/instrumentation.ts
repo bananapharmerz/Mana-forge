@@ -5,6 +5,8 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { startPriceTracker } = await import("./lib/prices");
     startPriceTracker();
+    const { startBanSync } = await import("./lib/bans");
+    startBanSync();
   }
 }
 

@@ -4,6 +4,7 @@
 
 import { headers } from "next/headers";
 import { securityEvent } from "@/lib/securityLog";
+import { ipFrom } from "@/lib/ipFrom";
 
 type Bucket = number[]; // timestamps of recent hits
 
@@ -18,6 +19,8 @@ if (!g.__mfRateSweep) {
   g.__mfRateSweep.unref?.();
 }
 
+const NO_STRIKE = new Set(["search", "stats", "rooms"]);
+
 /** Records a hit; returns true if it's allowed, false if the limit is reached. */
 export function hit(key: string, max: number, windowMs: number): boolean {
   const now = Date.now();
@@ -26,6 +29,9 @@ export function hit(key: string, max: number, windowMs: number): boolean {
     buckets.set(key, b);
     const area = key.split(":")[0];
     securityEvent(area === "login" ? "login_locked" : "rate_limited", area);
+    // Repeated blocks from one IP lead to a temporary ban (src/lib/bans.ts).
+    // Not for limits ordinary browsing can brush against (fast typing in search, page-view beacons).
+    if (!NO_STRIKE.has(area)) void import("@/lib/bans").then((m) => m.strike(area)).catch(() => {});
     return false;
   }
   b.push(now);
@@ -38,14 +44,7 @@ export function reset(key: string) {
   buckets.delete(key);
 }
 
-export function ipFrom(h: Headers): string {
-  // Behind Cloudflare every request arrives from a Cloudflare server, so use the visitor IP it passes on.
-  // Only trusted when TRUST_CLOUDFLARE=1 (set once the site is proxied and the firewall only admits Cloudflare).
-  const cf = process.env.TRUST_CLOUDFLARE === "1" ? h.get("cf-connecting-ip")?.trim() : "";
-  if (cf) return cf;
-  const fwd = h.get("x-forwarded-for");
-  return (fwd ? fwd.split(",")[0] : h.get("x-real-ip") || "local").trim() || "local";
-}
+export { ipFrom };
 
 /** The visitor's IP inside a server action or server component. */
 export async function clientIp(): Promise<string> {
