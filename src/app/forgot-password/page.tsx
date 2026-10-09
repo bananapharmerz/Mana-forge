@@ -13,8 +13,9 @@ export default function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
 
   return (
-    <div className="mx-auto max-w-sm px-4 py-16 sm:px-6">
-      <h1 className="text-2xl font-bold text-foreground">Forgot your password?</h1>
+    <div className="forge-band relative flex min-h-[calc(100vh-9rem)] items-start justify-center px-4 py-14 sm:items-center">
+      <div className="relative w-full max-w-sm rounded-2xl border border-[#3a2f1c] bg-surface px-6 py-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] sm:px-8">
+      <h1 className="font-display text-3xl font-semibold text-foreground">Forgot your password?</h1>
       {sent ? (
         <div className="mt-6 text-sm text-muted">
           <p className="text-foreground">Check your inbox.</p>
@@ -49,6 +50,7 @@ export default function ForgotPasswordPage() {
           <Link href="/login" className="text-sm text-muted underline hover:text-gold-bright">Back to sign in</Link>
         </form>
       )}
+      </div>
     </div>
   );
 }

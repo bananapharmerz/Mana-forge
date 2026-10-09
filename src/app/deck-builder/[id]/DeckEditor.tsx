@@ -34,6 +34,7 @@ import { hasSecondCommanderMechanic } from "@/lib/partnerMechanics";
 import { saveGuestDeck } from "@/lib/guestDeck";
 import GuestSaveBanner from "@/components/GuestSaveBanner";
 import BudgetUpgradesPanel from "@/components/BudgetUpgradesPanel";
+import { ManaCost } from "@/components/ManaText";
 import {
   CATEGORY_ORDER,
   defaultCategory,
@@ -522,7 +523,7 @@ export default function DeckEditor({ initialDeck, guest = false }: { initialDeck
                     >
                       <span className="w-6 text-right text-xs text-muted">{c.quantity}x</span>
                       <CardNameZoom name={c.name} imageUrl={c.imageUrl} />
-                      <span className="hidden text-xs text-muted sm:block">{c.manaCost}</span>
+                      <ManaCost cost={c.manaCost} className="hidden text-sm sm:inline-flex" />
                       <CardPriceCell price={currentPrice(c, live)} quantity={c.quantity} change={weekChange(c, live)} />
                       <select
                         value={c.category}

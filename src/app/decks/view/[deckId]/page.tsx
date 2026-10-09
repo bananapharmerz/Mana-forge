@@ -1,3 +1,5 @@
+import ArtBand from "@/components/ArtBand";
+import { ManaCost } from "@/components/ManaText";
 import SupporterBadge from "@/components/SupporterBadge";
 import Image from "next/image";
 import Link from "next/link";
@@ -68,15 +70,36 @@ export default async function ViewDeckPage({
   })).filter((g) => g.cards.length > 0);
 
   return (
+    <>
+    <ArtBand
+      art={deck.commander?.imageUrl?.includes("cards.scryfall.io") ? deck.commander.imageUrl.replace("/normal/", "/art_crop/").replace("/large/", "/art_crop/") : null}
+      colors={deck.commander?.colorIdentity}
+    >
+      <div className="mx-auto max-w-6xl px-4 pb-9 pt-8 sm:px-6">
+        <Link
+          href={`/decks/${encodeURIComponent(deck.commander?.name ?? "")}`}
+          className="text-xs text-[#cdbf9e] underline hover:text-[#f5ecd6]"
+        >
+          ← Back to {deck.commander?.name}
+        </Link>
+        <h1 className="mt-3 max-w-3xl font-display text-4xl font-semibold leading-tight text-[#f5ecd6] sm:text-5xl">{deck.name}</h1>
+        <p className="mt-2 text-sm text-[#cdbf9e]">
+          by {author}
+          <SupporterBadge tier={row.owner.tier} /> · {size} cards
+        </p>
+        {row.owner.email === HOUSE_EMAIL && (
+          <p className="mt-1 max-w-2xl text-xs text-[#a99c7c]">
+            Starter deck built from community play data on{" "}
+            <a href="https://edhrec.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#f5ecd6]">
+              EDHREC
+            </a>
+            . Make it yours and tune it to your table.
+          </p>
+        )}
+      </div>
+    </ArtBand>
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <Link
-        href={`/decks/${encodeURIComponent(deck.commander?.name ?? "")}`}
-        className="text-xs text-muted underline hover:text-gold-bright"
-      >
-        ← Back to {deck.commander?.name}
-      </Link>
-
-      <div className="mt-4 flex flex-col gap-6 lg:flex-row">
+      <div className="flex flex-col gap-6 lg:flex-row">
         <div className="w-full lg:w-64 shrink-0">
           {deck.commander?.imageUrl && deck.partner?.imageUrl ? (
             <div className="card-frame relative aspect-[5/7] w-full overflow-hidden bg-surface-raised">
@@ -172,17 +195,6 @@ export default async function ViewDeckPage({
         </div>
 
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground">{deck.name}</h1>
-          <p className="mt-1 text-sm text-muted">by {author}<SupporterBadge tier={row.owner.tier} /></p>
-          {row.owner.email === HOUSE_EMAIL && (
-            <p className="mt-1 text-xs text-muted">
-              Starter deck by {author}, built from community play data on{" "}
-              <a href="https://edhrec.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-gold-bright">
-                EDHREC
-              </a>
-              . Make it yours and tune it to your table.
-            </p>
-          )}
 
           <div className="mt-8 flex flex-col gap-6">
             {grouped.length === 0 && (
@@ -201,7 +213,7 @@ export default async function ViewDeckPage({
                     >
                       <span className="w-6 text-right text-xs text-muted">{c.quantity}x</span>
                       <CardNameZoom name={c.name} imageUrl={c.imageUrl} />
-                      <span className="text-xs text-muted">{c.manaCost}</span>
+                      <ManaCost cost={c.manaCost} className="ml-auto text-sm" />
                     </div>
                   ))}
                 </div>
@@ -211,5 +223,6 @@ export default async function ViewDeckPage({
         </div>
       </div>
     </div>
+    </>
   );
 }

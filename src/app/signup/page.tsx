@@ -39,8 +39,9 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="mx-auto max-w-sm px-4 py-16 sm:px-6">
-      <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
+    <div className="forge-band relative flex min-h-[calc(100vh-9rem)] items-start justify-center px-4 py-14 sm:items-center">
+      <div className="relative w-full max-w-sm rounded-2xl border border-[#3a2f1c] bg-surface px-6 py-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] sm:px-8">
+      <h1 className="font-display text-3xl font-semibold text-foreground">Create account</h1>
       <p className="mt-1 text-sm text-muted">
         Free accounts save up to 10 decks and can play online. Premium adds unlimited decks, no ads and price alerts.
       </p>
@@ -111,6 +112,7 @@ export default function SignupPage() {
           Sign in
         </Link>
       </p>
+      </div>
     </div>
   );
 }

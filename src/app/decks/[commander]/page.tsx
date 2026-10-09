@@ -1,3 +1,5 @@
+import ArtBand from "@/components/ArtBand";
+import { ManaCost, ManaText } from "@/components/ManaText";
 import SupporterBadge from "@/components/SupporterBadge";
 import Image from "next/image";
 import Link from "next/link";
@@ -143,8 +145,10 @@ export default async function CommanderDecksPage({
   ].filter((t) => t.show);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <Link href="/commanders" className="text-xs text-muted underline hover:text-gold-bright">
+    <>
+    <ArtBand art={card.image_uris?.art_crop ?? card.card_faces?.[0]?.image_uris?.art_crop} colors={card.color_identity}>
+    <div className="mx-auto max-w-5xl px-4 pb-10 pt-8 sm:px-6">
+      <Link href="/commanders" className="text-xs text-[#cdbf9e] underline hover:text-[#f5ecd6]">
         ← Back to Commanders
       </Link>
 
@@ -180,7 +184,7 @@ export default async function CommanderDecksPage({
             )
           )}
           {partnerCard && partnerImg && (
-            <p className="mt-1.5 text-center text-xs text-muted">
+            <p className="mt-1.5 text-center text-xs text-[#cdbf9e]">
               Partners with{" "}
               <Link
                 href={`/decks/${encodeURIComponent(partnerCard.name)}`}
@@ -191,34 +195,40 @@ export default async function CommanderDecksPage({
             </p>
           )}
           {cardArtist(card) && (
-            <p className="mt-1.5 text-center text-[10px] text-muted">
+            <p className="mt-1.5 text-center text-[10px] text-[#a99c7c]">
               Art by {cardArtist(card)}
             </p>
           )}
         </div>
 
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-foreground">{card.name}</h1>
-          <p className="mt-1 text-muted">{card.type_line}</p>
+          <h1 className="font-display text-4xl font-semibold leading-tight text-[#f5ecd6] sm:text-5xl">{card.name}</h1>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-[#cdbf9e]">
+            {card.type_line}
+            <ManaCost cost={card.mana_cost} className="text-base" />
+          </p>
           <div className="mt-3">
             <ManaPips colors={card.color_identity} />
           </div>
           {card.oracle_text && (
-            <p className="mt-4 whitespace-pre-line text-sm text-foreground/90">
-              {card.oracle_text}
+            <p className="mt-4 max-w-prose whitespace-pre-line text-[15px] leading-relaxed text-[#e9dfc6]">
+              <ManaText text={card.oracle_text} />
             </p>
           )}
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href={`/deck-builder?commander=${encodeURIComponent(card.name)}`}
-              className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright"
+              className="rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-[#d4a23e]"
             >
               Build a deck with {card.name}
             </Link>
           </div>
         </div>
       </div>
+    </div>
+    </ArtBand>
+    <div className="mx-auto max-w-5xl px-4 pb-10 sm:px-6">
 
       {edhrec ? (
         <>
@@ -326,5 +336,6 @@ export default async function CommanderDecksPage({
         )}
       </div>
     </div>
+    </>
   );
 }
