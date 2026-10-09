@@ -7,6 +7,9 @@ export async function register() {
     startPriceTracker();
     const { startBanSync } = await import("./lib/bans");
     startBanSync();
+    // Build the full commander list for the sitemap in the background.
+    const { commanderNames } = await import("./lib/commanderIndex");
+    commanderNames();
   }
 }
 

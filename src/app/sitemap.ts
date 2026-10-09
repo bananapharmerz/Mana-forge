@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { SITE } from "@/lib/site";
 import { SHOP_ENABLED } from "@/lib/features";
+import { commanderNames } from "@/lib/commanderIndex";
 import { colorIdentityCategories, typalCategories, themeCategories } from "@/lib/categories";
 
 // Every public page, for search engines: the main sections, browse pages, commanders with
@@ -35,12 +36,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     db.deck.groupBy({ by: ["commanderName"], where: { isPublic: true }, _max: { updatedAt: true } }).catch(() => []),
     SHOP_ENABLED ? db.product.findMany({ select: { id: true, createdAt: true } }).catch(() => []) : Promise.resolve([]),
   ]);
+  // Every legal commander has a page (play data, top cards, decklists), not just those with decks here.
+  const withDecks = new Set(commanders.map((c) => c.commanderName));
+  const otherCommanders = commanderNames().filter((n) => !withDecks.has(n));
   return [
     ...main,
     ...categories,
     ...commanders
       .filter((c) => c.commanderName)
       .map((c) => ({ url: u(`/decks/${encodeURIComponent(c.commanderName)}`), lastModified: c._max.updatedAt ?? undefined, changeFrequency: "daily" as const, priority: 0.7 })),
+    ...otherCommanders.map((n) => ({ url: u(`/decks/${encodeURIComponent(n)}`), changeFrequency: "weekly" as const, priority: 0.6 })),
     ...decks.map((d) => ({ url: u(`/decks/view/${d.id}`), lastModified: d.updatedAt, changeFrequency: "weekly" as const, priority: 0.5 })),
     ...products.map((p) => ({ url: u(`/store/${p.id}`), lastModified: p.createdAt, changeFrequency: "weekly" as const, priority: 0.6 })),
   ];

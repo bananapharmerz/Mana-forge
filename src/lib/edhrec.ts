@@ -23,6 +23,16 @@ export interface EdhrecCommanderData {
     land: number;
   };
   cardlists: EdhrecCardList[];
+  /** Facts for the written deck guide on the commander page. */
+  overview: {
+    numDecks: number | null;
+    rank: number | null;
+    basics: number | null;
+    nonbasics: number | null;
+    themes: { name: string; count: number }[];
+    similar: string[];
+    combos: string[];
+  };
 }
 
 export function edhrecSlug(name: string): string {
@@ -55,11 +65,28 @@ export async function getEdhrecCommanderData(name: string): Promise<EdhrecComman
         land: data.land ?? 0,
       },
       cardlists,
+      overview: {
+        numDecks: num(data?.container?.json_dict?.card?.num_decks),
+        rank: num(data?.container?.json_dict?.card?.rank),
+        basics: num(data?.basic),
+        nonbasics: num(data?.nonbasic),
+        themes: (Array.isArray(data?.panels?.taglinks) ? data.panels.taglinks : [])
+          .filter((t: { value?: unknown; count?: unknown }) => typeof t?.value === "string" && typeof t?.count === "number")
+          .slice(0, 5)
+          .map((t: { value: string; count: number }) => ({ name: t.value.slice(0, 40), count: t.count })),
+        similar: (Array.isArray(data?.similar) ? data.similar : []).filter((s: unknown): s is string => typeof s === "string").slice(0, 8),
+        combos: (Array.isArray(data?.panels?.combocounts) ? data.panels.combocounts : [])
+          .map((c: { value?: unknown }) => c?.value)
+          .filter((v: unknown): v is string => typeof v === "string" && v.includes("+"))
+          .slice(0, 3),
+      },
     };
   } catch {
     return null;
   }
 }
+
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
 export function findCardlist(data: EdhrecCommanderData, tag: string): EdhrecCardList | undefined {
   return data.cardlists.find((l) => l.tag === tag);

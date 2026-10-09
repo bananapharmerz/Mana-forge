@@ -34,16 +34,38 @@ import {
 import { SITE } from "@/lib/site";
 import type { Metadata } from "next";
 import { authorName } from "@/lib/author";
+import CommanderGuide from "@/components/CommanderGuide";
 
 export async function generateMetadata({ params }: { params: Promise<{ commander: string }> }): Promise<Metadata> {
   const { commander } = await params;
-  const name = decodeURIComponent(commander);
-  const count = await db.deck.count({ where: { commanderName: name, isPublic: true } }).catch(() => 0);
+  const asked = decodeURIComponent(commander);
+  // Same cached requests the page itself makes, so this adds no extra fetches.
+  const card = await getCardByName(asked).catch(() => null);
+  const name = card?.name ?? asked;
+  const [count, edhrec] = await Promise.all([
+    db.deck.count({ where: { commanderName: name, isPublic: true } }).catch(() => 0),
+    card ? getEdhrecCommanderData(name).catch(() => null) : Promise.resolve(null),
+  ]);
+  const top = edhrec ? getMostPlayed(edhrec, 40).sort((a, b) => b.num_decks / (b.potential_decks || 1) - a.num_decks / (a.potential_decks || 1)).slice(0, 3).map((c) => c.name) : [];
+  const short = name.split(",")[0].split(" // ")[0];
+  const description = [
+    `${name} Commander (EDH) deck guide: the cards ${short} decks play most${top.length ? ` (${top.join("; ")})` : ""}, the average land count, combos`,
+    count ? ` and ${count} decklist${count === 1 ? "" : "s"} from players.` : " and decklists.",
+    ` Free deck builder with card prices.`,
+  ].join("");
+  const art = card?.image_uris?.art_crop ?? card?.card_faces?.[0]?.image_uris?.art_crop;
+  const url = `/decks/${encodeURIComponent(name)}`;
   return {
-    title: `${name} Commander decks`,
-    description: `${count ? `${count} ${name} deck${count === 1 ? "" : "s"} built on ${SITE.name}, plus` : "Build"} ${name} decklists, top cards and ideas for your next Commander game.`,
-    alternates: { canonical: `/decks/${encodeURIComponent(name)}` },
-    openGraph: { title: `${name} Commander decks · ${SITE.name}`, url: `/decks/${encodeURIComponent(name)}`, images: [{ url: "/opengraph-image", width: 1200, height: 630 }] },
+    title: `${name} Commander Deck: Top Cards & Decklists`,
+    description: description.slice(0, 300),
+    alternates: { canonical: url },
+    openGraph: {
+      title: `${name} Commander Deck · ${SITE.name}`,
+      description: description.slice(0, 300),
+      url,
+      images: art ? [{ url: art, alt: `${name} card art` }] : [{ url: "/opengraph-image", width: 1200, height: 630 }],
+    },
+    twitter: { card: "summary_large_image", images: art ? [art] : undefined },
   };
 }
 
@@ -229,6 +251,30 @@ export default async function CommanderDecksPage({
     </div>
     </ArtBand>
     <div className="mx-auto max-w-5xl px-4 pb-10 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: SITE.url },
+              { "@type": "ListItem", position: 2, name: "Commanders", item: `${SITE.url}/commanders` },
+              { "@type": "ListItem", position: 3, name: card.name, item: `${SITE.url}/decks/${encodeURIComponent(card.name)}` },
+            ],
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
+      {edhrec && (
+        <CommanderGuide
+          name={card.name}
+          identity={card.color_identity}
+          typeLine={card.type_line}
+          edhrec={edhrec}
+          mostPlayed={mostPlayed}
+          siteDecks={siteDecks.length}
+        />
+      )}
 
       {edhrec ? (
         <>
