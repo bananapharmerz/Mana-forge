@@ -60,6 +60,32 @@ interface ScryfallSearchResponse {
 
 const SCRYFALL_API = process.env.SCRYFALL_API_URL || "https://api.scryfall.com"; // server-side override only for testing
 
+// Scryfall allows about 10 requests a second and answers 429 ("too many requests") beyond that,
+// sometimes for a while. Every request goes through this queue: at least 110ms apart, and on a
+// 429 it waits (Retry-After, or 1s, 2s, 3s) and tries again without reusing a cached answer.
+// A 429 must never turn into "this card doesn't exist" (that would 404 a real commander page).
+export class ScryfallBusyError extends Error {}
+const sq = globalThis as unknown as { __scryfallNext?: number };
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+export async function sfetch(url: string, init: RequestInit = {}): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const now = Date.now();
+    const at = Math.max(now, sq.__scryfallNext ?? 0);
+    sq.__scryfallNext = at + 110;
+    if (at > now) await pause(at - now);
+    const res = await fetch(url, init);
+    if (res.status !== 429 && res.status < 500) return res;
+    if (attempt >= 3) return res;
+    const ra = Number(res.headers.get("retry-after"));
+    const wait = Number.isFinite(ra) && ra > 0 ? Math.min(ra * 1000, 10000) : 1000 * (attempt + 1);
+    sq.__scryfallNext = Math.max(sq.__scryfallNext ?? 0, Date.now() + wait);
+    await pause(wait);
+    const { next: _skip, ...rest } = init as RequestInit & { next?: unknown };
+    void _skip;
+    init = { ...rest, cache: "no-store" };
+  }
+}
+
 export function cardImage(card: ScryfallCard): string | undefined {
   return (
     card.image_uris?.normal ?? card.card_faces?.[0]?.image_uris?.normal
@@ -110,7 +136,7 @@ export async function searchCards(
     unique: opts.unique ?? "cards",
   });
 
-  const res = await fetch(`${SCRYFALL_API}/cards/search?${params}`, {
+  const res = await sfetch(`${SCRYFALL_API}/cards/search?${params}`, {
     headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" },
     next: { revalidate: 3600 },
   });
@@ -120,6 +146,7 @@ export async function searchCards(
   }
 
   if (!res.ok) {
+    if (res.status === 429 || res.status >= 500) throw new ScryfallBusyError(`Scryfall is busy (${res.status})`);
     throw new Error(`Scryfall search failed: ${res.status}`);
   }
 
@@ -128,7 +155,7 @@ export async function searchCards(
 
 export async function autocompleteCardNames(query: string): Promise<string[]> {
   if (!query.trim()) return [];
-  const res = await fetch(
+  const res = await sfetch(
     `${SCRYFALL_API}/cards/autocomplete?q=${encodeURIComponent(query)}`
   );
   if (!res.ok) return [];
@@ -157,7 +184,7 @@ export async function getCardsByNames(names: string[]): Promise<ScryfallCard[]> 
   const parts = await Promise.all(
     batches.map(async (batch) => {
       try {
-        const res = await fetch(`${SCRYFALL_API}/cards/collection`, {
+        const res = await sfetch(`${SCRYFALL_API}/cards/collection`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -201,7 +228,7 @@ export interface ScryfallSet {
 const EXCLUDED_SET_TYPES = new Set(["token", "memorabilia", "minigame"]);
 
 export async function getCommanderSets(): Promise<ScryfallSet[]> {
-  const res = await fetch(`${SCRYFALL_API}/sets`, {
+  const res = await sfetch(`${SCRYFALL_API}/sets`, {
     headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" },
     next: { revalidate: 86400 },
   });
@@ -214,10 +241,13 @@ export async function getCommanderSets(): Promise<ScryfallSet[]> {
 }
 
 export async function getCardByName(name: string): Promise<ScryfallCard | null> {
-  const res = await fetch(
+  const res = await sfetch(
     `${SCRYFALL_API}/cards/named?exact=${encodeURIComponent(name)}`,
     { headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" }, next: { revalidate: 3600 } }
   );
-  if (!res.ok) return null;
-  return res.json();
+  if (res.ok) return res.json();
+  // Only a real "no such card" means null. Scryfall being busy is an error, so the page answers
+  // "try again" instead of a cached "not found".
+  if (res.status === 404 || res.status === 400) return null;
+  throw new ScryfallBusyError(`Scryfall is busy (${res.status})`);
 }

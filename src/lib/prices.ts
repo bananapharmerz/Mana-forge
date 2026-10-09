@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { sfetch } from "@/lib/scryfall";
 
 // Card price tracker. Scryfall publishes one price per printing per day, so Mana Forge keeps:
 //   CardPrice         - the latest price for every printing that's in a deck or on a watchlist
@@ -71,7 +72,7 @@ export interface RefreshResult {
 
 async function fetchBatch(ids: string[]): Promise<{ found: ScryfallPriced[]; missing: number } | null> {
   try {
-    const res = await fetch(`${SCRYFALL}/cards/collection`, {
+    const res = await sfetch(`${SCRYFALL}/cards/collection`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "mtg-hub/1.0" },
       body: JSON.stringify({ identifiers: ids.map((id) => ({ id })) }),
