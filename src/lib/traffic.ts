@@ -4,7 +4,7 @@ import path from "node:path";
 // Counts page requests per day, split into browsers and bots (search crawlers, scripts,
 // monitors, headless browsers), by user agent. No IPs and nothing per person: just totals.
 // Real people are counted separately from the analytics beacon (only real browsers run it).
-// Kept in memory and written to /data/traffic.json every few minutes; 60 days are kept.
+// Kept in memory and written to /data/traffic.json every minute and on shutdown; 60 days are kept.
 
 export interface TrafficDay {
   pages: number; // page requests (not API, not static files)
@@ -46,8 +46,16 @@ function state() {
       days = JSON.parse(readFileSync(file(), "utf8")).days ?? {};
     } catch {}
     g.__mfTraffic = { days, dirty: false };
-    g.__mfTraffic.timer = setInterval(flush, 5 * 60 * 1000);
+    g.__mfTraffic.timer = setInterval(flush, 60 * 1000);
     g.__mfTraffic.timer.unref?.();
+    // A deploy stops the old container: save the counts first so nothing is lost.
+    // If nothing else handles the signal, exit as Node normally would.
+    for (const sig of ["SIGTERM", "SIGINT"] as const)
+      process.once(sig, () => {
+        flush();
+        if (process.listenerCount(sig) === 0) process.exit(0);
+      });
+    process.once("beforeExit", flush);
   }
   return g.__mfTraffic;
 }
