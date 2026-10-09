@@ -2,7 +2,7 @@
 // (src/lib/rateLimit.ts) that IP gets a strike; enough strikes in an hour and the IP is banned:
 // 24 hours the first time, 7 days if it was banned in the last 30 days. Banned visitors see
 // /banned with an appeal code and can email us; bans can be lifted from Nexus.
-// Ordinary visitors never get close: it takes 15 blocked requests within an hour.
+// Ordinary visitors never get close: it takes 10 blocked requests within an hour.
 
 import { randomInt } from "node:crypto";
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
@@ -13,7 +13,7 @@ import { legalInfo } from "@/lib/legal";
 import { SITE } from "@/lib/site";
 import { bansFile, hashIp, type BansFile } from "@/lib/banHash";
 
-const STRIKE_LIMIT = 15;
+const STRIKE_LIMIT = 10;
 const STRIKE_WINDOW_MS = 60 * 60 * 1000;
 const FIRST_BAN_MS = 24 * 60 * 60 * 1000;
 const REPEAT_BAN_MS = 7 * 24 * 60 * 60 * 1000;
