@@ -2,11 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { readFileSync, statSync } from "node:fs";
 import { bansFile, hashIp, type BansFile } from "@/lib/banHash";
 import { ipFrom } from "@/lib/ipFrom";
+import { countPage } from "@/lib/traffic";
 
 // 1. Banned IPs (src/lib/bans.ts) see /banned instead of the site. The list is a small JSON file
 //    re-read at most every 10 seconds, and only when it changed.
 // 2. While the shop is switched off (NEXT_PUBLIC_SHOP_ENABLED, see src/lib/features.ts), every
 //    store and proxy page shows the "coming soon" page instead.
+// 3. Page loads are counted (browsers vs bots) for Nexus's Activity panel.
 
 const g = globalThis as unknown as { __mfBans?: { checked: number; mtime: number; bans: BansFile } };
 function bans(): BansFile {
@@ -31,6 +33,10 @@ const OPEN_PATHS = ["/banned", "/legal", "/api/webhooks", "/api/admin"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Page loads, split into browsers and bots (src/lib/traffic.ts). Totals only.
+  if (request.method === "GET" && !pathname.startsWith("/api/") && (request.headers.get("accept") ?? "").includes("text/html")) {
+    countPage(request.headers.get("user-agent"));
+  }
   const list = bans();
   if (Object.keys(list).length && !OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     const hit = list[hashIp(ipFrom(request.headers))];
