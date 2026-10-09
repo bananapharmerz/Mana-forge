@@ -10,19 +10,31 @@ import { trafficDays } from "@/lib/traffic";
 // never do). Bots = page loads from crawler / script user agents. Needs the admin key, else 404.
 export const dynamic = "force-dynamic";
 
-const g = globalThis as unknown as { __mfPlans?: { at: number; data: { month: number; year: number; trialing: number } } };
+type Plans = { month: number; year: number; trialing: number; monthCents: number; yearCents: number; currency: string };
+const g = globalThis as unknown as { __mfPlans?: { at: number; data: Plans } };
 
 async function plans() {
   if (g.__mfPlans && Date.now() - g.__mfPlans.at < 10 * 60 * 1000) return g.__mfPlans.data;
-  const data = { month: 0, year: 0, trialing: 0 };
+  // monthCents / yearCents: what the paying (not trialing) subscriptions bring in per period, after discounts.
+  const data: Plans = { month: 0, year: 0, trialing: 0, monthCents: 0, yearCents: 0, currency: "eur" };
   const key = process.env.STRIPE_SECRET_KEY;
   if (key) {
-    const subs = await new Stripe(key).subscriptions.list({ status: "all", limit: 100 }).catch(() => null);
+    const subs = await new Stripe(key).subscriptions.list({ status: "all", limit: 100, expand: ["data.latest_invoice"] }).catch(() => null);
     for (const s of subs?.data ?? []) {
       if (s.status !== "active" && s.status !== "trialing") continue;
-      const interval = s.items.data[0]?.price?.recurring?.interval;
-      if (interval === "year") data.year++;
-      else if (interval === "month") data.month++;
+      const item = s.items.data[0];
+      const interval = item?.price?.recurring?.interval;
+      // What the latest invoice actually charged (after any discount); a free trial or a 100%-off code is 0.
+      const inv = s.latest_invoice && typeof s.latest_invoice === "object" ? (s.latest_invoice as Stripe.Invoice) : null;
+      const cents = s.status === "trialing" ? 0 : (inv?.total ?? item?.price?.unit_amount ?? 0);
+      if (item?.price?.currency) data.currency = item.price.currency;
+      if (interval === "year") {
+        data.year++;
+        data.yearCents += cents;
+      } else if (interval === "month") {
+        data.month++;
+        data.monthCents += cents;
+      }
       if (s.status === "trialing") data.trialing++;
     }
   }
