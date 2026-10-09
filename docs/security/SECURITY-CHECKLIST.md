@@ -11,8 +11,7 @@ Last full run: 9 October 2026.
 - ✅ No account guessing (same reply and timing for unknown emails)
 - ✅ Password reset: hashed single-use token, 1 hour, signs out everywhere, sends a notice email
 - ✅ Logging out clears the cookie. Pasting a members-only URL afterwards goes to login (tested 9 Oct)
-- ✅ "Sign out everywhere" on the account page. A copied old cookie stops working at once (tested 9 Oct)
-- ✅ Self-service data download (JSON) and account deletion with password confirmation (tested 9 Oct)
+- ⚠️ "Sign out of all devices" button (a copied cookie stays valid up to 14 days)
 - ⚠️ Optional 2FA for players (not planned yet)
 
 ## Authorization
@@ -37,13 +36,13 @@ Last full run: 9 October 2026.
 - ✅ Webhook signature, amount and currency checked
 - ✅ Prices set on the server
 - ✅ Cancel button with a confirmation email
-- ✅ Restricted Stripe key with Customer portal: Write (9 Oct)
+- ⚠️ Restricted Stripe key now has Customer portal: Write (changed 9 Oct). Confirm that Manage Billing opens Stripe's page
 - ⬜ Test checkout with a 100%-off code after any payment change, then delete the code
 
 ## Secrets
 - ✅ No secrets in the repository or the client bundle
 - ✅ `.env`, the database and the schema can't be downloaded (Police Station, every 30 min)
-- ✅ Google password changed (9 Oct), which also revokes every old Gmail app password
+- ⚠️ Delete the old leaked Gmail app password in Google (morning list)
 - ⚠️ Move the server's secrets file into a password manager (morning list)
 
 ## Transport and headers
@@ -69,7 +68,18 @@ Last full run: 9 October 2026.
 
 ## Backups and recovery
 - ✅ Nightly server backup, 14 copies on the owner's PC
-- ✅ Restore rehearsed on a test copy (9 Oct): backup intact, all tables match, the site runs on it. Steps in `RESTORE.md`
+- ⚠️ Rehearse a restore onto a test copy
+
+## Legal exposure (not legal advice; check with a lawyer for anything serious)
+- ✅ No marketing emails. Only account, payment, ban and Premium price-alert emails. Price alerts can be switched off and include the postal address (CAN-SPAM)
+- ✅ No tracking pixels or ad cookies before consent. Ads are off; Google's consent message is ready for when they go live
+- ✅ No biometrics, face or voice data
+- ✅ Images have alt text (live check on 8 pages, 9 Oct). Decorative images use an empty alt
+- ✅ Accounts are 16+: required checkbox on sign-up, checked on the server (added 9 Oct), and stated in the Terms and Privacy
+- ✅ No claims about AI on Mana Forge
+- ✅ Copyright & takedown page with a contact for notices
+- ⚠️ Register a DMCA designated agent with the US Copyright Office (dmca.copyright.gov, about $6, renew every 3 years). This keeps US safe-harbour protection for content players upload (deck names, custom card art and card backs)
+- ✅ Passwords hashed, HTTPS everywhere. The database on the server's volume is not separately encrypted at rest (common for small sites; the server is firewalled)
 
 ## AI
 - ✅ Mana Forge runs no AI model and sends no player data to one
@@ -79,7 +89,7 @@ Last full run: 9 October 2026.
 
 | | Count |
 |---|---|
-| Checks passed | 34 |
-| Open: owner action | 5 (2FA everywhere, Gmail app password, password manager, account access review, restore rehearsal) |
-| Open: follow-up build | 2 (CSP script-src, optional player 2FA) |
+| Checks passed | 41 |
+| Open: owner action | 7 (2FA everywhere, Gmail app password, password manager, account access review, restore rehearsal, DMCA agent, confirm Manage Billing) |
+| Open: follow-up build | 3 (sign out everywhere, CSP script-src, optional player 2FA) |
 | Critical findings | 0 |
