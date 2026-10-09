@@ -89,3 +89,10 @@ admin hub that reads and edits this site's database.
 - Ads behind `NEXT_PUBLIC_ADS_ENABLED` (+ `NEXT_PUBLIC_ADSENSE_SLOT_BANNER/SQUARE`, build variables). AdSlot loads AdSense only when on, never for Premium; privacy text switches automatically.
 - Perf: EDHREC waits capped (feed 1.2s, credits 0.7–1s, commander deck file 1.5s) with in-flight dedupe; hourly commander rotation for the first feed page; Scryfall batches in parallel. /decks ~0.35s warm, commander pages ~2s cold / 0.4s warm.
 - Deploys are triggered via Coolify's queue (GitHub webhook still points at the old :8000 address).
+
+## 2026-10-09 morning
+- Premium: €3.99/month or €29/year (src/lib/tier.ts PREMIUM_PLANS), promotion codes allowed at checkout. Owner tested with a 100% code: works end to end.
+- Guest deck builder: /deck-builder works signed out; draft in localStorage (src/lib/guestDeck.ts), /deck-builder/guest edits it, GuestSaveBanner moves it into the account (importGuestDeck).
+- Premium perks: price alert emails (src/lib/priceAlerts.ts, runs after each hourly price refresh; User.priceAlerts toggle on /premium), budget upgrades (src/app/actions/upgrades.ts + BudgetUpgradesPanel), SupporterBadge on public decks.
+- Play streams capped at 8 open per IP.
+- IP bans: src/lib/bans.ts (15 rate-limit strikes/hour → 24h, repeat → 7d), hashed IP only, /data/bans.json read by src/proxy.ts, /banned page with appeal code, email when signed in. Admin API /api/admin/bans needs ADMIN_API_KEY (32+ chars), 404 otherwise. Nexus Police Station lists bans and lifts them with the same key in nexus/.env.
