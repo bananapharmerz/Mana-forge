@@ -8,7 +8,7 @@ import {
   createBillingPortalSession,
   getMyTier,
 } from "@/app/actions/premium";
-import { PREMIUM_VAT_NOTE, premiumPrice } from "@/lib/tier";
+import { PREMIUM_PLANS, PREMIUM_VAT_NOTE, planPrice, type PremiumPlan } from "@/lib/tier";
 import { SITE } from "@/lib/site";
 
 const BENEFITS = [
@@ -26,6 +26,7 @@ export default function PremiumPage() {
   const [error, setError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
   const [startNow, setStartNow] = useState(false);
+  const [plan, setPlan] = useState<PremiumPlan>("year");
 
   useEffect(() => {
     if (status === "authenticated") getMyTier().then(setTier);
@@ -35,7 +36,7 @@ export default function PremiumPage() {
     setLoading(true);
     setError(null);
     setNotConfigured(false);
-    const result = await createPremiumCheckoutSession(startNow);
+    const result = await createPremiumCheckoutSession(startNow, plan);
     if (!result.ok) {
       setError(result.error);
       setNotConfigured(!result.configured);
@@ -64,7 +65,7 @@ export default function PremiumPage() {
       <div className="text-center">
         <h1 className="text-4xl font-bold text-foreground">{SITE.name} Premium</h1>
         <p className="mt-2 text-muted">
-          {premiumPrice()}/month — unlimited decks, no ads, instant games.
+          From {planPrice("month")}/month, or {planPrice("year")}/year (save 39%).
         </p>
         <p className="mt-1 text-xs text-muted">{PREMIUM_VAT_NOTE}</p>
       </div>
@@ -121,6 +122,27 @@ export default function PremiumPage() {
             </>
           ) : (
             <>
+            <div className="mx-auto mb-5 grid max-w-md grid-cols-2 gap-2" role="radiogroup" aria-label="Plan">
+              {(Object.keys(PREMIUM_PLANS) as PremiumPlan[]).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={plan === k}
+                  onClick={() => setPlan(k)}
+                  className={`relative rounded-xl border p-3 text-left transition-colors ${plan === k ? "border-gold bg-gold/10" : "border-border hover:border-gold/60"}`}
+                >
+                  {PREMIUM_PLANS[k].note && (
+                    <span className="absolute -top-2 right-2 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-black">{PREMIUM_PLANS[k].note}</span>
+                  )}
+                  <span className="block text-xs text-muted">{PREMIUM_PLANS[k].label}</span>
+                  <span className="block text-lg font-bold text-foreground">
+                    {planPrice(k)}
+                    <span className="text-xs font-normal text-muted">{PREMIUM_PLANS[k].per}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
             <label className="mx-auto mb-4 flex max-w-md items-start gap-2 text-left text-xs text-muted">
               <input
                 type="checkbox"
@@ -130,9 +152,9 @@ export default function PremiumPage() {
               />
               <span>
                 Start Premium straight away. I understand that my 14-day right of withdrawal ends once
-                Premium starts. It renews monthly and I can{" "}
+                Premium starts. It renews every {PREMIUM_PLANS[plan].interval} and I can{" "}
                 <Link href="/cancel" className="underline hover:text-gold-bright">cancel any time</Link>; I keep
-                Premium until the end of the month I paid for. See the{" "}
+                Premium until the end of the {PREMIUM_PLANS[plan].interval} I paid for. See the{" "}
                 <Link href="/legal/terms" className="underline hover:text-gold-bright">Terms</Link>.
               </span>
             </label>
@@ -141,7 +163,7 @@ export default function PremiumPage() {
               disabled={loading || !startNow}
               className="rounded-lg bg-gold px-8 py-3 text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-50"
             >
-              {loading ? "Redirecting to Stripe..." : `Upgrade for ${premiumPrice()}/mo`}
+              {loading ? "Redirecting to Stripe..." : `Upgrade for ${planPrice(plan)}${PREMIUM_PLANS[plan].per}`}
             </button>
             </>
           )}

@@ -64,7 +64,7 @@ export default function TermsPage() {
 
       <h2>Premium</h2>
       <ul>
-        <li>Premium is a monthly subscription at the price shown on the <Link href="/premium">Premium page</Link>. It renews automatically each month until you cancel.</li>
+        <li>Premium is a monthly or yearly subscription at the price shown on the <Link href="/premium">Premium page</Link>. It renews automatically at the end of each month or year until you cancel.</li>
         <li>
           You can cancel any time with the <Link href="/cancel">Cancel subscription</Link> button
           (also in the footer). Cancelling stops the next renewal; you keep Premium until the end of

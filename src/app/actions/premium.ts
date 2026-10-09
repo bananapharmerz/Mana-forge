@@ -3,7 +3,7 @@
 import Stripe from "stripe";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { PREMIUM_CURRENCY, PREMIUM_PRICE_CENTS } from "@/lib/tier";
+import { PREMIUM_CURRENCY, PREMIUM_PLANS, type PremiumPlan } from "@/lib/tier";
 import { SITE } from "@/lib/site";
 import { clientIp, hit, TOO_MANY } from "@/lib/rateLimit";
 import { randomUUID } from "node:crypto";
@@ -18,7 +18,7 @@ export async function getMyTier(): Promise<string | null> {
 // EU consumers have a 14-day right to withdraw from online purchases. For a subscription that
 // starts straight away, they must expressly ask for it to start now and confirm they know the
 // withdrawal right ends once it does — that's the `startNow` checkbox on the Premium page.
-export async function createPremiumCheckoutSession(startNow?: unknown): Promise<
+export async function createPremiumCheckoutSession(startNow?: unknown, planChoice?: unknown): Promise<
   | { ok: true; url: string }
   | { ok: false; error: string; configured: boolean }
 > {
@@ -36,6 +36,9 @@ export async function createPremiumCheckoutSession(startNow?: unknown): Promise<
     return { ok: false, error: "Tick the box to start Premium straight away.", configured: true };
   }
   if (!hit(`premium:${user.id}`, 10, 10 * 60 * 1000)) return { ok: false, error: TOO_MANY, configured: true };
+  // The price always comes from the server; the browser only picks which plan.
+  const planKey: PremiumPlan = planChoice === "year" ? "year" : "month";
+  const plan = PREMIUM_PLANS[planKey];
 
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) {
@@ -67,24 +70,26 @@ export async function createPremiumCheckoutSession(startNow?: unknown): Promise<
         quantity: 1,
         price_data: {
           currency: PREMIUM_CURRENCY,
-          unit_amount: PREMIUM_PRICE_CENTS,
-          recurring: { interval: "month" },
+          unit_amount: plan.cents,
+          recurring: { interval: plan.interval },
           product_data: {
-            name: `${SITE.name} Premium`,
-            description: "Unlimited decks, no ads, no game-start queue.",
+            name: `${SITE.name} Premium (${plan.label.toLowerCase()})`,
+            description: "Deck price tracking and alerts, budget upgrade picks, unlimited decks, no ads, instant games, supporter badge.",
           },
         },
       },
     ],
     success_url: `${origin}/premium?upgraded=1`,
     cancel_url: `${origin}/premium`,
-    metadata: { userId: user.id, startNowConsentAt: new Date().toISOString() },
+    // Promotion codes created in Stripe (e.g. a one-off 100%-off code for testing) can be entered here.
+    allow_promotion_codes: true,
+    metadata: { userId: user.id, plan: planKey, startNowConsentAt: new Date().toISOString() },
     subscription_data: { metadata: { userId: user.id, startNowConsentAt: new Date().toISOString() } },
     // Stripe's "Managed Payments" (Stripe as merchant of record) is on by default for this account
     // and doesn't allow custom_text. We sell directly, so it's switched off for this checkout.
     ...({ managed_payments: { enabled: false } } as object),
     custom_text: {
-      submit: { message: "Premium starts right away. Cancel any time; you keep Premium until the end of the month you paid for." },
+      submit: { message: `Premium starts right away and renews every ${plan.interval}. Cancel any time; you keep Premium until the end of the ${plan.interval} you paid for.` },
     },
   });
   } catch (e) {
