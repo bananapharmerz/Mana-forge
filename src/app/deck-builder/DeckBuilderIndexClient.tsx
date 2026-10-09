@@ -139,19 +139,45 @@ export default function DeckBuilderIndexClient({
     }
   }
 
+  // Delete takes two taps (the second within 4s), then the deck goes from the list at once and
+  // comes back with a message if the server says no.
+  const [armed, setArmed] = useState<string | null>(null);
+  const [copying, setCopying] = useState<string | null>(null);
   async function handleDelete(id: string) {
-    await deleteDeckAction(id);
+    if (armed !== id) {
+      setArmed(id);
+      setTimeout(() => setArmed((a) => (a === id ? null : a)), 4000);
+      return;
+    }
+    setArmed(null);
+    setError(null);
+    const before = decks;
     setDecks((prev) => prev.filter((d) => d.id !== id));
+    try {
+      await deleteDeckAction(id);
+      router.refresh();
+    } catch {
+      setDecks(before);
+      setError("Couldn't delete that deck. Check your connection and try again.");
+    }
   }
 
   async function handleCopy(id: string) {
+    if (copying) return;
     setError(null);
-    const result = await duplicateDeck(id);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    setCopying(id);
+    try {
+      const result = await duplicateDeck(id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      router.push(`/deck-builder/${result.id}`);
+    } catch {
+      setError("Couldn't copy that deck. Check your connection and try again.");
+    } finally {
+      setCopying(null);
     }
-    router.push(`/deck-builder/${result.id}`);
   }
 
   return (
@@ -297,15 +323,17 @@ export default function DeckBuilderIndexClient({
                   </Link>
                   <button
                     onClick={() => handleCopy(deck.id)}
-                    className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-gold"
+                    disabled={copying !== null}
+                    className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-gold disabled:opacity-50"
                   >
-                    Copy Deck
+                    {copying === deck.id ? "Copying…" : "Copy Deck"}
                   </button>
                   <button
                     onClick={() => handleDelete(deck.id)}
-                    className="rounded-md border border-border px-3 py-1.5 text-xs text-muted hover:border-red-600 hover:text-red-600"
+                    aria-live="polite"
+                    className={`rounded-md border px-3 py-1.5 text-xs ${armed === deck.id ? "border-red-600 bg-red-600 text-white" : "border-border text-muted hover:border-red-600 hover:text-red-600"}`}
                   >
-                    Delete
+                    {armed === deck.id ? "Tap again to delete" : "Delete"}
                   </button>
                 </div>
               </div>

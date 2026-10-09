@@ -1,5 +1,6 @@
 "use client";
 
+import PasswordInput from "@/components/PasswordInput";
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -48,11 +49,11 @@ function ResetForm() {
       <p className="text-sm text-muted">At least 8 characters, with a letter and a number.</p>
       <div>
         <label htmlFor="rp-pass" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">New password</label>
-        <input id="rp-pass" type="password" required minLength={8} maxLength={128} autoComplete="new-password" value={pass} onChange={(e) => setPass(e.target.value)} className={field} />
+        <PasswordInput id="rp-pass" required minLength={8} maxLength={128} autoComplete="new-password" value={pass} onChange={(e) => setPass(e.target.value)} className={field} />
       </div>
       <div>
         <label htmlFor="rp-again" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Type it again</label>
-        <input id="rp-again" type="password" required minLength={8} maxLength={128} autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} className={field} />
+        <PasswordInput id="rp-again" required minLength={8} maxLength={128} autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} className={field} />
       </div>
       {error && (
         <p className="text-sm text-red-600">

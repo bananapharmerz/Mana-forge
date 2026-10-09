@@ -1,5 +1,6 @@
 "use client";
 
+import PasswordInput from "@/components/PasswordInput";
 import { useState } from "react";
 import Turnstile from "@/components/Turnstile";
 import { useRouter } from "next/navigation";
@@ -77,11 +78,13 @@ export default function SignupPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+          <label htmlFor="signup-email" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
             Email
           </label>
           <input
+            id="signup-email"
             type="email"
+            autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -89,13 +92,14 @@ export default function SignupPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+          <label htmlFor="signup-password" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
             Password
           </label>
-          <input
-            type="password"
+          <PasswordInput
+            id="signup-password"
             required
             minLength={8}
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-gold focus:outline-none"

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import BackToTop from "@/components/BackToTop";
 import { SITE } from "@/lib/site";
 import { Geist, Geist_Mono } from "next/font/google";
 import Nav from "@/components/Nav";
@@ -64,15 +65,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       </head>
       <body className="min-h-full flex flex-col">
+        <a href="#main" className="sr-only z-[200] rounded-md bg-gold px-4 py-2 font-semibold text-black focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
+          Skip to content
+        </a>
         <ForgeIntro />
         <AuthProvider>
           <CartProvider>
             <ProxyProjectProvider>
               <CardSelectionProvider>
                 <Nav />
-                <main className="flex-1">{children}</main>
+                <main id="main" tabIndex={-1} className="flex-1 outline-none">{children}</main>
                 <Footer />
                 <CardSelectionTray />
+                <BackToTop />
                 <SiteTracker />
               </CardSelectionProvider>
             </ProxyProjectProvider>

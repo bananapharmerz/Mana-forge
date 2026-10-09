@@ -6,6 +6,7 @@ import {
   deckToCockatriceXml,
   deckToArenaText,
   downloadCardImagesZip,
+  printDecklist,
 } from "@/lib/deckExport";
 import { decklistText, type Deck } from "@/lib/deckTypes";
 
@@ -43,20 +44,30 @@ export default function DeckOptionsMenu({ deck }: { deck: Deck }) {
     }
   }
 
+  async function copy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      flashNote("Couldn't copy to your clipboard. Use Decklist (.txt) instead.");
+      return false;
+    }
+  }
+
   async function handleExportMoxfield() {
-    await navigator.clipboard.writeText(decklistText(deck));
+    if (!(await copy(decklistText(deck)))) return;
     window.open("https://moxfield.com/decks/personal", "_blank", "noopener,noreferrer");
     flashNote("Decklist copied — sign in, then Import/New Deck and paste.");
   }
 
   async function handleExportArchidekt() {
-    await navigator.clipboard.writeText(decklistText(deck));
+    if (!(await copy(decklistText(deck)))) return;
     window.open("https://archidekt.com/sandbox", "_blank", "noopener,noreferrer");
     flashNote('Decklist copied — click "Import cards" and paste.');
   }
 
   async function handleExportArena() {
-    await navigator.clipboard.writeText(deckToArenaText(deck));
+    if (!(await copy(deckToArenaText(deck)))) return;
     flashNote("Copied in MTG Arena's import format — paste into Arena's deck import. Cards not in Arena won't be recognized.");
   }
 
@@ -82,6 +93,14 @@ export default function DeckOptionsMenu({ deck }: { deck: Deck }) {
                 className="rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-surface-raised"
               >
                 Decklist (.txt)
+              </button>
+              <button
+                onClick={() => {
+                  if (!printDecklist(deck)) flashNote("Your browser blocked the print window. Allow pop-ups for this site and try again.");
+                }}
+                className="rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-surface-raised"
+              >
+                Print decklist
               </button>
               <button
                 onClick={handleDownloadXml}

@@ -1,5 +1,6 @@
 "use client";
 
+import PasswordInput from "@/components/PasswordInput";
 import { useState, Suspense } from "react";
 import Turnstile from "@/components/Turnstile";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -55,11 +56,13 @@ function LoginForm() {
       <h1 className="font-display text-3xl font-semibold text-foreground">Sign in</h1>
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+          <label htmlFor="login-email" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
             Email
           </label>
           <input
+            id="login-email"
             type="email"
+            autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -67,12 +70,13 @@ function LoginForm() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+          <label htmlFor="login-password" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
             Password
           </label>
-          <input
-            type="password"
+          <PasswordInput
+            id="login-password"
             required
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-gold focus:outline-none"
