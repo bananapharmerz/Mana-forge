@@ -6,7 +6,7 @@ import { SOCIALS } from "@/lib/socials";
 
 // The one link for every social media bio: the site plus all our other pages.
 export const metadata: Metadata = {
-  title: `${SITE.name} links`,
+  title: "Links",
   description: `${SITE.name} on the web and on social media.`,
   alternates: { canonical: "/links" },
 };

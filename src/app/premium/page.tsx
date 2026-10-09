@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
+import PremiumThanks from "@/components/PremiumThanks";
 import {
   createPremiumCheckoutSession,
   createBillingPortalSession,
@@ -83,6 +84,7 @@ export default function PremiumPage() {
         description={`Unlimited decks, no ads, instant games, and tools that save you money on cards. Try it free for ${TRIAL_DAYS} days, then ${planPrice("month")} a month or ${planPrice("year")} a year.`}
         width="max-w-5xl"
       />
+      <PremiumThanks trialDays={TRIAL_DAYS} />
       <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section aria-label="Free and Premium compared" className="min-w-0">
           <h2 className="font-display text-2xl font-semibold text-foreground">Free vs Premium</h2>
