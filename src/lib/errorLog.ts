@@ -9,8 +9,12 @@ import { db } from "@/lib/db";
 let windowStart = 0;
 let written = 0;
 
+// A visitor or bot leaving before the page finished sending: not a fault in the site.
+const CLIENT_GONE = /destination stream closed early|premature close|request aborted|ECONNRESET|EPIPE|socket hang up/i;
+
 export async function logServerError(err: unknown, request: { path: string; method: string }, routeType?: string) {
   try {
+    if (CLIENT_GONE.test(err instanceof Error ? `${err.message} ${(err as { code?: string }).code ?? ""}` : String(err))) return;
     const now = Date.now();
     if (now - windowStart > 60_000) {
       windowStart = now;

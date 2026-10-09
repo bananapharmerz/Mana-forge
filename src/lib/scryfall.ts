@@ -240,12 +240,26 @@ export async function getCommanderSets(): Promise<ScryfallSet[]> {
     .sort((a, b) => (b.released_at ?? "").localeCompare(a.released_at ?? ""));
 }
 
+// Cards we've already fetched, so a busy Scryfall can still be answered (at most 3000 kept).
+const lastGood = ((globalThis as unknown as { __mfLastGood?: Map<string, ScryfallCard> }).__mfLastGood ??= new Map());
+
 export async function getCardByName(name: string): Promise<ScryfallCard | null> {
+  const key = name.toLowerCase();
+  // Every legal commander is already in memory (src/lib/commanderIndex.ts, refreshed daily).
+  const indexed = (globalThis as unknown as { __mfCommanderCards?: Map<string, ScryfallCard> }).__mfCommanderCards?.get(key);
+  if (indexed) return indexed;
   const res = await sfetch(
     `${SCRYFALL_API}/cards/named?exact=${encodeURIComponent(name)}`,
     { headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" }, next: { revalidate: 3600 } }
   );
-  if (res.ok) return res.json();
+  if (res.ok) {
+    const card = (await res.json()) as ScryfallCard;
+    if (lastGood.size >= 3000) lastGood.delete(lastGood.keys().next().value!);
+    lastGood.set(key, card);
+    return card;
+  }
+  const stale = lastGood.get(key);
+  if (stale && res.status !== 404) return stale;
   // Only a real "no such card" means null. Scryfall being busy is an error, so the page answers
   // "try again" instead of a cached "not found".
   if (res.status === 404 || res.status === 400) return null;
