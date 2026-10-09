@@ -6,6 +6,8 @@ import type { Deck } from "./deckTypes";
 const KEY = "mf-guest-deck";
 export { GUEST_DECK_ID } from "./guestDeckId";
 
+export const GUEST_DECK_EVENT = "mf-guest-deck";
+
 export function loadGuestDeck(): Deck | null {
   try {
     const raw = window.localStorage.getItem(KEY);
@@ -20,6 +22,7 @@ export function loadGuestDeck(): Deck | null {
 export function saveGuestDeck(deck: Deck) {
   try {
     window.localStorage.setItem(KEY, JSON.stringify({ ...deck, updatedAt: new Date().toISOString() }));
+    window.dispatchEvent(new CustomEvent(GUEST_DECK_EVENT));
   } catch {
     // Storage full or blocked: the deck still works for this visit.
   }

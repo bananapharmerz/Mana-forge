@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { signup } from "@/app/actions/auth";
+import { importGuestDeck } from "@/app/actions/decks";
+import { clearGuestDeck, loadGuestDeck } from "@/lib/guestDeck";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -33,6 +35,17 @@ export default function SignupPage() {
     if (res?.error) {
       setError("Account created, but sign-in failed. Try signing in manually.");
       return;
+    }
+    // A deck they built as a guest moves into the new account and opens straight away.
+    const draft = loadGuestDeck();
+    if (draft) {
+      const r = await importGuestDeck(draft).catch(() => null);
+      if (r?.ok) {
+        clearGuestDeck();
+        router.push(`/deck-builder/${r.id}`);
+        router.refresh();
+        return;
+      }
     }
     // Back to where they came from (e.g. the Premium page), but only ever a page on this site.
     const wanted = new URLSearchParams(window.location.search).get("callbackUrl") || "";

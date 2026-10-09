@@ -50,7 +50,7 @@ export default function GuestSaveBanner({ compact = false }: { compact?: boolean
         share it and play with it.
       </p>
       <Link
-        href="/signup"
+        href="/signup?callbackUrl=/deck-builder"
         className="rounded-md bg-gold px-3 py-2 text-center font-semibold text-black hover:bg-gold-bright"
       >
         Sign up free to save

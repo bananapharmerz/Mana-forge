@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { saveDeckCopy } from "@/app/actions/decks";
 
-export default function SaveDeckButton({ deckId }: { deckId: string }) {
+export default function SaveDeckButton({ deckId, signedIn = true }: { deckId: string; signedIn?: boolean }) {
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -17,6 +18,18 @@ export default function SaveDeckButton({ deckId }: { deckId: string }) {
       return;
     }
     setState("saved");
+  }
+
+  // Signed out: sign up, then the deck page copies it in for them (?mine=1).
+  if (!signedIn) {
+    return (
+      <Link
+        href={`/signup?callbackUrl=${encodeURIComponent(`/decks/view/${deckId}?mine=1`)}`}
+        className="block w-full rounded-md border border-border px-2 py-1 text-center text-xs text-muted hover:border-gold hover:text-foreground"
+      >
+        Save to My Decks
+      </Link>
+    );
   }
 
   return (

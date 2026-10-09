@@ -68,7 +68,7 @@ export default function SiteDeckCard({
           </Link>
         ) : (
           <div className="flex-1">
-            <SaveDeckButton deckId={deck.id} />
+            <SaveDeckButton deckId={deck.id} signedIn={signedIn ?? false} />
           </div>
         )}
         <FavoriteButton kind="site" deckId={deck.id} initialFavorited={isFavorited ?? false} signedIn={signedIn ?? false} />

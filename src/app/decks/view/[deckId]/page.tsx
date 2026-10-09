@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { rowToDeck } from "@/lib/deckSerialize";
 import { CATEGORY_ORDER, deckSize, manaCurve } from "@/lib/deckTypes";
 import CardNameZoom from "@/components/CardNameZoom";
-import SaveDeckButton from "@/components/SaveDeckButton";
+import MakeItMineButton from "@/components/MakeItMineButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import ReportDeckButton from "@/components/ReportDeckButton";
 import BuyDeckPanel from "@/components/BuyDeckPanel";
@@ -96,6 +96,12 @@ export default async function ViewDeckPage({
             . Make it yours and tune it to your table.
           </p>
         )}
+        {!isOwnDeck && (
+          <div className="mt-5 max-w-xs">
+            <MakeItMineButton deckId={row.id} signedIn={Boolean(userId)} large />
+            <p className="mt-1.5 text-xs text-[#a99c7c]">Copy all {size} cards into your own deck, then tweak it.</p>
+          </div>
+        )}
       </div>
     </ArtBand>
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -179,7 +185,7 @@ export default async function ViewDeckPage({
               </Link>
             ) : (
               <div className="flex-1">
-                <SaveDeckButton deckId={row.id} />
+                <MakeItMineButton deckId={row.id} signedIn={Boolean(userId)} />
               </div>
             )}
             <FavoriteButton
