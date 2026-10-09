@@ -83,3 +83,26 @@ export async function deleteMyAccount(password: unknown): Promise<{ ok: true } |
   }).catch(() => null);
   return { ok: true };
 }
+
+/** Sends a fresh "confirm your email" link (at most 3 an hour). */
+export async function resendVerification(): Promise<{ ok: boolean; message: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { ok: false, message: "Sign in first." };
+  if (!hit(`verify-resend:${session.user.id}`, 3, 60 * 60 * 1000)) return { ok: false, message: TOO_MANY };
+  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { email: true, emailVerifiedAt: true } });
+  if (!user) return { ok: false, message: "Account not found." };
+  if (user.emailVerifiedAt) return { ok: true, message: "Your email is already confirmed." };
+  const { verifyLink } = await import("@/lib/emailVerify");
+  const link = await verifyLink(session.user.id);
+  await sendEmail({
+    to: user.email,
+    subject: `Confirm your email for ${SITE.name}`,
+    text: `Please confirm this is your email address for ${SITE.name}:\n${link}\n\nThe link works for 7 days. If you didn't ask for this, you can ignore it.`,
+    html: emailHtml({
+      heading: "Confirm your email",
+      body: `<p>Tap the button to confirm this is your email address for ${SITE.name}. The link works for 7 days.</p><p style="color:#7a7488;font-size:13px">If you didn't ask for this, you can ignore it.</p>`,
+      button: { label: "Confirm my email", url: link },
+    }),
+  });
+  return { ok: true, message: `Sent. Check ${user.email} (and the spam folder).` };
+}

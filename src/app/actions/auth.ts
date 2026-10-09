@@ -6,6 +6,7 @@ import { clientIp, hit, TOO_MANY } from "@/lib/rateLimit";
 import { passwordProblem } from "@/lib/passwordRules";
 import { emailHtml, esc, sendEmail } from "@/lib/email";
 import { SITE } from "@/lib/site";
+import { verifyLink } from "@/lib/emailVerify";
 
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/;
 
@@ -37,7 +38,7 @@ export async function signup(
 
   const passwordHash = await bcrypt.hash(pass, 12);
 
-  await db.user.create({
+  const created = await db.user.create({
     data: {
       email: cleanEmail,
       passwordHash,
@@ -45,15 +46,17 @@ export async function signup(
     },
   });
 
-  // A short welcome email (not awaited: sign-up never waits on the mail service).
+  // A short welcome email with the "confirm your email" link (sending isn't awaited: sign-up never
+  // waits on the mail service).
+  const confirm = await verifyLink(created.id).catch(() => null);
   void sendEmail({
     to: cleanEmail,
     subject: `Welcome to ${SITE.name}`,
-    text: `Welcome${cleanName ? `, ${cleanName}` : ""}!\n\nYour ${SITE.name} account is ready. Build a deck, browse commanders or start a game with friends:\n${SITE.url}/deck-builder\n\nIf you didn't create this account, you can ignore this email.`,
+    text: `Welcome${cleanName ? `, ${cleanName}` : ""}!\n\nYour ${SITE.name} account is ready.${confirm ? ` Please confirm this is your email address:\n${confirm}\n` : ""}\nBuild a deck, browse commanders or start a game with friends:\n${SITE.url}/deck-builder\n\nIf you didn't create this account, you can ignore this email.`,
     html: emailHtml({
       heading: `Welcome${cleanName ? `, ${esc(cleanName)}` : ""}!`,
-      body: `<p>Your ${esc(SITE.name)} account is ready. Build a Commander deck, browse every commander, or start a game with friends.</p><p style="color:#7a7488;font-size:13px">If you didn't create this account, you can ignore this email.</p>`,
-      button: { label: "Start building", url: `${SITE.url}/deck-builder` },
+      body: `<p>Your ${esc(SITE.name)} account is ready. ${confirm ? "Tap the button to confirm this is your email address, then build a Commander deck, browse every commander, or start a game with friends." : "Build a Commander deck, browse every commander, or start a game with friends."}</p><p style="color:#7a7488;font-size:13px">If you didn't create this account, you can ignore this email.</p>`,
+      button: confirm ? { label: "Confirm my email", url: confirm } : { label: "Start building", url: `${SITE.url}/deck-builder` },
     }),
   });
 

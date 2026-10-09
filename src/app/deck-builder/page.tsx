@@ -4,6 +4,7 @@ import { deckLimitFor } from "@/lib/tier";
 import { rowToDeck } from "@/lib/deckSerialize";
 import DeckBuilderIndexClient from "./DeckBuilderIndexClient";
 import StarterDecks from "@/components/StarterDecks";
+import EmailConfirmNote from "@/components/EmailConfirmNote";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "My decks", robots: { index: false, follow: false } };
@@ -23,11 +24,18 @@ export default async function DeckBuilderIndexPage() {
   const limit = deckLimitFor(user?.tier ?? "free");
 
   return (
+    <>
+    {!user?.emailVerifiedAt && user?.email && (
+      <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-6">
+        <EmailConfirmNote email={user.email} />
+      </div>
+    )}
     <DeckBuilderIndexClient
       initialDecks={decks}
       deckLimit={Number.isFinite(limit) ? limit : null}
       tier={user?.tier ?? "free"}
       starter={decks.length === 0 ? <StarterDecks signedIn title="Or copy a ready-made deck" /> : undefined}
     />
+    </>
   );
 }

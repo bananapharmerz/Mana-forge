@@ -40,7 +40,7 @@ export async function runPriceAlerts(): Promise<{ emailed: number }> {
 
   if (!emailEnabled()) return { emailed: 0 };
   const users = await db.user.findMany({
-    where: { tier: "premium", priceAlerts: true },
+    where: { tier: "premium", priceAlerts: true, emailVerifiedAt: { not: null } }, // only confirmed addresses get mail
     select: { id: true, email: true, priceDigestAt: true },
   });
   let emailed = 0;

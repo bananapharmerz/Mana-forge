@@ -21,6 +21,7 @@ model User {
   sessionVersion       Int      @default(0) // bumped on password reset: signs the account out everywhere
   priceAlerts          Boolean  @default(true) // Premium: email when watched cards hit their target or deck cards move a lot
   priceDigestAt        DateTime? // last deck price-move email, so it goes out at most once a week
+  emailVerifiedAt      DateTime? // set when they click the link in the welcome email
   createdAt            DateTime @default(now())
   decks                Deck[]
   orders               Order[]
@@ -248,6 +249,18 @@ model ContactMessage {
 }
 
 /// One-time password reset links. Only a hash of the token is stored; the link expires after an hour.
+// "Confirm your email" links: like password resets, only a hash of the token is stored.
+model EmailVerification {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
 model PasswordReset {
   id        String    @id @default(cuid())
   userId    String

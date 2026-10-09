@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import EmailConfirmNote from "@/components/EmailConfirmNote";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
@@ -11,7 +12,7 @@ export const metadata: Metadata = { title: "Your account", robots: { index: fals
 export default async function AccountPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login?callbackUrl=/account");
-  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { email: true, name: true, tier: true, createdAt: true, stripeSubscriptionId: true } });
+  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { email: true, name: true, tier: true, createdAt: true, stripeSubscriptionId: true, emailVerifiedAt: true } });
   if (!user) redirect("/login?callbackUrl=/account");
   const decks = await db.deck.count({ where: { ownerId: session.user.id } });
 
@@ -19,6 +20,7 @@ export default async function AccountPage() {
     <>
       <PageHeader title="Your account" description={user.email} width="max-w-3xl" />
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+        {!user.emailVerifiedAt && <EmailConfirmNote email={user.email} />}
         <dl className="grid grid-cols-[auto_1fr] gap-x-8 gap-y-3 text-sm">
           <dt className="text-muted">Name</dt>
           <dd className="text-foreground">{user.name || "Not set"}</dd>
