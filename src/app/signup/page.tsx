@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [ofAge, setOfAge] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +20,7 @@ export default function SignupPage() {
     setLoading(true);
     setError(null);
 
-    const result = await signup(email, password, name);
+    const result = await signup(email, password, name, ofAge);
     if (!result.ok) {
       setError(result.error);
       setLoading(false);
@@ -41,7 +42,7 @@ export default function SignupPage() {
     <div className="mx-auto max-w-sm px-4 py-16 sm:px-6">
       <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
       <p className="mt-1 text-sm text-muted">
-        Free accounts can save up to 10 decks. Premium (unlimited decks) is coming soon.
+        Free accounts save up to 10 decks and can play online. Premium adds unlimited decks, no ads and price alerts.
       </p>
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <div>
@@ -80,6 +81,16 @@ export default function SignupPage() {
           />
           <p className="mt-1 text-xs text-muted">At least 8 characters, with a letter and a number. Passwords found in data breaches are refused.</p>
         </div>
+        <label className="flex items-start gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            required
+            checked={ofAge}
+            onChange={(e) => setOfAge(e.target.checked)}
+            className="mt-1 accent-[var(--color-gold)]"
+          />
+          <span>I&apos;m 16 or older.</span>
+        </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"

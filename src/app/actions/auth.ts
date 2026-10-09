@@ -12,8 +12,11 @@ const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/;
 export async function signup(
   email: unknown,
   password: unknown,
-  name?: unknown
+  name?: unknown,
+  ofAge?: unknown
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  // Accounts are for people 16 and over (GDPR consent age in Germany; see the Terms).
+  if (ofAge !== true) return { ok: false, error: "You need to be 16 or older to create an account." };
   const cleanEmail = String(email ?? "").trim().toLowerCase();
   const pass = String(password ?? "");
   const cleanName = String(name ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
