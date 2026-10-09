@@ -276,9 +276,9 @@ export async function cardPriceDetail(scryfallId: string) {
 }
 
 /**
- * A deck's total value per day for up to a year: each card's price that day (or its last known
- * price) times how many copies. Starts on the first day at least 90% of the cards had a price,
- * so the line doesn't jump while prices were still being collected.
+ * A deck's total value per day for up to a year: each card's price that day times its copies.
+ * A card with no price on a day uses its nearest known price (the last before, else the first
+ * after), and a card with no history at all uses today's price, so every day counts the whole deck.
  */
 export async function deckValueHistory(entries: { id: string; qty: number }[], days = 366) {
   const qty = new Map<string, number>();
@@ -292,32 +292,41 @@ export async function deckValueHistory(entries: { id: string; qty: number }[], d
     ),
     inChunks(ids, (part) => db.cardPrice.findMany({ where: { scryfallId: { in: part } }, select: { scryfallId: true, usd: true, usdFoil: true } })),
   ]);
-  const totalQty = [...qty.values()].reduce((a, b) => a + b, 0);
-  const byDay = new Map<string, { id: string; v: number }[]>();
+  const series = new Map<string, { day: string; v: number }[]>();
+  const allDays = new Set<string>();
   for (const r of rows) {
     const v = r.usd ?? r.usdFoil;
     if (v === null) continue;
-    (byDay.get(r.day) ?? byDay.set(r.day, []).get(r.day)!).push({ id: r.scryfallId, v });
+    (series.get(r.scryfallId) ?? series.set(r.scryfallId, []).get(r.scryfallId)!).push({ day: r.day, v });
+    allDays.add(r.day);
   }
-  const last = new Map<string, number>();
-  const history: { day: string; usd: number | null; usdFoil: number | null }[] = [];
-  for (const day of [...byDay.keys()].sort()) {
-    for (const { id, v } of byDay.get(day)!) last.set(id, v);
-    let covered = 0;
-    let sum = 0;
-    for (const [id, v] of last) {
-      covered += qty.get(id) ?? 0;
-      sum += v * (qty.get(id) ?? 0);
-    }
-    if (history.length || covered >= totalQty * 0.9) history.push({ day, usd: Math.round(sum * 100) / 100, usdFoil: null });
-  }
+  const nowPrice = new Map(now.map((p) => [p.scryfallId, p.usd ?? p.usdFoil ?? null]));
   let current = 0;
-  let any = false;
-  for (const p of now) {
-    const v = p.usd ?? p.usdFoil ?? last.get(p.scryfallId) ?? null;
+  let priced = 0;
+  for (const id of ids) {
+    const v = nowPrice.get(id) ?? series.get(id)?.at(-1)?.v ?? null;
     if (v === null) continue;
-    any = true;
-    current += v * (qty.get(p.scryfallId) ?? 0);
+    priced++;
+    current += v * qty.get(id)!;
   }
-  return { history, current: any ? Math.round(current * 100) / 100 : null };
+  if (!priced) return { history: [], current: null };
+  // Walk the days with a cursor per card (the series are sorted by day).
+  const cursor = new Map<string, number>();
+  const history: { day: string; usd: number | null; usdFoil: number | null }[] = [];
+  for (const day of [...allDays].sort()) {
+    let sum = 0;
+    for (const id of ids) {
+      const s = series.get(id);
+      let v: number | null;
+      if (s?.length) {
+        let i = cursor.get(id) ?? -1;
+        while (i + 1 < s.length && s[i + 1].day <= day) i++;
+        cursor.set(id, i);
+        v = i >= 0 ? s[i].v : s[0].v;
+      } else v = nowPrice.get(id) ?? null;
+      if (v !== null) sum += v * qty.get(id)!;
+    }
+    history.push({ day, usd: Math.round(sum * 100) / 100, usdFoil: null });
+  }
+  return { history, current: Math.round(current * 100) / 100 };
 }
