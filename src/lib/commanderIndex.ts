@@ -3,6 +3,8 @@
 // page, so the list takes ~20 requests: it's built in the background, kept in memory for a day,
 // and the sitemap simply leaves these out until the first build has finished.
 
+import { readFileSync, statSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { sfetch } from "@/lib/scryfall";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -12,6 +14,27 @@ const state = (g.__mfCommanders ??= { names: [], builtAt: 0, building: null });
 // The full card data from the same pages, by lower-case name. getCardByName (src/lib/scryfall.ts)
 // answers commander pages from here, so crawling thousands of them doesn't hammer Scryfall.
 const cards = globalThis as unknown as { __mfCommanderCards?: Map<string, unknown> };
+
+// Saved to /data/commanders.json too, so a restart or deploy starts with the list instead of
+// asking Scryfall for every commander page in the first minutes.
+const file = () => path.join(path.dirname(process.env.DATABASE_PATH || path.join(process.cwd(), "dev.db")), "commanders.json");
+if (!state.builtAt) {
+  try {
+    const at = statSync(file()).mtimeMs;
+    if (Date.now() - at < 3 * DAY) {
+      const list = JSON.parse(readFileSync(file(), "utf8")) as { name?: string }[];
+      const byName = new Map<string, unknown>();
+      for (const c of list) if (typeof c.name === "string") byName.set(c.name.toLowerCase(), c);
+      if (byName.size > 100) {
+        state.names = list.map((c) => c.name as string);
+        state.builtAt = at;
+        cards.__mfCommanderCards = byName;
+      }
+    }
+  } catch {
+    /* no saved list yet */
+  }
+}
 
 async function build() {
   const out: string[] = [];
@@ -34,6 +57,9 @@ async function build() {
     state.names = out;
     state.builtAt = Date.now();
     cards.__mfCommanderCards = byName;
+    try {
+      writeFileSync(file(), JSON.stringify([...byName.values()]));
+    } catch {}
   }
 }
 
