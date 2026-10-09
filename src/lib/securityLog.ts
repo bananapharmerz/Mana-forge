@@ -5,7 +5,7 @@
 
 import { randomUUID } from "node:crypto";
 
-export type SecurityKind = "login_locked" | "rate_limited" | "breached_password" | "seat_rejected" | "webhook_bad_signature" | "payment_mismatch";
+export type SecurityKind = "login_locked" | "rate_limited" | "breached_password" | "seat_rejected" | "webhook_bad_signature" | "payment_mismatch" | "double_subscription";
 
 const g = globalThis as unknown as { __mfSec?: Map<string, number>; __mfSecTimer?: ReturnType<typeof setInterval> };
 const pending: Map<string, number> = g.__mfSec ?? (g.__mfSec = new Map<string, number>());

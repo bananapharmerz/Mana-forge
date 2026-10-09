@@ -73,29 +73,32 @@ export async function POST(req: Request) {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = session.metadata?.userId;
     if (userId && session.mode === "subscription") {
-      await db.user.update({
-        where: { id: userId },
-        data: {
-          tier: "premium",
-          stripeSubscriptionId:
-            typeof session.subscription === "string" ? session.subscription : session.subscription?.id,
-        },
-      });
+      const subId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+      const user = await db.user.findUnique({ where: { id: userId }, select: { tier: true, stripeSubscriptionId: true } });
+      if (user?.tier === "premium" && user.stripeSubscriptionId && subId && user.stripeSubscriptionId !== subId) {
+        // A second Premium checkout went through (two tabs, say). Keep the first; flag the extra one for a refund.
+        securityEvent("double_subscription", "stripe");
+        console.error(`[stripe] user ${userId} paid for a second subscription ${subId} (keeping ${user.stripeSubscriptionId}); cancel and refund it in Stripe.`);
+      } else if (user) {
+        await db.user.update({ where: { id: userId }, data: { tier: "premium", stripeSubscriptionId: subId } });
+      }
     }
   }
 
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
     const userId = subscription.metadata?.userId;
-    if (userId) {
+    const user = userId ? await db.user.findUnique({ where: { id: userId }, select: { stripeSubscriptionId: true } }) : null;
+    if (userId && user) {
       const active = subscription.status === "active" || subscription.status === "trialing";
-      await db.user.update({
-        where: { id: userId },
-        data: {
-          tier: active ? "premium" : "free",
-          stripeSubscriptionId: active ? subscription.id : null,
-        },
-      });
+      const current = user.stripeSubscriptionId;
+      // Only the member's current subscription decides their tier, so an old or duplicate one
+      // ending (or arriving late) can't switch off Premium they're still paying for.
+      if (active && (!current || current === subscription.id)) {
+        await db.user.update({ where: { id: userId }, data: { tier: "premium", stripeSubscriptionId: subscription.id } });
+      } else if (!active && (!current || current === subscription.id)) {
+        await db.user.update({ where: { id: userId }, data: { tier: "free", stripeSubscriptionId: null } });
+      }
     }
   }
 

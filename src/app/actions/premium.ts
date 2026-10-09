@@ -100,6 +100,19 @@ export async function createPremiumCheckoutSession(startNow?: unknown, planChoic
     await db.user.update({ where: { id: user.id }, data: { stripeCustomerId: customerId } });
   }
 
+  // One payable checkout at a time: refuse if a subscription is already running (the webhook may
+  // not have arrived yet), and close any checkout page left open in another tab.
+  try {
+    const running = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 10 });
+    if (running.data.some((s) => s.status === "active" || s.status === "trialing" || s.status === "past_due")) {
+      return { ok: false, error: "Your Premium is already set up. Give it a minute, then refresh this page.", configured: true };
+    }
+    const open = await stripe.checkout.sessions.list({ customer: customerId, status: "open", limit: 10 });
+    await Promise.all(open.data.filter((s) => s.mode === "subscription").map((s) => stripe.checkout.sessions.expire(s.id).catch(() => null)));
+  } catch {
+    // Stripe unreachable for these checks: carry on; the webhook still guards against doubles.
+  }
+
   let checkoutSession: Stripe.Checkout.Session;
   try {
   checkoutSession = await stripe.checkout.sessions.create({
