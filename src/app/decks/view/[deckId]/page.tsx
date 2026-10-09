@@ -1,3 +1,4 @@
+import SupporterBadge from "@/components/SupporterBadge";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -42,7 +43,7 @@ export default async function ViewDeckPage({
   const [row, session] = await Promise.all([
     db.deck.findUnique({
       where: { id: deckId },
-      include: { owner: { select: { name: true, email: true } } },
+      include: { owner: { select: { name: true, email: true, tier: true } } },
     }),
     auth(),
   ]);
@@ -172,7 +173,7 @@ export default async function ViewDeckPage({
 
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">{deck.name}</h1>
-          <p className="mt-1 text-sm text-muted">by {author}</p>
+          <p className="mt-1 text-sm text-muted">by {author}<SupporterBadge tier={row.owner.tier} /></p>
           {row.owner.email === HOUSE_EMAIL && (
             <p className="mt-1 text-xs text-muted">
               Starter deck by {author}, built from community play data on{" "}

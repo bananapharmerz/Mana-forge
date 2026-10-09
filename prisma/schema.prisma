@@ -19,6 +19,8 @@ model User {
   stripeCustomerId     String?
   stripeSubscriptionId String?
   sessionVersion       Int      @default(0) // bumped on password reset: signs the account out everywhere
+  priceAlerts          Boolean  @default(true) // Premium: email when watched cards hit their target or deck cards move a lot
+  priceDigestAt        DateTime? // last deck price-move email, so it goes out at most once a week
   createdAt            DateTime @default(now())
   decks                Deck[]
   orders               Order[]
@@ -168,6 +170,7 @@ model PriceWatch {
   scryfallId String
   name       String
   targetUsd  Float? // tell me when it drops to this
+  alertedAt  DateTime? // when we last emailed that it hit the target; cleared once it's back above
   createdAt  DateTime @default(now())
 
   @@unique([userId, scryfallId])

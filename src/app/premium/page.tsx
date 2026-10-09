@@ -7,6 +7,8 @@ import {
   createPremiumCheckoutSession,
   createBillingPortalSession,
   getMyTier,
+  getPriceAlerts,
+  setPriceAlerts,
 } from "@/app/actions/premium";
 import { PREMIUM_PLANS, PREMIUM_VAT_NOTE, planPrice, type PremiumPlan } from "@/lib/tier";
 import { SITE } from "@/lib/site";
@@ -15,6 +17,9 @@ const BENEFITS = [
   { feature: "Saved decks", free: "Up to 10", premium: "Unlimited" },
   { feature: "Ads", free: "Shown across the site", premium: "None, anywhere" },
   { feature: "Starting a game", free: "30s wait", premium: "Instant" },
+  { feature: "Price alerts by email", free: "—", premium: "Target prices + weekly deck moves" },
+  { feature: "Budget upgrade ideas", free: "—", premium: "In the deck builder" },
+  { feature: "Supporter badge", free: "—", premium: "On your public decks" },
 ];
 
 export default function PremiumPage() {
@@ -28,8 +33,12 @@ export default function PremiumPage() {
   const [startNow, setStartNow] = useState(false);
   const [plan, setPlan] = useState<PremiumPlan>("year");
 
+  const [alerts, setAlerts] = useState<boolean | null>(null);
+
   useEffect(() => {
-    if (status === "authenticated") getMyTier().then(setTier);
+    if (status !== "authenticated") return;
+    getMyTier().then(setTier);
+    getPriceAlerts().then(setAlerts);
   }, [status]);
 
   async function handleUpgrade() {
@@ -109,6 +118,16 @@ export default function PremiumPage() {
               <p className="mb-4 text-sm font-medium text-gold-bright">
                 You&apos;re on Premium. Thanks for supporting {SITE.name}!
               </p>
+              {alerts !== null && (
+                <label className="mb-4 flex items-center justify-center gap-2 text-sm text-muted">
+                  <input
+                    type="checkbox"
+                    checked={alerts}
+                    onChange={async (e) => setAlerts(await setPriceAlerts(e.target.checked))}
+                  />
+                  Email me price alerts (watchlist targets and big weekly moves in my decks)
+                </label>
+              )}
               <button
                 onClick={handleManageBilling}
                 disabled={loading}

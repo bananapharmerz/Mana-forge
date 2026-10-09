@@ -16,7 +16,7 @@ const PAUSE_MS = 120;
 // SQLite caps how many values one query may carry (Prisma sends each id as one), and with hundreds
 // of decks the tracked cards run into the tens of thousands, so long id lists go in batches.
 const CHUNK = 500;
-async function inChunks<T>(ids: string[], run: (part: string[]) => Promise<T[]>): Promise<T[]> {
+export async function inChunks<T>(ids: string[], run: (part: string[]) => Promise<T[]>): Promise<T[]> {
   const out: T[] = [];
   for (let i = 0; i < ids.length; i += CHUNK) out.push(...(await run(ids.slice(i, i + CHUNK))));
   return out;
@@ -166,6 +166,8 @@ export function startPriceTracker() {
   const tick = () =>
     void refreshPrices()
       .then((r) => r.checked && console.log(`[prices] refreshed ${r.updated}/${r.checked} cards${r.failedBatches ? `, ${r.failedBatches} batches failed` : ""}`))
+      .then(() => import("./priceAlerts").then((m) => m.runPriceAlerts()))
+      .then((a) => a.emailed && console.log(`[prices] sent ${a.emailed} price alert emails`))
       .catch((e) => console.error("[prices] refresh failed:", e));
   g.__priceTimer = setInterval(tick, 3600000);
   setTimeout(tick, 30000);

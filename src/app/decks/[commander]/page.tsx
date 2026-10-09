@@ -1,3 +1,4 @@
+import SupporterBadge from "@/components/SupporterBadge";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -89,7 +90,7 @@ export default async function CommanderDecksPage({
   const [siteDecks, edhrec, edhrecDecks] = await Promise.all([
     db.deck.findMany({
       where: { commanderName: card.name, isPublic: true },
-      include: { owner: { select: { name: true } } },
+      include: { owner: { select: { name: true, tier: true } } },
       orderBy: { updatedAt: "desc" },
     }),
     getEdhrecCommanderData(card.name),
@@ -316,7 +317,7 @@ export default async function CommanderDecksPage({
                 >
                   <h3 className="font-semibold text-foreground">{deck.name}</h3>
                   <p className="text-xs text-muted">
-                    by {author} · {size}/100 cards
+                    by {author}<SupporterBadge tier={deck.owner.tier} /> · {size}/100 cards
                   </p>
                 </Link>
               );

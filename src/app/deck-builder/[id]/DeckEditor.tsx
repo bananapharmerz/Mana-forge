@@ -33,6 +33,7 @@ import {
 import { hasSecondCommanderMechanic } from "@/lib/partnerMechanics";
 import { saveGuestDeck } from "@/lib/guestDeck";
 import GuestSaveBanner from "@/components/GuestSaveBanner";
+import BudgetUpgradesPanel from "@/components/BudgetUpgradesPanel";
 import {
   CATEGORY_ORDER,
   defaultCategory,
@@ -446,6 +447,8 @@ export default function DeckEditor({ initialDeck, guest = false }: { initialDeck
           </div>
 
           <DeckValuePanel value={value} />
+
+          <BudgetUpgradesPanel deckId={deck.id} guest={guest} onAdd={addCard} />
 
           <div className="mt-4">
             <CardBackPicker value={deck.cardBackUrl} onChange={changeCardBack} />

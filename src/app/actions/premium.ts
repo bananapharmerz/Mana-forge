@@ -15,6 +15,21 @@ export async function getMyTier(): Promise<string | null> {
   return user?.tier ?? null;
 }
 
+// Premium price alerts (watchlist targets + weekly deck moves) can be switched off.
+export async function getPriceAlerts(): Promise<boolean | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { priceAlerts: true } });
+  return user?.priceAlerts ?? null;
+}
+
+export async function setPriceAlerts(on: unknown): Promise<boolean | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const user = await db.user.update({ where: { id: session.user.id }, data: { priceAlerts: on === true }, select: { priceAlerts: true } });
+  return user.priceAlerts;
+}
+
 // EU consumers have a 14-day right to withdraw from online purchases. For a subscription that
 // starts straight away, they must expressly ask for it to start now and confirm they know the
 // withdrawal right ends once it does — that's the `startNow` checkbox on the Premium page.

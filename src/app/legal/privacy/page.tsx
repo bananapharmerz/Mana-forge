@@ -65,8 +65,10 @@ export default function PrivacyPage() {
       <h2>Cookies and browser storage</h2>
       <p>
         The site itself only uses what it needs to work: a sign-in cookie (secure, HttpOnly, lasts up
-        to 14 days) and your browser&apos;s own storage for your cart, proxy project, intro animation
-        and your seat in a play room. There are no analytics.
+        to 14 days) and your browser&apos;s own storage for your cart, proxy project, intro animation,
+        your seat in a play room, and a deck you build before creating an account (it stays in your
+        browser until you save it to an account or clear it). The visitor statistics described on this
+        page use no cookies or browser storage.
       </p>
       {ADS_ENABLED ? (
         <p>
