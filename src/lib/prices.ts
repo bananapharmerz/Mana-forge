@@ -12,6 +12,16 @@ const STALE_MS = 20 * 3600000;
 const BATCH = 75;
 const PAUSE_MS = 120;
 
+
+// SQLite caps how many values one query may carry (Prisma sends each id as one), and with hundreds
+// of decks the tracked cards run into the tens of thousands, so long id lists go in batches.
+const CHUNK = 500;
+async function inChunks<T>(ids: string[], run: (part: string[]) => Promise<T[]>): Promise<T[]> {
+  const out: T[] = [];
+  for (let i = 0; i < ids.length; i += CHUNK) out.push(...(await run(ids.slice(i, i + CHUNK))));
+  return out;
+}
+
 export const today = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const num = (v: string | null | undefined) => {
@@ -117,10 +127,12 @@ export async function refreshPrices(opts: { ids?: string[]; force?: boolean; lim
     if (!opts.force && wanted.length) {
       const fresh = new Set(
         (
-          await db.cardPrice.findMany({
-            where: { scryfallId: { in: wanted }, updatedAt: { gte: new Date(Date.now() - STALE_MS) } },
-            select: { scryfallId: true },
-          })
+          await inChunks(wanted, (part) =>
+            db.cardPrice.findMany({
+              where: { scryfallId: { in: part }, updatedAt: { gte: new Date(Date.now() - STALE_MS) } },
+              select: { scryfallId: true },
+            })
+          )
         ).map((r) => r.scryfallId)
       );
       todo = wanted.filter((id) => !fresh.has(id));
@@ -173,12 +185,14 @@ export async function livePrices(ids: string[]): Promise<Record<string, LivePric
   if (!unique.length) return {};
   const weekStart = today(Date.now() - 7 * 86400000);
   const [rows, history] = await Promise.all([
-    db.cardPrice.findMany({ where: { scryfallId: { in: unique } } }),
-    db.cardPriceHistory.findMany({
-      where: { scryfallId: { in: unique }, day: { gte: weekStart, lt: today() } },
-      orderBy: { day: "asc" },
-      select: { scryfallId: true, usd: true },
-    }),
+    inChunks(unique, (part) => db.cardPrice.findMany({ where: { scryfallId: { in: part } } })),
+    inChunks(unique, (part) =>
+      db.cardPriceHistory.findMany({
+        where: { scryfallId: { in: part }, day: { gte: weekStart, lt: today() } },
+        orderBy: { day: "asc" },
+        select: { scryfallId: true, usd: true },
+      })
+    ),
   ]);
   const old = new Map<string, number | null>();
   for (const h of history) if (!old.has(h.scryfallId)) old.set(h.scryfallId, h.usd);
@@ -209,7 +223,7 @@ export async function weeklyMovers(limit = 8): Promise<{ up: Mover[]; down: Move
   const old = new Map<string, number>();
   for (const h of history) if (!old.has(h.scryfallId) && h.usd !== null) old.set(h.scryfallId, h.usd);
   if (!old.size) return { up: [], down: [] };
-  const now = await db.cardPrice.findMany({ where: { scryfallId: { in: [...old.keys()] }, usd: { not: null } } });
+  const now = await inChunks([...old.keys()], (part) => db.cardPrice.findMany({ where: { scryfallId: { in: part }, usd: { not: null } } }));
   const movers: Mover[] = now
     .map((p) => {
       const before = old.get(p.scryfallId)!;
@@ -225,11 +239,13 @@ export async function weeklyMovers(limit = 8): Promise<{ up: Mover[]; down: Move
 
 export async function priceHistory(ids: string[], days = 30): Promise<Record<string, { day: string; usd: number | null }[]>> {
   if (!ids.length) return {};
-  const rows = await db.cardPriceHistory.findMany({
-    where: { scryfallId: { in: ids }, day: { gte: today(Date.now() - days * 86400000) } },
-    orderBy: { day: "asc" },
-    select: { scryfallId: true, day: true, usd: true },
-  });
+  const rows = await inChunks(ids, (part) =>
+    db.cardPriceHistory.findMany({
+      where: { scryfallId: { in: part }, day: { gte: today(Date.now() - days * 86400000) } },
+      orderBy: { day: "asc" },
+      select: { scryfallId: true, day: true, usd: true },
+    })
+  );
   const out: Record<string, { day: string; usd: number | null }[]> = {};
   for (const r of rows) (out[r.scryfallId] ??= []).push({ day: r.day, usd: r.usd });
   return out;
