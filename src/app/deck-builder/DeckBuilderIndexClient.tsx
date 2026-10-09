@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -25,16 +26,44 @@ const STARTER_COMMANDERS = [
   "Talrand, Sky Summoner",
 ];
 
+// The popular-commander picker shown to guests and to new members with no decks yet.
+function StartGrid() {
+  return (
+    <section aria-label="Start from a popular commander">
+            <h2 className="font-display text-2xl font-semibold text-foreground">Start from a popular commander</h2>
+            <p className="mt-1 text-sm text-muted">Pick one to start a deck with it, or use New deck to search any commander.</p>
+            <ul className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
+              {STARTER_COMMANDERS.map((name) => (
+                <li key={name}>
+                  <a href={`/deck-builder?commander=${encodeURIComponent(name)}`} className="group block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image&version=normal`}
+                      alt={name}
+                      loading="lazy"
+                      className="aspect-[5/7] w-full rounded-[4.5%] shadow-sm transition-transform group-hover:-translate-y-1"
+                    />
+                    <span className="mt-2 block text-xs font-medium text-foreground group-hover:text-gold-bright">{name}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+  );
+}
+
 export default function DeckBuilderIndexClient({
   initialDecks,
   deckLimit,
   tier,
   guest = false,
+  starter,
 }: {
   initialDecks: Deck[];
   deckLimit: number | null;
   tier: string;
   guest?: boolean;
+  starter?: React.ReactNode; // "copy a ready-made deck", rendered on the server (new members only)
 }) {
   const router = useRouter();
   const [decks, setDecks] = useState(initialDecks);
@@ -220,31 +249,32 @@ export default function DeckBuilderIndexClient({
 
       {guest ? (
         !draftDeck && (
-          <section aria-label="Start from a popular commander">
-            <h2 className="font-display text-2xl font-semibold text-foreground">Start from a popular commander</h2>
-            <p className="mt-1 text-sm text-muted">Pick one to start a deck with it, or use New deck to search any commander.</p>
-            <ul className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
-              {STARTER_COMMANDERS.map((name) => (
-                <li key={name}>
-                  <a href={`/deck-builder?commander=${encodeURIComponent(name)}`} className="group block">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&format=image&version=normal`}
-                      alt={name}
-                      loading="lazy"
-                      className="aspect-[5/7] w-full rounded-[4.5%] shadow-sm transition-transform group-hover:-translate-y-1"
-                    />
-                    <span className="mt-2 block text-xs font-medium text-foreground group-hover:text-gold-bright">{name}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <StartGrid />
         )
       ) : decks.length === 0 ? (
-        <p className="text-sm text-muted">
-          No decks yet. Click &quot;New Deck&quot; to pick a commander and start building.
-        </p>
+        // A brand-new member: a real starting point instead of an empty page.
+        <section aria-label="Build your first deck" className="space-y-10">
+          <div className="card-frame p-5 sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-bright">Welcome to Mana Forge</p>
+            <h2 className="mt-1 font-display text-2xl font-semibold text-foreground sm:text-3xl">Let&apos;s build your first deck</h2>
+            <p className="mt-1 max-w-2xl text-sm text-muted">
+              Tap a popular commander below to start a deck with it, or search for any commander. While you build, you&apos;ll see the cards other players run with it.
+            </p>
+            <button
+              type="button"
+              data-track="onboarding: search any commander"
+              onClick={() => {
+                setShowNew(true);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="mt-4 rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-gold-bright"
+            >
+              Search any commander
+            </button>
+          </div>
+          <StartGrid />
+          {starter}
+        </section>
       ) : (
         <>
           {error && !showNew && <p className="mb-4 text-sm text-red-600">{error}</p>}

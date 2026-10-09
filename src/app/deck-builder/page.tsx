@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { deckLimitFor } from "@/lib/tier";
 import { rowToDeck } from "@/lib/deckSerialize";
 import DeckBuilderIndexClient from "./DeckBuilderIndexClient";
+import StarterDecks from "@/components/StarterDecks";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "My decks", robots: { index: false, follow: false } };
@@ -26,6 +27,7 @@ export default async function DeckBuilderIndexPage() {
       initialDecks={decks}
       deckLimit={Number.isFinite(limit) ? limit : null}
       tier={user?.tier ?? "free"}
+      starter={decks.length === 0 ? <StarterDecks signedIn title="Or copy a ready-made deck" /> : undefined}
     />
   );
 }
