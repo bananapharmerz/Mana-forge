@@ -118,15 +118,15 @@ export default async function CommanderDecksPage({
       orderBy: { updatedAt: "desc" },
     }),
     getEdhrecCommanderData(card.name),
-    // EDHREC's deck file for a commander can be 10MB+; on a cold start the page doesn't wait for it
+    // EDHREC's deck file for a commander can be 10MB+; on a cold start the page waits at most 0.4s for it
     // (the section appears for the next visitor once it's loaded).
-    getEdhrecPublicDecks(card.name, 24, 1500),
+    getEdhrecPublicDecks(card.name, 24, 400),
   ]);
 
   // Credit links that aren't ready within a second fill in for the next visitor. They load while
   // the card details below are fetched, not before.
   const deckSourcesP = Promise.all(
-    (edhrecDecks ?? []).map(async (d) => [d.urlhash, await getEdhrecDeckSource(d.urlhash, 1000)] as const)
+    (edhrecDecks ?? []).map(async (d) => [d.urlhash, await getEdhrecDeckSource(d.urlhash, 300)] as const)
   );
 
   const typeSections = edhrec ? getTypeSections(edhrec) : [];
