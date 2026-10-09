@@ -47,6 +47,16 @@ export default function PrivacyPage() {
           <b>Reports:</b> if you report a deck, we store the reason you give and the deck it&apos;s about.
         </li>
         <li>
+          <b>Visitor statistics:</b> to see which pages work and where people leave, we count page views,
+          the site that sent you (its domain only), your country (from our network provider), the kind of
+          device, how long you stayed on a page, how far you scrolled and what you clicked. There are no
+          cookies and nothing is stored in your browser. Your IP address is never saved: together with a
+          secret that changes every day it only makes a short code that groups one day&apos;s pages, so you
+          can&apos;t be recognised across days. If your browser sends &quot;Do Not Track&quot; or &quot;Global Privacy
+          Control&quot;, you&apos;re not counted. Kept for 90 days. Legal basis: legitimate interest in improving
+          the site (Art. 6(1)(f) GDPR).
+        </li>
+        <li>
           <b>Contact form:</b> if you write to us, we store your email, your name if you give it, and your
           message, only so we can answer you (Art. 6(1)(b) and (f) GDPR).
         </li>
@@ -88,6 +98,7 @@ export default function PrivacyPage() {
         <li>Orders: as long as tax law requires (usually up to 10 years), then deleted.</li>
         <li>Play rooms: deleted after a few hours of inactivity.</li>
         <li>Contact messages: deleted within 12 months of our last reply.</li>
+        <li>Visitor statistics: 90 days.</li>
         <li>Backups: kept for 14 days.</li>
       </ul>
 

@@ -10,6 +10,7 @@ import { CardSelectionProvider } from "@/components/CardSelectionContext";
 import CardSelectionTray from "@/components/CardSelectionTray";
 import { display } from "./fonts";
 import ForgeIntro, { INTRO_SCRIPT } from "@/components/fx/ForgeIntro";
+import SiteTracker from "@/components/SiteTracker";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <main className="flex-1">{children}</main>
                 <Footer />
                 <CardSelectionTray />
+                <SiteTracker />
               </CardSelectionProvider>
             </ProxyProjectProvider>
           </CartProvider>

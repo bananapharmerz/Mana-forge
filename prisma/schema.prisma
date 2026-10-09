@@ -255,3 +255,23 @@ model PasswordReset {
 
   @@index([userId])
 }
+
+/// Anonymous visitor statistics (no cookies, no IP addresses). `visitor` is a hash of a daily-changing
+/// secret + IP + browser, so the same person can't be recognised from one day to the next.
+model Hit {
+  id        String   @id @default(cuid())
+  at        DateTime @default(now())
+  visitor   String // daily hash
+  kind      String // "view" | "leave" | "click"
+  path      String
+  ref       String? // external site that sent them (domain only)
+  source    String? // utm_source
+  country   String? // from Cloudflare (two letters)
+  device    String? // "mobile" | "tablet" | "desktop"
+  ms        Int? // time on the page (leave)
+  scroll    Int? // furthest scroll, percent (leave)
+  target    String? // what was clicked (click)
+
+  @@index([at])
+  @@index([path, at])
+}
