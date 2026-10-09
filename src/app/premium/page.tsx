@@ -20,6 +20,7 @@ const BENEFITS = [
   { feature: "Ads", free: "Shown across the site", premium: "None, anywhere" },
   { feature: "Starting a game", free: "30s wait", premium: "Instant" },
   { feature: "Price alerts by email", free: "—", premium: "Target prices + weekly deck moves" },
+  { feature: "Deck value graph", free: "—", premium: "Week, month and year in the builder" },
   { feature: "Budget upgrade ideas", free: "—", premium: "In the deck builder" },
   { feature: "Supporter badge", free: "—", premium: "On your public decks" },
 ];
