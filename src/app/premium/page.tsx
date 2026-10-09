@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
@@ -13,7 +13,7 @@ import {
   getTrialOffer,
   setPriceAlerts,
 } from "@/app/actions/premium";
-import { PREMIUM_PLANS, PREMIUM_VAT_NOTE, TRIAL_DAYS, planPrice, type PremiumPlan } from "@/lib/tier";
+import { FREE_TIER_DECK_LIMIT, PREMIUM_PLANS, PREMIUM_VAT_NOTE, TRIAL_DAYS, planPrice, type PremiumPlan } from "@/lib/tier";
 import { SITE } from "@/lib/site";
 
 const BENEFITS = [
@@ -275,6 +275,49 @@ export default function PremiumPage() {
         )}
         </aside>
       </div>
+      <PremiumFaq />
     </>
+  );
+}
+
+// Short answers to what people ask before paying. Each opens on tap, no JavaScript needed.
+function PremiumFaq() {
+  const qa: [string, ReactNode][] = [
+    [
+      "Is there a free trial?",
+      <>First-time members get {TRIAL_DAYS} days free. Stripe takes your card at checkout but charges nothing until the trial ends, and we email you 3 days before. Cancel before then and you pay nothing.</>,
+    ],
+    [
+      "How do I cancel?",
+      <>Any time, on the <Link href="/cancel" className="underline hover:text-gold-bright">cancel page</Link>. You keep Premium until the end of the month or year you paid for, and you aren&apos;t charged again.</>,
+    ],
+    [
+      "What happens to my decks if I stop Premium?",
+      <>They all stay. Free accounts can keep up to {FREE_TIER_DECK_LIMIT} decks, so you can still open and edit everything; you just can&apos;t add new decks while you&apos;re over that number.</>,
+    ],
+    [
+      "How do I pay, and is VAT added?",
+      <>Payment goes through Stripe (cards and the other methods Stripe offers at checkout). Prices are in euros and are final. {PREMIUM_VAT_NOTE}</>,
+    ],
+    [
+      "Can I switch between monthly and yearly?",
+      <>Yes. Cancel your current plan, and when it runs out choose the other one. Your decks and settings stay as they are.</>,
+    ],
+  ];
+  return (
+    <section className="mx-auto max-w-3xl px-4 pb-16 sm:px-6">
+      <h2 className="mb-4 font-display text-2xl font-semibold text-foreground">Questions</h2>
+      <div className="divide-y divide-border rounded-xl border border-border bg-surface">
+        {qa.map(([q, a]) => (
+          <details key={q} className="group px-4 py-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-foreground">
+              {q}
+              <span aria-hidden className="text-gold transition-transform group-open:rotate-45">+</span>
+            </summary>
+            <p className="mt-2 text-sm leading-relaxed text-muted">{a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
   );
 }

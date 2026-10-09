@@ -45,6 +45,7 @@ export default function Footer() {
           </Link>
         ))}
       </nav>
+      <p className="mt-3">© {new Date().getFullYear()} {SITE.name}</p>
     </footer>
   );
 }

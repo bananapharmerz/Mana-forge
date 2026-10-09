@@ -364,7 +364,11 @@ export async function searchCardPrices(raw: string, limit = 24): Promise<PriceHi
     else if (res.ok) {
       // Scryfall's usd order puts foil-only printings (no plain price) on top, so sort here.
       const val = (c: ScryfallPriced) => num(c.prices?.usd) ?? num(c.prices?.usd_foil) ?? num(c.prices?.usd_etched) ?? -1;
-      found = (((await res.json()) as { data?: ScryfallPriced[] }).data ?? []).sort((a, b) => val(b) - val(a)).slice(0, limit);
+      const all = (((await res.json()) as { data?: ScryfallPriced[] }).data ?? []).sort((a, b) => val(b) - val(a));
+      found = all.slice(0, limit);
+      // Keep the cheapest regular printing in the list too, so "cheapest copy" is really the cheapest.
+      const cheapest = all.filter((c) => num(c.prices?.usd) !== null).at(-1);
+      if (cheapest && all.length > limit && !found.includes(cheapest)) found = [...found.slice(0, limit - 1), cheapest];
     }
   } catch {
     found = null;

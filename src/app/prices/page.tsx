@@ -56,6 +56,17 @@ function SearchResults({ q, hits }: { q: string; hits: PriceHit[] }) {
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
         {hits.length ? `${hits.length === 24 ? "Top 24" : hits.length} printing${hits.length === 1 ? "" : "s"} matching “${q}”, priciest first` : `No paper cards match “${q}”. Check the spelling, or try part of the name.`}
       </h2>
+      {(() => {
+        // Most people own an ordinary copy, so say what the cheapest regular printing costs first.
+        const plain = hits.map((h) => h.usd).filter((v): v is number => v !== null);
+        if (plain.length < 2) return null;
+        return (
+          <p className="mb-3 text-sm text-foreground">
+            Cheapest regular copy <b className="font-mono text-gold-bright">{usd(Math.min(...plain))}</b>
+            <span className="text-muted"> · priciest {usd(Math.max(...plain))}</span>
+          </p>
+        );
+      })()}
       {hits.length > 0 && (
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {hits.map((c) => (
