@@ -8,7 +8,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        // Social media images and videos must stay fetchable (Buffer, link previews).
+        allow: ["/", "/api/media/", "/api/social-card"],
         disallow: ["/api/", "/deck-builder", "/login", "/signup", "/store/cart", "/store/checkout", "/store/success", "/proxies/checkout", "/proxies/success", "/play/"],
       },
     ],

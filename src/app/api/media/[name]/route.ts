@@ -10,6 +10,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, { params }: { params: Promise<{ name: string }> }) {
   const { name } = await params;
+  // Who fetches the social videos (to see Buffer arrive). No IPs.
+  console.log(`[media] ${req.method} ${name.slice(0, 6)}… ua="${(req.headers.get("user-agent") ?? "").slice(0, 80)}" range="${req.headers.get("range") ?? ""}"`);
   if (!MEDIA_NAME.test(name)) return new NextResponse("Not found", { status: 404 });
   const file = path.join(mediaDir(), name);
   const s = await stat(file).catch(() => null);
