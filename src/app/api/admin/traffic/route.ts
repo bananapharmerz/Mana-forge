@@ -22,6 +22,8 @@ async function plans() {
     const subs = await new Stripe(key).subscriptions.list({ status: "all", limit: 100, expand: ["data.latest_invoice"] }).catch(() => null);
     for (const s of subs?.data ?? []) {
       if (s.status !== "active" && s.status !== "trialing") continue;
+      // The owner's own test purchases are tagged in Stripe (metadata test=1) and left out of the counts.
+      if (s.metadata?.test === "1") continue;
       const item = s.items.data[0];
       const interval = item?.price?.recurring?.interval;
       // What the latest invoice actually charged (after any discount); a free trial or a 100%-off code is 0.
