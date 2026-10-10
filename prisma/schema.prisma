@@ -53,6 +53,7 @@ model Deck {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   favorites            Favorite[]
+  snapshots            DeckSnapshot[]
 
   @@index([commanderName])
   @@index([ownerId])
@@ -310,3 +311,92 @@ model IpBan {
   @@index([expiresAt])
 }
 
+
+// ---- Community: polls, monthly deck challenge, deck snapshots --------------------------------
+
+/// A one-question community poll (/vote). Signed-in members vote once; results show after voting
+/// or once it closes. Created through /api/admin/polls (Nexus) with the admin key.
+model Poll {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  question    String
+  description String?
+  options     String // JSON [{id, label}]
+  opensAt     DateTime   @default(now())
+  closesAt    DateTime
+  createdAt   DateTime   @default(now())
+  votes       PollVote[]
+
+  @@index([closesAt])
+}
+
+model PollVote {
+  id        String   @id @default(cuid())
+  pollId    String
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  userId    String
+  optionId  String
+  createdAt DateTime @default(now())
+
+  @@unique([pollId, userId])
+  @@index([pollId])
+}
+
+/// The monthly "Forge Challenge" (/challenge): one theme, members enter one public deck, the admin
+/// picks finalists (JSON list of entry ids), members vote, most votes wins a Premium prize.
+model Challenge {
+  id           String           @id @default(cuid())
+  slug         String           @unique
+  title        String
+  theme        String
+  rules        String?
+  prize        String
+  submitUntil  DateTime
+  voteUntil    DateTime
+  finalists    String? // JSON entry ids, set by the admin after submissions close
+  createdAt    DateTime         @default(now())
+  entries      ChallengeEntry[]
+  votes        ChallengeVote[]
+
+  @@index([submitUntil])
+}
+
+model ChallengeEntry {
+  id          String          @id @default(cuid())
+  challengeId String
+  challenge   Challenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  deckId      String
+  userId      String
+  note        String? // how the deck fits the theme
+  createdAt   DateTime        @default(now())
+  votes       ChallengeVote[]
+
+  @@unique([challengeId, userId])
+  @@index([challengeId])
+}
+
+model ChallengeVote {
+  id          String         @id @default(cuid())
+  challengeId String
+  challenge   Challenge      @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  entryId     String
+  entry       ChallengeEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId      String
+  createdAt   DateTime       @default(now())
+
+  @@unique([challengeId, userId])
+  @@index([entryId])
+}
+
+/// Premium: saved versions of a deck the owner can compare against and restore.
+model DeckSnapshot {
+  id        String   @id @default(cuid())
+  deckId    String
+  deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  label     String?
+  data      String // JSON {name, commander, partner, companion, cards}
+  cardCount Int
+  createdAt DateTime @default(now())
+
+  @@index([deckId, createdAt])
+}

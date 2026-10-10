@@ -116,6 +116,8 @@ export default function ForgeStory() {
       <div aria-hidden className="absolute inset-0" style={{ background: "radial-gradient(50% 55% at 70% 50%, rgba(91,42,134,0.28), transparent 70%)" }} />
       <div ref={host} aria-hidden className={`absolute inset-0 transition-opacity duration-1000 ${ready ? "opacity-100" : "opacity-0"}`} />
       <CursorGlow color="200,170,255" size={480} />
+      {/* Fade in from the parchment section above. */}
+      <div aria-hidden className="forge-fade-in pointer-events-none absolute inset-x-0 top-0 z-[1] h-56" />
 
       <div className="relative z-[2] mx-auto flex h-full max-w-7xl items-end px-4 pb-[12vh] sm:px-6 md:items-center md:pb-0">
         <div className="relative h-64 w-full max-w-md" aria-live="polite">

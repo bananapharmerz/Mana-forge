@@ -56,7 +56,8 @@ export default function ForgeTrails() {
       <div aria-hidden className="absolute inset-0" style={{ background: "radial-gradient(60% 50% at 50% 50%, rgba(224,178,82,0.12), transparent 70%), linear-gradient(100deg, transparent 20%, rgba(61,143,224,0.08) 45%, rgba(255,81,48,0.08) 60%, transparent 80%)" }} />
       <div ref={host} aria-hidden className={`absolute inset-0 transition-opacity duration-1000 ${ready ? "opacity-100" : "opacity-0"}`} />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#07050c] to-transparent" />
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#07050c] to-transparent" />
+      {/* Fade out into the parchment section below. */}
+      <div aria-hidden className="forge-fade-out pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-56" />
       <div className="relative z-[2] mx-auto flex h-full max-w-4xl flex-col items-center justify-center px-6 text-center">
         <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.4em] text-[#e0b252]">Five colors · one hundred cards</p>
         <h2 className="font-display text-5xl font-semibold leading-[0.95] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] sm:text-7xl">
