@@ -106,3 +106,22 @@ export async function resendVerification(): Promise<{ ok: boolean; message: stri
   });
   return { ok: true, message: `Sent. Check ${user.email} (and the spam folder).` };
 }
+
+/**
+ * The weekly roundup email is opt-in: off by default, switched on only here by the member, and
+ * only for a confirmed address (the confirmation link proves the address is theirs). When it's
+ * turned on we keep the time, as proof of consent; every email has a one-click unsubscribe.
+ */
+export async function setWeeklyEmail(on: unknown): Promise<{ ok: true; on: boolean } | { ok: false; error: string }> {
+  const user = await me();
+  if (!user) return { ok: false, error: "Sign in first." };
+  if (!hit(`weekly-toggle:${user.id}`, 20, 60 * 60 * 1000)) return { ok: false, error: TOO_MANY };
+  const want = on === true;
+  if (want && !user.emailVerifiedAt) return { ok: false, error: "Confirm your email address first (the link in your welcome email), then switch it on." };
+  const u = await db.user.update({
+    where: { id: user.id },
+    data: want ? { weeklyEmail: true, weeklyEmailConsentAt: new Date() } : { weeklyEmail: false },
+    select: { weeklyEmail: true },
+  });
+  return { ok: true, on: u.weeklyEmail };
+}

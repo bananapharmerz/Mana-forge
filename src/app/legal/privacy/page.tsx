@@ -60,6 +60,12 @@ export default function PrivacyPage() {
           the site (Art. 6(1)(f) GDPR).
         </li>
         <li>
+          <b>Weekly roundup email:</b> only if you switch it on yourself on your account page (it&apos;s
+          off by default and needs a confirmed address). We store that it&apos;s on, when you switched it on
+          and when the last one went out. Legal basis: your consent (Art. 6(1)(a) GDPR), which you can
+          withdraw any time with the one-click link in every email or on your account page.
+        </li>
+        <li>
           <b>Contact form:</b> if you write to us, we store your email, your name if you give it, and your
           message, only so we can answer you (Art. 6(1)(b) and (f) GDPR).
         </li>
@@ -93,7 +99,7 @@ export default function PrivacyPage() {
         <li><b>Stripe</b> processes payments. Card details go straight to Stripe and never touch our server.</li>
         <li><b>Scryfall</b> serves card images, so your browser connects to their servers when you view cards.</li>
         <li><b>Our hosting provider</b> runs the server and stores the database.</li>
-        <li><b>Resend</b> delivers the emails we send (the welcome email with its link to confirm your address, password resets, price alerts, replies to contact messages), so it receives your email address and that email.</li>
+        <li><b>Resend</b> delivers the emails we send (the welcome email with its link to confirm your address, password resets, price alerts, the weekly roundup if you switched it on, replies to contact messages), so it receives your email address and that email.</li>
         <li>Print and shipping partners receive your shipping address for proxy orders.</li>
       </ul>
       <p>We don&apos;t sell your data. Some of these providers may process data outside your country under standard legal safeguards.</p>

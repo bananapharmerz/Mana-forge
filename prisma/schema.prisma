@@ -22,6 +22,11 @@ model User {
   priceAlerts          Boolean  @default(true) // Premium: email when watched cards hit their target or deck cards move a lot
   priceDigestAt        DateTime? // last deck price-move email, so it goes out at most once a week
   emailVerifiedAt      DateTime? // set when they click the link in the welcome email
+  // The weekly roundup email (Mondays): off until the member switches it on themselves on their
+  // account page (only possible with a confirmed address); consentAt is when they did, as proof.
+  weeklyEmail          Boolean  @default(false)
+  weeklyEmailConsentAt DateTime?
+  weeklyEmailSentAt    DateTime?
   // Refer a friend: everyone gets a code for their invite link (/r/<code>). A friend who signs up
   // through it gets 50% off their first months of Premium; when they first pay, the referrer gets
   // a month's credit on their Stripe balance (referralRewardedAt stops it happening twice).

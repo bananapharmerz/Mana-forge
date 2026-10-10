@@ -169,6 +169,8 @@ export function startPriceTracker() {
       .then((r) => r.checked && console.log(`[prices] refreshed ${r.updated}/${r.checked} cards${r.failedBatches ? `, ${r.failedBatches} batches failed` : ""}`))
       .then(() => import("./priceAlerts").then((m) => m.runPriceAlerts()))
       .then((a) => a.emailed && console.log(`[prices] sent ${a.emailed} price alert emails`))
+      .then(() => import("./weeklyEmail").then((m) => m.runWeeklyEmail()))
+      .then((w) => w.emailed && console.log(`[weekly] sent ${w.emailed} weekly roundup emails`))
       .catch((e) => console.error("[prices] refresh failed:", e));
   g.__priceTimer = setInterval(tick, 3600000);
   setTimeout(tick, 30000);

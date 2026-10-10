@@ -16,7 +16,7 @@ export function legalInfo() {
     address: v("LEGAL_ADDRESS", "[Street, postcode, city, country]"),
     email: v("LEGAL_EMAIL", "[contact email]"),
     country: v("LEGAL_COUNTRY", "[your country]"),
-    updated: "7 October 2026",
+    updated: "10 October 2026",
   };
 }
 
