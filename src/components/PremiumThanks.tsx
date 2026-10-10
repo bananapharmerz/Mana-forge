@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+import { trackGoal } from "@/components/SiteTracker";
 import Ember from "@/components/Ember";
 
 // The thank-you after Stripe checkout (it sends people back to /premium?upgraded=1): a celebration
@@ -14,6 +15,14 @@ export default function PremiumThanks({ trialDays }: { trialDays: number }) {
     () => new URLSearchParams(window.location.search).get("upgraded") === "1",
     () => false
   );
+  // Counted once per page load, for the funnel in Nexus.
+  const counted = useRef(false);
+  useEffect(() => {
+    if (upgraded && !counted.current) {
+      counted.current = true;
+      trackGoal("premium");
+    }
+  }, [upgraded]);
   if (!upgraded) return null;
   return (
     <section aria-label="Welcome to Premium" className="mx-auto max-w-5xl px-4 pt-8 sm:px-6">

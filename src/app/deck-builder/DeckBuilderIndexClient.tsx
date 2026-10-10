@@ -11,6 +11,7 @@ import AdSlot from "@/components/AdSlot";
 import PageHeader from "@/components/PageHeader";
 import { autocompleteCommanderNames, getCardByName, cardImage, cardPriceUsd } from "@/lib/scryfall";
 import { createDeck, deleteDeckAction, duplicateDeck } from "@/app/actions/decks";
+import { trackGoal } from "@/components/SiteTracker";
 import { defaultCategory, deckSize, type Deck, type DeckCard } from "@/lib/deckTypes";
 import { GUEST_DECK_ID, loadGuestDeck, saveGuestDeck } from "@/lib/guestDeck";
 import GuestSaveBanner from "@/components/GuestSaveBanner";
@@ -134,6 +135,7 @@ export default function DeckBuilderIndexClient({
         setError(result.error);
         return;
       }
+      trackGoal("deck");
       router.push(`/deck-builder/${result.id}`);
     } finally {
       setCreating(false);

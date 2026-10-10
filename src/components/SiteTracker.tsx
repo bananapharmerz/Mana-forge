@@ -20,6 +20,16 @@ function send(data: Record<string, unknown>) {
 const optedOut = () =>
   typeof navigator !== "undefined" && (navigator.doNotTrack === "1" || (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true);
 
+/**
+ * A milestone in the visitor's journey ("signup", "deck", "premium"), sent as an anonymous click
+ * named "goal: <name>". It carries nothing new (same daily visitor code, no account id), so Nexus
+ * can tell which landing pages and sources lead to sign-ups and decks without linking to anyone.
+ */
+export function trackGoal(name: "signup" | "deck" | "premium") {
+  if (typeof window === "undefined" || optedOut()) return;
+  send({ k: "click", p: window.location.pathname, t: `goal: ${name}` });
+}
+
 export default function SiteTracker() {
   const pathname = usePathname();
   const page = useRef<{ path: string; start: number; scroll: number; sent: boolean } | null>(null);

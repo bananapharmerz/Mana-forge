@@ -9,6 +9,7 @@ import { signIn } from "next-auth/react";
 import { signup } from "@/app/actions/auth";
 import { importGuestDeck } from "@/app/actions/decks";
 import { clearGuestDeck, loadGuestDeck } from "@/lib/guestDeck";
+import { trackGoal } from "@/components/SiteTracker";
 
 const noSubscribe = () => () => {};
 
@@ -49,11 +50,13 @@ export default function SignupPage() {
       setError("Account created, but sign-in failed. Try signing in manually.");
       return;
     }
+    trackGoal("signup");
     // A deck they built as a guest moves into the new account and opens straight away.
     const draft = loadGuestDeck();
     if (draft) {
       const r = await importGuestDeck(draft).catch(() => null);
       if (r?.ok) {
+        trackGoal("deck");
         clearGuestDeck();
         router.push(`/deck-builder/${r.id}`);
         router.refresh();

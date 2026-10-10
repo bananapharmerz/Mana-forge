@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { saveDeckCopy } from "@/app/actions/decks";
+import { trackGoal } from "@/components/SiteTracker";
 
 /** One click: copy a public deck into your account and open it in the builder. */
 export default function MakeItMineButton({ deckId, signedIn, large = false }: { deckId: string; signedIn: boolean; large?: boolean }) {
@@ -17,7 +18,10 @@ export default function MakeItMineButton({ deckId, signedIn, large = false }: { 
     setBusy(true);
     setError(null);
     const r = await saveDeckCopy(deckId);
-    if (r.ok) router.push(`/deck-builder/${r.id}`);
+    if (r.ok) {
+      trackGoal("deck");
+      router.push(`/deck-builder/${r.id}`);
+    }
     else {
       setError(r.error);
       setBusy(false);

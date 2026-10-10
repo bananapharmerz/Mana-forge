@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { saveDeckCopy } from "@/app/actions/decks";
+import { trackGoal } from "@/components/SiteTracker";
 
 export default function SaveDeckButton({ deckId, signedIn = true }: { deckId: string; signedIn?: boolean }) {
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -17,6 +18,7 @@ export default function SaveDeckButton({ deckId, signedIn = true }: { deckId: st
       setError(result.error);
       return;
     }
+    trackGoal("deck");
     setState("saved");
   }
 
