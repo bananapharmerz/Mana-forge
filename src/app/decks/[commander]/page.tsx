@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ commander
   const { commander } = await params;
   const asked = decodeURIComponent(commander);
   // Same cached requests the page itself makes, so this adds no extra fetches.
-  const card = await getCardByName(asked).catch(() => null);
+  const card = await getCardByName(asked, { commanderOnly: true }).catch(() => null);
   const name = card?.name ?? asked;
   const [count, edhrec] = await Promise.all([
     db.deck.count({ where: { commanderName: name, isPublic: true } }).catch(() => 0),
@@ -101,7 +101,7 @@ export default async function CommanderDecksPage({
 }) {
   const { commander } = await params;
   const commanderName = decodeURIComponent(commander);
-  const card = await getCardByName(commanderName);
+  const card = await getCardByName(commanderName, { commanderOnly: true });
 
   if (!card) notFound();
 

@@ -253,11 +253,42 @@ export async function getCommanderSets(): Promise<ScryfallSet[]> {
 // Cards we've already fetched, so a busy Scryfall can still be answered (at most 3000 kept).
 const lastGood = ((globalThis as unknown as { __mfLastGood?: Map<string, ScryfallCard> }).__mfLastGood ??= new Map());
 
-export async function getCardByName(name: string): Promise<ScryfallCard | null> {
+/** A commander from the in-memory index (src/lib/commanderIndex.ts, refreshed daily) by its full
+ *  name, its front face ("Kolvori, God of Kinship" for "Kolvori, God of Kinship // The Ringhart
+ *  Crest"), or a short name only one commander starts with ("Urabrask" if there were just one).
+ *  `loaded` says whether the index is there at all. */
+function fromCommanderIndex(name: string): { card: ScryfallCard | null; loaded: boolean } {
+  const g = globalThis as unknown as { __mfCommanderCards?: Map<string, ScryfallCard>; __mfCommanderFronts?: { size: number; map: Map<string, ScryfallCard | null> } };
+  const index = g.__mfCommanderCards;
+  if (!index || index.size < 100) return { card: null, loaded: false };
+  const key = name.toLowerCase().trim();
+  const hit = index.get(key);
+  if (hit) return { card: hit, loaded: true };
+  // Front faces and short names, built once per index (null marks a short name two cards share).
+  if (g.__mfCommanderFronts?.size !== index.size) {
+    const map = new Map<string, ScryfallCard | null>();
+    const add = (k: string, c: ScryfallCard) => map.set(k, map.has(k) && map.get(k) !== c ? null : c);
+    for (const [full, c] of index) {
+      const front = full.split(" // ")[0];
+      if (front !== full) add(front, c);
+      const short = front.split(",")[0];
+      if (short !== front && short.length >= 4) add(short, c);
+    }
+    g.__mfCommanderFronts = { size: index.size, map };
+  }
+  return { card: g.__mfCommanderFronts.map.get(key) ?? null, loaded: true };
+}
+
+/**
+ * `commanderOnly`: for commander pages. Once the index is loaded, a name that isn't a commander is
+ * a plain "not found" without asking Scryfall. Search engines crawl odd /decks/<name> links, and
+ * sending each of those to Scryfall is what got us rate-limited (429).
+ */
+export async function getCardByName(name: string, opts: { commanderOnly?: boolean } = {}): Promise<ScryfallCard | null> {
   const key = name.toLowerCase();
-  // Every legal commander is already in memory (src/lib/commanderIndex.ts, refreshed daily).
-  const indexed = (globalThis as unknown as { __mfCommanderCards?: Map<string, ScryfallCard> }).__mfCommanderCards?.get(key);
-  if (indexed) return indexed;
+  const fromIndex = fromCommanderIndex(name);
+  if (fromIndex.card) return fromIndex.card;
+  if (opts.commanderOnly && fromIndex.loaded) return lastGood.get(key) ?? null;
   const res = await sfetch(
     `${SCRYFALL_API}/cards/named?exact=${encodeURIComponent(name)}`,
     { headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" }, next: { revalidate: 3600 } }
