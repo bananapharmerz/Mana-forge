@@ -60,8 +60,8 @@ export default function PrivacyPage() {
           the site (Art. 6(1)(f) GDPR).
         </li>
         <li>
-          <b>Weekly roundup email:</b> only if you switch it on yourself on your account page (it&apos;s
-          off by default and needs a confirmed address). We store that it&apos;s on, when you switched it on
+          <b>Weekly roundup email:</b> only if you ask for it yourself (the unticked box when you sign up,
+          or the switch on your account page), and only once your address is confirmed. We store that it&apos;s on, when you switched it on
           and when the last one went out. Legal basis: your consent (Art. 6(1)(a) GDPR), which you can
           withdraw any time with the one-click link in every email or on your account page.
         </li>

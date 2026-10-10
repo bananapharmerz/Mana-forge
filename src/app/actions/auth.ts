@@ -24,7 +24,8 @@ export async function signup(
   password: unknown,
   name?: unknown,
   ofAge?: unknown,
-  human?: unknown // Turnstile token
+  human?: unknown, // Turnstile token
+  weekly?: unknown // ticked "send me the weekly roundup" (unticked by default)
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   // Accounts are for people 16 and over (GDPR consent age in Germany; see the Terms).
   if (ofAge !== true) return { ok: false, error: "You need to be 16 or older to create an account." };
@@ -60,6 +61,9 @@ export async function signup(
       passwordHash,
       name: cleanName || undefined,
       referredById,
+      // Their own tick on the form is the consent (time kept). Nothing is sent until they confirm
+      // the address with the link in the welcome email (runWeeklyEmail only mails confirmed ones).
+      ...(weekly === true ? { weeklyEmail: true, weeklyEmailConsentAt: new Date() } : {}),
     },
   });
   if (referredById) jar.delete(REF_COOKIE);

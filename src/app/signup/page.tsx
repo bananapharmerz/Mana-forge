@@ -20,6 +20,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [ofAge, setOfAge] = useState(false);
+  const [weekly, setWeekly] = useState(false); // the weekly roundup: unticked unless they tick it
   const [error, setError] = useState<string | null>(null);
   const [human, setHuman] = useState("");
   const [humanReset, setHumanReset] = useState(0);
@@ -51,7 +52,7 @@ export default function SignupPage() {
     setLoading(true);
     setError(null);
 
-    const result = await signup(email, password, name, ofAge, human);
+    const result = await signup(email, password, name, ofAge, human, weekly);
     if (!result.ok) {
       setHumanReset((n) => n + 1); // a Turnstile token works once
       setError(result.error);
@@ -152,6 +153,13 @@ export default function SignupPage() {
             className="mt-1 accent-[var(--color-gold)]"
           />
           <span>I&apos;m 16 or older.</span>
+        </label>
+        <label className="flex items-start gap-2 text-sm text-foreground">
+          <input type="checkbox" checked={weekly} onChange={(e) => setWeekly(e.target.checked)} className="mt-1 accent-[var(--color-gold)]" />
+          <span>
+            Send me the weekly roundup (Mondays: price movers, commander of the week, challenges). Optional; starts once you confirm your email, unsubscribe in one
+            click.
+          </span>
         </label>
         <Turnstile onToken={setHuman} resetKey={humanReset} />
         {error && <p className="text-sm text-red-600">{error}</p>}
