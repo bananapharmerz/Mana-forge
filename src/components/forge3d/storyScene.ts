@@ -209,7 +209,8 @@ const CLOUD_PALETTE = ["#b9a6ff", "#e0b252", "#8fb8ff", "#f3e9cf", "#ff9a6a"];
 const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
 // How long each step of the loop takes, in seconds.
-const TIMING = { cloud: 1.6, form: 2.0, hold: 4.6, scatter: 1.6 };
+// Kept short between shapes so there is never a long stretch of just drifting dust.
+const TIMING = { cloud: 0.35, form: 1.4, hold: 4.6, scatter: 0.9 };
 
 export interface Story {
   goTo(chapter: number): void;
