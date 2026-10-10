@@ -45,23 +45,24 @@ export default async function StarterDecks({ signedIn, title }: { signedIn: bool
         {picks.map((d) => {
           const img = image(d.commanderData);
           return (
-            <div key={d.id} className="card-frame flex flex-col overflow-hidden">
-              <Link href={`/decks/view/${d.id}`} className="block aspect-[5/4] overflow-hidden bg-surface-raised">
+            // The whole card opens the deck (one obvious click target); copying sits in its own strip.
+            <div key={d.id} className="card-frame group relative flex flex-col overflow-hidden transition-all hover:-translate-y-0.5 hover:border-gold hover:shadow-[0_12px_30px_-18px_rgba(124,88,20,0.6)]">
+              <div className="aspect-[5/4] overflow-hidden bg-surface-raised">
                 {img ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={img} alt={d.commanderName} className="h-full w-full object-cover object-top transition-transform hover:scale-105" loading="lazy" />
+                  <img src={img} alt="" className="h-full w-full object-cover object-top transition-transform group-hover:scale-105" loading="lazy" />
                 ) : null}
-              </Link>
+              </div>
               <div className="flex flex-1 flex-col gap-1 p-3">
-                <Link href={`/decks/view/${d.id}`} className="line-clamp-1 text-sm font-semibold text-foreground hover:text-gold-bright">
+                <Link href={`/decks/view/${d.id}`} className="line-clamp-1 text-sm font-semibold text-foreground after:absolute after:inset-0 after:content-[''] group-hover:text-gold-bright">
                   {d.name}
                 </Link>
                 <p className="line-clamp-1 text-xs text-muted">
                   {d.commanderName} · {size(d.cards)} cards · by {authorName(d.owner.name)}
                 </p>
-                <div className="mt-auto pt-2">
-                  <MakeItMineButton deckId={d.id} signedIn={signedIn} />
-                </div>
+              </div>
+              <div className="relative z-10 border-t border-border bg-surface/60 p-3">
+                <MakeItMineButton deckId={d.id} signedIn={signedIn} />
               </div>
             </div>
           );

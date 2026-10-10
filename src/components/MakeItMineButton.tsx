@@ -38,7 +38,7 @@ export default function MakeItMineButton({ deckId, signedIn, large = false }: { 
   if (!signedIn) {
     return (
       <Link href={`/signup?callbackUrl=${encodeURIComponent(`/decks/view/${deckId}?mine=1`)}`} className={cls}>
-        Sign up &amp; make it mine
+        Copy this deck, free
       </Link>
     );
   }

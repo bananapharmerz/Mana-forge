@@ -1,5 +1,6 @@
 "use client";
 
+import Ember from "@/components/Ember";
 import type React from "react";
 import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -280,7 +281,9 @@ export default function DeckBuilderIndexClient({
       ) : decks.length === 0 ? (
         // A brand-new member: a real starting point instead of an empty page.
         <section aria-label="Build your first deck" className="space-y-10">
-          <div className="card-frame p-5 sm:p-6">
+          <div className="card-frame relative overflow-hidden p-5 sm:p-6 sm:pr-48">
+            {/* Ember greets new members (the mascot turns up in the same spots across the site). */}
+            <Ember mood="hyped" size={150} className="pointer-events-none absolute -bottom-3 right-4 hidden sm:block" title="Ember, cheering you on" />
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-bright">Welcome to Mana Forge</p>
             <h2 className="mt-1 font-display text-2xl font-semibold text-foreground sm:text-3xl">Let&apos;s build your first deck</h2>
             <p className="mt-1 max-w-2xl text-sm text-muted">
