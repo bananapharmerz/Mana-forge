@@ -15,7 +15,7 @@ const securityHeaders = [
     value: [
       "object-src 'none'",
       "base-uri 'self'",
-      "form-action 'self' https://checkout.stripe.com",
+      "form-action 'self' https://checkout.stripe.com https://accounts.google.com",
       "frame-ancestors 'none'",
     ].join("; "),
   },

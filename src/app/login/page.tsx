@@ -6,6 +6,7 @@ import Turnstile from "@/components/Turnstile";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import GoogleButton from "@/components/GoogleButton";
 
 function LoginForm() {
   const router = useRouter();
@@ -16,7 +17,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(searchParams.get("error") === "google" ? "Google didn't confirm that email address, so we couldn't sign you in with it." : null);
   const [loading, setLoading] = useState(false);
   const [human, setHuman] = useState("");
   const [humanReset, setHumanReset] = useState(0);
@@ -95,6 +96,7 @@ function LoginForm() {
           {loading ? "Signing in..." : "Sign In"}
         </button>
       </form>
+      <GoogleButton callbackUrl={callbackUrl} />
       <p className="mt-6 text-sm text-muted">
         No account yet?{" "}
         <Link href="/signup" className="text-gold-bright underline">

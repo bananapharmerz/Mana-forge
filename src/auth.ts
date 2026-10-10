@@ -1,9 +1,16 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import { humanCheck } from "@/lib/turnstile";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { hit, ipFrom, reset } from "@/lib/rateLimit";
+import { REF_COOKIE, referrerFromCode } from "@/lib/referral";
+import { AGE_COOKIE, googleSignInOn } from "@/lib/googleSignIn";
+import { emailHtml, sendEmail } from "@/lib/email";
+import { SITE } from "@/lib/site";
 
 // Thrown when someone tries too many passwords; the login page shows a "wait a bit" message.
 class TooManyAttempts extends CredentialsSignin {
@@ -55,9 +62,50 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return { id: user.id, email: user.email, name: user.name ?? undefined, sv: user.sessionVersion } as { id: string; email: string; name?: string };
       },
     }),
+    // "Continue with Google", only when AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET are set (Coolify →
+    // Environment Variables). Google only tells us the email address and that it's confirmed.
+    ...(googleSignInOn() ? [Google({ authorization: { params: { prompt: "select_account" } } })] : []),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    // Google sign-in: an existing account with that (Google-confirmed) email signs in; a new one is
+    // only created after the person ticked "I'm 16 or older" on the sign-up page (a 10-minute cookie),
+    // otherwise they're sent there first. No password is set (they can add one with "forgot password").
+    async signIn({ account, profile }) {
+      if (account?.provider !== "google") return true;
+      const email = String(profile?.email ?? "").trim().toLowerCase().slice(0, 254);
+      if (!email || profile?.email_verified !== true) return "/login?error=google";
+      const existing = await db.user.findUnique({ where: { email }, select: { id: true, emailVerifiedAt: true } });
+      if (existing) {
+        if (!existing.emailVerifiedAt) await db.user.update({ where: { id: existing.id }, data: { emailVerifiedAt: new Date() } });
+        return true;
+      }
+      const jar = await cookies();
+      if (jar.get(AGE_COOKIE)?.value !== "1") return "/signup?google=1";
+      const referredById = await referrerFromCode(jar.get(REF_COOKIE)?.value, email).catch(() => null);
+      await db.user.create({
+        data: { email, passwordHash: await bcrypt.hash(randomBytes(32).toString("hex"), 10), emailVerifiedAt: new Date(), referredById },
+      });
+      void sendEmail({
+        to: email,
+        subject: `Welcome to ${SITE.name}`,
+        text: `Welcome!\n\nYour ${SITE.name} account is ready (you signed up with Google).\nBuild a deck, browse commanders or start a game with friends:\n${SITE.url}/deck-builder\n\nIf you didn't create this account, you can ignore this email.`,
+        html: emailHtml({
+          heading: "Welcome!",
+          body: `<p>Your ${SITE.name} account is ready (you signed up with Google). Build a Commander deck, browse every commander, or start a game with friends.</p><p style="color:#7a7488;font-size:13px">If you didn't create this account, you can ignore this email.</p>`,
+          button: { label: "Start building", url: `${SITE.url}/deck-builder` },
+        }),
+      });
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      if (user && account?.provider === "google") {
+        // Google's own id isn't ours: look the account up by its (confirmed) email.
+        const u = await db.user.findUnique({ where: { email: String(user.email ?? "").toLowerCase() }, select: { id: true, sessionVersion: true } });
+        if (!u) return null;
+        token.id = u.id;
+        token.sv = u.sessionVersion;
+        return token;
+      }
       if (user) {
         token.id = user.id;
         token.sv = (user as { sv?: number }).sv ?? 0;

@@ -6,7 +6,8 @@ import Turnstile from "@/components/Turnstile";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { signup } from "@/app/actions/auth";
+import { confirmAgeForGoogle, signup } from "@/app/actions/auth";
+import GoogleButton from "@/components/GoogleButton";
 import { importGuestDeck } from "@/app/actions/decks";
 import { clearGuestDeck, loadGuestDeck } from "@/lib/guestDeck";
 import { trackGoal } from "@/components/SiteTracker";
@@ -29,6 +30,21 @@ export default function SignupPage() {
     () => new URLSearchParams(window.location.search).has("invited"),
     () => false
   );
+  // Sent back here by Google sign-in for a new account: they still need to confirm they're 16+.
+  const fromGoogle = useSyncExternalStore(
+    noSubscribe,
+    () => new URLSearchParams(window.location.search).get("google") === "1",
+    () => false
+  );
+  const nextPage = () => {
+    const wanted = new URLSearchParams(window.location.search).get("callbackUrl") || "";
+    return wanted.startsWith("/") && !wanted.startsWith("//") && !wanted.startsWith("/\\") ? wanted : "/deck-builder";
+  };
+  async function beforeGoogle() {
+    const r = await confirmAgeForGoogle(ofAge).catch(() => ({ ok: false, error: "Something went wrong. Try again." }));
+    if (!r.ok) setError(r.error ?? "Tick \u201cI'm 16 or older\u201d first.");
+    return r.ok;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,6 +92,11 @@ export default function SignupPage() {
       {invited && (
         <p className="mb-4 rounded-lg border border-gold/50 bg-gold/10 px-3 py-2 text-sm text-foreground">
           🎁 A friend invited you: you get <b>50% off Premium for your first 3 months</b> (after the free trial) whenever you want it.
+        </p>
+      )}
+      {fromGoogle && (
+        <p className="mb-4 rounded-lg border border-gold/50 bg-gold/10 px-3 py-2 text-sm text-foreground">
+          Almost there: tick <b>I&apos;m 16 or older</b> below, then tap <b>Continue with Google</b> again to create your account.
         </p>
       )}
       <h1 className="font-display text-3xl font-semibold text-foreground">Create account</h1>
@@ -147,6 +168,7 @@ export default function SignupPage() {
           <Link href="/legal/privacy" className="underline hover:text-gold-bright">Privacy policy</Link>.
         </p>
       </form>
+      <GoogleButton callbackUrl={nextPage} before={beforeGoogle} />
       <p className="mt-6 text-sm text-muted">
         Already have an account?{" "}
         <Link href="/login" className="text-gold-bright underline">

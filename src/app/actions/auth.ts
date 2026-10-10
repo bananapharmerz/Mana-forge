@@ -10,6 +10,7 @@ import { verifyLink } from "@/lib/emailVerify";
 import { humanCheck, turnstileSiteKey } from "@/lib/turnstile";
 import { REF_COOKIE, referrerFromCode } from "@/lib/referral";
 import { cookies } from "next/headers";
+import { AGE_COOKIE } from "@/lib/googleSignIn";
 
 /** The Turnstile site key for the forms (null while Turnstile is off). */
 export async function getTurnstileSiteKey(): Promise<string | null> {
@@ -77,5 +78,13 @@ export async function signup(
     }),
   });
 
+  return { ok: true };
+}
+
+/** Before "Continue with Google" on the sign-up page: remembers for 10 minutes that they confirmed they're 16+. */
+export async function confirmAgeForGoogle(ofAge: unknown): Promise<{ ok: boolean; error?: string }> {
+  if (ofAge !== true) return { ok: false, error: "Tick \u201cI'm 16 or older\u201d first." };
+  const jar = await cookies();
+  jar.set(AGE_COOKIE, "1", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", maxAge: 600, path: "/" });
   return { ok: true };
 }

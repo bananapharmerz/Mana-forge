@@ -99,6 +99,7 @@ export default function PrivacyPage() {
         <li><b>Stripe</b> processes payments. Card details go straight to Stripe and never touch our server.</li>
         <li><b>Scryfall</b> serves card images, so your browser connects to their servers when you view cards.</li>
         <li><b>Our hosting provider</b> runs the server and stores the database.</li>
+        <li><b>Google</b>, only if you choose &quot;Continue with Google&quot;: Google tells us your email address and that it has confirmed it. We don&apos;t get your Google password, contacts or anything else, and we don&apos;t send Google anything about what you do on the site.</li>
         <li><b>Resend</b> delivers the emails we send (the welcome email with its link to confirm your address, password resets, price alerts, the weekly roundup if you switched it on, replies to contact messages), so it receives your email address and that email.</li>
         <li>Print and shipping partners receive your shipping address for proxy orders.</li>
       </ul>
