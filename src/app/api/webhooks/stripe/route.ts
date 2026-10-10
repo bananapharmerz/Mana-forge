@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { SITE } from "@/lib/site";
 import { emailHtml, esc, sendEmail } from "@/lib/email";
+import { rewardReferrer } from "@/lib/referral";
 
 export async function POST(req: Request) {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -81,6 +82,8 @@ export async function POST(req: Request) {
         console.error(`[stripe] user ${userId} paid for a second subscription ${subId} (keeping ${user.stripeSubscriptionId}); cancel and refund it in Stripe.`);
       } else if (user) {
         await db.user.update({ where: { id: userId }, data: { tier: "premium", stripeSubscriptionId: subId } });
+        // Paid straight away (no trial): whoever invited them gets their reward now.
+        if ((session.amount_total ?? 0) > 0) await rewardReferrer(stripe, userId).catch(() => false);
       }
     }
   }
@@ -96,6 +99,9 @@ export async function POST(req: Request) {
       // ending (or arriving late) can't switch off Premium they're still paying for.
       if (active && (!current || current === subscription.id)) {
         await db.user.update({ where: { id: userId }, data: { tier: "premium", stripeSubscriptionId: subscription.id } });
+        // The trial just turned into a paid subscription: whoever invited them gets their reward.
+        const before = (event.data as { previous_attributes?: { status?: string } }).previous_attributes?.status;
+        if (subscription.status === "active" && before === "trialing") await rewardReferrer(stripe, userId).catch(() => false);
       } else if (!active && (!current || current === subscription.id)) {
         await db.user.update({ where: { id: userId }, data: { tier: "free", stripeSubscriptionId: null } });
       }

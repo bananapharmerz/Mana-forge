@@ -6,6 +6,8 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import PageHeader from "@/components/PageHeader";
 import AccountActions from "./AccountActions";
+import InviteFriends from "@/components/InviteFriends";
+import { FRIEND_MONTHS, FRIEND_PERCENT, REWARD_CENTS, inviteLink, referralCodeFor } from "@/lib/referral";
 
 export const metadata: Metadata = { title: "Your account", robots: { index: false, follow: false } };
 
@@ -14,7 +16,12 @@ export default async function AccountPage() {
   if (!session?.user?.id) redirect("/login?callbackUrl=/account");
   const user = await db.user.findUnique({ where: { id: session.user.id }, select: { email: true, name: true, tier: true, createdAt: true, stripeSubscriptionId: true, emailVerifiedAt: true } });
   if (!user) redirect("/login?callbackUrl=/account");
-  const decks = await db.deck.count({ where: { ownerId: session.user.id } });
+  const [decks, code, joined, paid] = await Promise.all([
+    db.deck.count({ where: { ownerId: session.user.id } }),
+    referralCodeFor(session.user.id).catch(() => null),
+    db.user.count({ where: { referredById: session.user.id } }),
+    db.user.count({ where: { referredById: session.user.id, referralRewardedAt: { not: null } } }),
+  ]);
 
   return (
     <>
@@ -42,6 +49,7 @@ export default async function AccountPage() {
             </Link>
           </dd>
         </dl>
+        {code && <InviteFriends link={inviteLink(code)} joined={joined} paid={paid} percent={FRIEND_PERCENT} months={FRIEND_MONTHS} reward={`€${(REWARD_CENTS / 100).toFixed(2)}`} />}
         <AccountActions premium={user.tier === "premium" && !!user.stripeSubscriptionId} />
       </div>
     </>

@@ -1,7 +1,7 @@
 "use client";
 
 import PasswordInput from "@/components/PasswordInput";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Turnstile from "@/components/Turnstile";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,6 +9,8 @@ import { signIn } from "next-auth/react";
 import { signup } from "@/app/actions/auth";
 import { importGuestDeck } from "@/app/actions/decks";
 import { clearGuestDeck, loadGuestDeck } from "@/lib/guestDeck";
+
+const noSubscribe = () => () => {};
 
 export default function SignupPage() {
   const router = useRouter();
@@ -20,6 +22,12 @@ export default function SignupPage() {
   const [human, setHuman] = useState("");
   const [humanReset, setHumanReset] = useState(0);
   const [loading, setLoading] = useState(false);
+  // Came through a friend's invite link (/r/<code> sends people here with ?invited=1)
+  const invited = useSyncExternalStore(
+    noSubscribe,
+    () => new URLSearchParams(window.location.search).has("invited"),
+    () => false
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,6 +70,11 @@ export default function SignupPage() {
   return (
     <div className="forge-band relative flex min-h-[calc(100vh-9rem)] items-start justify-center px-4 py-14 sm:items-center">
       <div className="relative w-full max-w-sm rounded-2xl border border-[#3a2f1c] bg-surface px-6 py-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] sm:px-8">
+      {invited && (
+        <p className="mb-4 rounded-lg border border-gold/50 bg-gold/10 px-3 py-2 text-sm text-foreground">
+          🎁 A friend invited you: you get <b>50% off Premium for your first 3 months</b> (after the free trial) whenever you want it.
+        </p>
+      )}
       <h1 className="font-display text-3xl font-semibold text-foreground">Create account</h1>
       <p className="mt-1 text-sm text-muted">
         Free accounts save up to 10 decks and can play online. Premium adds unlimited decks, no ads and price alerts.

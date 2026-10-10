@@ -1,6 +1,7 @@
 "use server";
 
 import Stripe from "stripe";
+import { FRIEND_MONTHS, FRIEND_PERCENT, friendCoupon } from "@/lib/referral";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { PREMIUM_CURRENCY, PREMIUM_PLANS, TRIAL_DAYS, type PremiumPlan } from "@/lib/tier";
@@ -93,6 +94,7 @@ export async function createPremiumCheckoutSession(startNow?: unknown, planChoic
   const origin = (process.env.APP_URL || SITE.url).replace(/\/+$/, "");
 
   const trial = await trialEligible(stripe, user.stripeCustomerId);
+  const friendDiscount = user.referredById && trial ? await friendCoupon(stripe) : null;
   let customerId = user.stripeCustomerId ?? undefined;
   if (!customerId) {
     const customer = await stripe.customers.create({ email: user.email });
@@ -134,8 +136,10 @@ export async function createPremiumCheckoutSession(startNow?: unknown, planChoic
     ],
     success_url: `${origin}/premium?upgraded=1`,
     cancel_url: `${origin}/premium`,
-    // Promotion codes created in Stripe (e.g. a one-off 100%-off code for testing) can be entered here.
-    allow_promotion_codes: true,
+    // A friend invited by a member gets the friend discount on their first subscription (Stripe
+    // allows a discount or a promo-code box, not both). Otherwise promotion codes made in Stripe
+    // (e.g. a one-off 100%-off code for testing) can be entered.
+    ...(friendDiscount ? { discounts: [{ coupon: friendDiscount }] } : { allow_promotion_codes: true }),
     metadata: { userId: user.id, plan: planKey, startNowConsentAt: new Date().toISOString() },
     subscription_data: {
       metadata: { userId: user.id, startNowConsentAt: new Date().toISOString(), trial: trial ? "yes" : "no" },
@@ -276,4 +280,15 @@ export async function requestCancellation(email: unknown, note?: unknown): Promi
   }
   // Same answer whether or not the email has an account, so the form can't be used to look people up.
   return { ok: true };
+}
+
+/** Whether this member gets the friend discount at checkout (invited by a member, first subscription). */
+export async function getFriendOffer(): Promise<{ percent: number; months: number } | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { referredById: true, tier: true, stripeCustomerId: true } });
+  if (!user?.referredById || user.tier === "premium") return null;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || !hit(`friendoffer:${session.user.id}`, 30, 10 * 60 * 1000)) return null;
+  return (await trialEligible(new Stripe(key), user.stripeCustomerId)) ? { percent: FRIEND_PERCENT, months: FRIEND_MONTHS } : null;
 }

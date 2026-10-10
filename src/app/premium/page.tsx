@@ -10,6 +10,7 @@ import {
   createBillingPortalSession,
   getMyTier,
   getPriceAlerts,
+  getFriendOffer,
   getTrialOffer,
   setPriceAlerts,
 } from "@/app/actions/premium";
@@ -40,6 +41,7 @@ export default function PremiumPage() {
 
   const [alerts, setAlerts] = useState<boolean | null>(null);
   const [fetchedTrial, setTrial] = useState(false);
+  const [friend, setFriend] = useState<{ percent: number; months: number } | null>(null);
   // Everyone signing up fresh gets the trial; signed-in members only if they've never subscribed.
   const trial = status === "unauthenticated" ? true : fetchedTrial;
 
@@ -48,6 +50,7 @@ export default function PremiumPage() {
     getMyTier().then(setTier);
     getPriceAlerts().then(setAlerts);
     getTrialOffer().then(setTrial);
+    getFriendOffer().then(setFriend);
   }, [status]);
 
   async function handleUpgrade() {
@@ -261,6 +264,11 @@ export default function PremiumPage() {
                   €0 today. Then {planPrice(plan)}{PREMIUM_PLANS[plan].per}. We email you 3 days before.
                 </p>
               )}
+              {trial && friend && (
+                <p className="mt-2 rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-center text-xs text-gold-bright">
+                  Friend invite: {friend.percent}% off your first {friend.months} months after the trial. Applied at checkout.
+                </p>
+              )}
               </>
             )}
           </div>
@@ -287,6 +295,10 @@ function PremiumFaq() {
     [
       "Is there a free trial?",
       <>First-time members get {TRIAL_DAYS} days free. Stripe takes your card at checkout but charges nothing until the trial ends, and we email you 3 days before. Cancel before then and you pay nothing.</>,
+    ],
+    [
+      "Is there a refer-a-friend deal?",
+      <>Yes. Share your invite link from your <Link href="/account#invite" className="underline hover:text-gold-bright">account page</Link>. Friends who sign up with it get 50% off their first 3 months of Premium after the free trial, and once they pay for the first time you get a free month (up to 12).</>,
     ],
     [
       "How do I cancel?",

@@ -8,6 +8,8 @@ import { emailHtml, esc, sendEmail } from "@/lib/email";
 import { SITE } from "@/lib/site";
 import { verifyLink } from "@/lib/emailVerify";
 import { humanCheck, turnstileSiteKey } from "@/lib/turnstile";
+import { REF_COOKIE, referrerFromCode } from "@/lib/referral";
+import { cookies } from "next/headers";
 
 /** The Turnstile site key for the forms (null while Turnstile is off). */
 export async function getTurnstileSiteKey(): Promise<string | null> {
@@ -47,13 +49,19 @@ export async function signup(
 
   const passwordHash = await bcrypt.hash(pass, 12);
 
+  // Came through a friend's invite link? Link the accounts (for the friend discount and the reward).
+  const jar = await cookies();
+  const referredById = await referrerFromCode(jar.get(REF_COOKIE)?.value, cleanEmail).catch(() => null);
+
   const created = await db.user.create({
     data: {
       email: cleanEmail,
       passwordHash,
       name: cleanName || undefined,
+      referredById,
     },
   });
+  if (referredById) jar.delete(REF_COOKIE);
 
   // A short welcome email with the "confirm your email" link (sending isn't awaited: sign-up never
   // waits on the mail service).
