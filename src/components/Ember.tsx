@@ -85,20 +85,43 @@ export default function Ember({ mood = "happy", size = 160, className, title }: 
     <svg width={size} height={size} viewBox="0 0 400 400" className={className} role="img" aria-label={title ?? `Ember, the Mana Forge mascot (${mood})`}>
       <defs>
         <linearGradient id={`eb${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ffd27a" />
-          <stop offset="0.55" stopColor="#ff8a3d" />
-          <stop offset="1" stopColor="#d9481f" />
+          <stop offset="0" stopColor="#ffe08a" />
+          <stop offset="0.35" stopColor="#ffa22e" />
+          <stop offset="0.7" stopColor="#ff6a1a" />
+          <stop offset="1" stopColor="#c8320f" />
         </linearGradient>
+        <filter id={`eg${id}`} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="22" />
+        </filter>
         <linearGradient id={`ec${id}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff3d6" />
           <stop offset="1" stopColor="#ffc061" />
         </linearGradient>
       </defs>
-      <ellipse cx="200" cy="362" rx="96" ry="14" fill="#000" opacity="0.35" />
-      <path d="M200 52 C 214 96, 268 128, 290 196 C 312 264, 270 350, 200 350 C 130 350, 88 264, 110 196 C 124 152, 162 140, 168 104 C 182 122, 192 92, 200 52 Z" fill={`url(#eb${id})`} />
-      <path d="M200 150 C 214 182, 252 206, 252 254 C 252 300, 228 326, 200 326 C 172 326, 148 300, 148 254 C 148 214, 186 196, 200 150 Z" fill={`url(#ec${id})`} opacity="0.9" />
+      <ellipse className="ember-shadow" cx="200" cy="362" rx="96" ry="14" fill="#000" opacity="0.35" />
+      {/* Soft heat glow behind the flame */}
+      <ellipse className="ember-glow" cx="200" cy="250" rx="150" ry="140" fill="#ff7a2e" opacity="0.22" filter={`url(#eg${id})`} />
+      {/* The flame: three tongues of fire on a round glowing base. It flickers (see .ember-flame in globals.css). */}
+      <g className="ember-flame">
+        <path
+          d="M200 350 C 130 350, 86 290, 100 222 C 106 190, 118 166, 112 118 C 140 146, 150 166, 160 150 C 170 118, 180 92, 214 38 C 222 92, 238 120, 256 140 C 268 150, 286 138, 302 108 C 306 150, 296 176, 300 210 C 314 278, 268 350, 200 350 Z"
+          fill={`url(#eb${id})`}
+        />
+        <path
+          className="ember-core"
+          d="M200 330 C 158 330, 138 298, 146 258 C 152 224, 178 206, 190 158 C 200 196, 224 210, 238 234 C 258 272, 242 330, 200 330 Z"
+          fill={`url(#ec${id})`}
+          opacity="0.9"
+        />
+      </g>
       <ellipse cx="152" cy="280" rx="11" ry="6" fill="#ff6f6f" opacity="0.55" />
       <ellipse cx="248" cy="280" rx="11" ry="6" fill="#ff6f6f" opacity="0.55" />
+      {/* Little embers drifting up off the tips */}
+      <g className="ember-sparks" fill="#ffd27a">
+        <circle cx="214" cy="40" r="4" />
+        <circle cx="120" cy="112" r="3" />
+        <circle cx="298" cy="104" r="3.5" />
+      </g>
       {FACES[mood]}
     </svg>
   );

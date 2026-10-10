@@ -39,6 +39,15 @@ export default function Footer() {
         used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
       </p>
       <nav className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1">
+        {[
+          { href: "/challenge", label: "Forge Challenge" },
+          { href: "/vote", label: "Community vote" },
+          { href: "/prices/movers", label: "Price movers" },
+        ].map((l) => (
+          <Link key={l.href} href={l.href} className="underline hover:text-gold-bright">
+            {l.label}
+          </Link>
+        ))}
         {LEGAL_LINKS.map((l) => (
           <Link key={l.href} href={l.href} className="underline hover:text-gold-bright">
             {l.label}

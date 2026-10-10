@@ -8,6 +8,7 @@ import GuestDeckEditor from "./GuestDeckEditor";
 import PriceChart from "@/app/prices/PriceChart";
 import TrialNudge from "@/components/TrialNudge";
 import { deckValueHistory } from "@/lib/prices";
+import DeckSnapshotsPanel from "@/components/DeckSnapshotsPanel";
 
 export default async function DeckBuilderEditPage({
   params,
@@ -35,6 +36,9 @@ export default async function DeckBuilderEditPage({
           .map((c) => ({ id: c.scryfallId, qty: c.quantity ?? 1 }))
       ).catch(() => null)
     : null;
+  const snapshots = premium
+    ? (await db.deckSnapshot.findMany({ where: { deckId: row.id }, orderBy: { createdAt: "desc" }, select: { id: true, label: true, cardCount: true, createdAt: true } })).map((s) => ({ ...s, createdAt: s.createdAt.toISOString() }))
+    : [];
 
   return (
     <>
@@ -53,6 +57,10 @@ export default async function DeckBuilderEditPage({
         ) : (
           <TrialNudge>See what your deck is worth over the last week, month and year, and get an email when its price moves.</TrialNudge>
         )}
+      </section>
+      <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
+        <h2 className="mb-2 font-display text-2xl font-semibold text-foreground">Versions</h2>
+        <DeckSnapshotsPanel deckId={row.id} premium={premium} initial={snapshots} />
       </section>
     </>
   );

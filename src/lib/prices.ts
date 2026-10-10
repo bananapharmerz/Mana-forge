@@ -395,3 +395,83 @@ export async function searchCardPrices(raw: string, limit = 24): Promise<PriceHi
   cache.set(key, { at: Date.now(), hits });
   return hits;
 }
+
+// ---- weekly movers page ---------------------------------------------------------------------------
+
+const DAY_MS = 86400000;
+const dayMs = (d: string) => Date.parse(`${d}T00:00:00Z`);
+export const addDays = (d: string, n: number) => today(dayMs(d) + n * DAY_MS);
+export const yesterday = () => today(Date.now() - DAY_MS);
+
+/** Weeks for the archive end on Sundays (UTC). The latest finished one ends on or before yesterday. */
+export function lastWeekEnd(t = Date.now()): string {
+  const yesterday = today(t - DAY_MS);
+  const dow = new Date(dayMs(yesterday)).getUTCDay(); // 0 = Sunday
+  return addDays(yesterday, -dow);
+}
+export function isWeekEnd(d: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(dayMs(d)) && today(dayMs(d)) === d && new Date(dayMs(d)).getUTCDay() === 0;
+}
+
+export interface WeekMovers {
+  startDay: string;
+  endDay: string;
+  up: Mover[];
+  down: Mover[];
+  spark: Record<string, (number | null)[]>; // 30 days up to endDay, for each mover
+  tracked: number; // how many printings had prices on both ends
+}
+
+/**
+ * The tracked printings whose price moved most in the 7 days ending `endDay`: the first price
+ * recorded in [start, start+2] against the last one in [end-2, end]. At least $1 on one side,
+ * and a move of at least $0.25 and 3%, so pennies and noise stay out.
+ */
+export async function moversForWeek(endDay: string, limit = 10): Promise<WeekMovers> {
+  const startDay = addDays(endDay, -7);
+  const rows = await db.cardPriceHistory.findMany({
+    where: { OR: [{ day: { gte: startDay, lte: addDays(startDay, 2) } }, { day: { gte: addDays(endDay, -2), lte: endDay } }], usd: { not: null } },
+    orderBy: { day: "asc" },
+    select: { scryfallId: true, day: true, usd: true },
+  });
+  const from = new Map<string, number>();
+  const to = new Map<string, number>();
+  for (const r of rows) {
+    if (r.day <= addDays(startDay, 2)) {
+      if (!from.has(r.scryfallId)) from.set(r.scryfallId, r.usd!);
+    } else to.set(r.scryfallId, r.usd!);
+  }
+  const both = [...to.keys()].filter((id) => from.has(id));
+  const raw = both
+    .map((id) => {
+      const a = from.get(id)!;
+      const b = to.get(id)!;
+      return { id, a, b, change: b - a, pct: a ? (b - a) / a : 0 };
+    })
+    .filter((m) => Math.max(m.a, m.b) >= 1 && Math.abs(m.change) >= 0.25 && Math.abs(m.pct) >= 0.03);
+  const upRaw = raw.filter((m) => m.change > 0).sort((x, y) => y.pct - x.pct).slice(0, limit);
+  const downRaw = raw.filter((m) => m.change < 0).sort((x, y) => x.pct - y.pct).slice(0, limit);
+  const ids = [...upRaw, ...downRaw].map((m) => m.id);
+  const [meta, hist] = await Promise.all([
+    ids.length ? db.cardPrice.findMany({ where: { scryfallId: { in: ids } }, select: { scryfallId: true, name: true, setName: true, imageUrl: true } }) : Promise.resolve([]),
+    ids.length
+      ? db.cardPriceHistory.findMany({ where: { scryfallId: { in: ids }, day: { gte: addDays(endDay, -29), lte: endDay } }, select: { scryfallId: true, day: true, usd: true } })
+      : Promise.resolve([]),
+  ]);
+  const info = new Map(meta.map((m) => [m.scryfallId, m]));
+  const toMover = (m: (typeof raw)[number]): Mover => ({
+    scryfallId: m.id,
+    name: info.get(m.id)?.name ?? "Unknown card",
+    setName: info.get(m.id)?.setName ?? null,
+    imageUrl: info.get(m.id)?.imageUrl ?? null,
+    usd: m.b,
+    weekAgoUsd: m.a,
+    change: m.change,
+    pct: m.pct,
+  });
+  const days = Array.from({ length: 30 }, (_, i) => addDays(endDay, i - 29));
+  const byId = new Map<string, Map<string, number | null>>();
+  for (const h of hist) (byId.get(h.scryfallId) ?? byId.set(h.scryfallId, new Map()).get(h.scryfallId)!).set(h.day, h.usd);
+  const spark = Object.fromEntries(ids.map((id) => [id, days.map((d) => byId.get(id)?.get(d) ?? null)]));
+  return { startDay, endDay, up: upRaw.map(toMover), down: downRaw.map(toMover), spark, tracked: both.length };
+}

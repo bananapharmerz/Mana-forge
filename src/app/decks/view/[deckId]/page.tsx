@@ -12,6 +12,7 @@ import CardNameZoom from "@/components/CardNameZoom";
 import MakeItMineButton from "@/components/MakeItMineButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import ReportDeckButton from "@/components/ReportDeckButton";
+import ShareDeckButton from "@/components/ShareDeckButton";
 import BuyDeckPanel from "@/components/BuyDeckPanel";
 import PriceChart from "@/app/prices/PriceChart";
 import { deckValueHistory } from "@/lib/prices";
@@ -22,27 +23,20 @@ import { authorName, HOUSE_EMAIL } from "@/lib/author";
 
 export async function generateMetadata({ params }: { params: Promise<{ deckId: string }> }): Promise<Metadata> {
   const { deckId } = await params;
-  const d = await db.deck.findUnique({ where: { id: deckId }, select: { name: true, commanderName: true, commanderData: true, isPublic: true, owner: { select: { name: true } } } });
+  const d = await db.deck.findUnique({ where: { id: deckId }, select: { name: true, commanderName: true, isPublic: true, owner: { select: { name: true } } } });
   if (!d || !d.isPublic) return { title: "Deck not found", robots: { index: false } };
   const by = d.owner.name && d.owner.name !== SITE.name ? ` by ${d.owner.name}` : "";
   // "Kami: Average Build" already names the commander, so don't repeat it.
   const title = d.name.toLowerCase().includes(d.commanderName.toLowerCase()) ? `${d.name} — Commander deck` : `${d.name} — ${d.commanderName} Commander deck`;
   const description = `${d.commanderName} Commander (EDH) decklist${by}: ${d.name}. The full 100-card list, mana curve and what the deck costs.`;
-  // The commander's art for link previews (Scryfall's art crop of the card image).
-  const art = (() => {
-    try {
-      const url = (JSON.parse(d.commanderData) as { imageUrl?: string }).imageUrl;
-      return url?.includes("cards.scryfall.io") ? url.replace("/normal/", "/art_crop/").replace("/large/", "/art_crop/") : undefined;
-    } catch {
-      return undefined;
-    }
-  })();
+  // Link previews use the deck's own picture: commander art, name, card count, value and curve.
+  const card = `/api/deck-card/${deckId}`;
   return {
     title,
     description,
     alternates: { canonical: `/decks/view/${deckId}` },
-    openGraph: { type: "article", title, description, url: `/decks/view/${deckId}`, images: art ? [{ url: art, alt: `${d.commanderName} card art` }] : [{ url: "/opengraph-image", width: 1200, height: 630 }] },
-    twitter: { card: "summary_large_image", images: art ? [art] : undefined },
+    openGraph: { type: "article", title, description, url: `/decks/view/${deckId}`, images: [{ url: card, width: 1200, height: 630, alt: `${d.name}: ${d.commanderName} Commander deck` }] },
+    twitter: { card: "summary_large_image", images: [card] },
   };
 }
 
@@ -229,6 +223,7 @@ export default async function ViewDeckPage({
             />
           </div>
 
+          <ShareDeckButton deckId={row.id} name={deck.name} />
           <BuyDeckPanel deck={deck} />
           {!isOwnDeck && <ReportDeckButton deckId={row.id} />}
         </div>

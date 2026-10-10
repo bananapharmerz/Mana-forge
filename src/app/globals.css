@@ -278,3 +278,33 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .page-enter { animation: none; }
 }
+
+/* Ember the mascot: the flame flickers, the core breathes, sparks drift up. */
+.ember-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: ember-flicker 1.9s ease-in-out infinite; }
+.ember-core { transform-box: fill-box; transform-origin: 50% 100%; animation: ember-core 1.3s ease-in-out infinite; }
+.ember-glow { animation: ember-glow 2.4s ease-in-out infinite; }
+.ember-sparks circle { animation: ember-spark 2.6s ease-out infinite; }
+.ember-sparks circle:nth-child(2) { animation-delay: 0.9s; }
+.ember-sparks circle:nth-child(3) { animation-delay: 1.7s; }
+@keyframes ember-flicker {
+  0%, 100% { transform: scale(1, 1) skewX(0deg); }
+  20% { transform: scale(1.015, 1.035) skewX(-1.6deg); }
+  45% { transform: scale(0.99, 0.985) skewX(1.2deg); }
+  70% { transform: scale(1.01, 1.045) skewX(-0.8deg); }
+}
+@keyframes ember-core {
+  0%, 100% { transform: scale(1, 1); opacity: 0.9; }
+  50% { transform: scale(0.96, 1.06); opacity: 1; }
+}
+@keyframes ember-glow {
+  0%, 100% { opacity: 0.18; }
+  50% { opacity: 0.3; }
+}
+@keyframes ember-spark {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-46px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ember-flame, .ember-core, .ember-glow, .ember-sparks circle { animation: none; }
+}

@@ -173,6 +173,10 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
       </section>
 
       )}
+      <div className="mb-3 flex items-end justify-between gap-3">
+        <h2 className="font-display text-2xl font-semibold text-foreground">This week</h2>
+        <Link href="/prices/movers" className="text-sm text-gold-bright underline hover:text-foreground">All price movers, week by week →</Link>
+      </div>
       <section className="grid gap-4 md:grid-cols-3">
         <MoverList title="Up this week" rows={movers.up} up />
         <MoverList title="Down this week" rows={movers.down} up={false} />

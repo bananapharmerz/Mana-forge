@@ -35,6 +35,8 @@ import { SITE } from "@/lib/site";
 import type { Metadata } from "next";
 import { authorName } from "@/lib/author";
 import CommanderGuide from "@/components/CommanderGuide";
+import RisingFalling from "@/components/RisingFalling";
+import { cardTrends } from "@/lib/trending";
 
 export async function generateMetadata({ params }: { params: Promise<{ commander: string }> }): Promise<Metadata> {
   const { commander } = await params;
@@ -129,6 +131,9 @@ export default async function CommanderDecksPage({
     (edhrecDecks ?? []).map(async (d) => [d.urlhash, await getEdhrecDeckSource(d.urlhash, 300)] as const)
   );
 
+  // What's gaining or losing ground in this commander's decks on this site (needs a few decks).
+  const trends = cardTrends(siteDecks);
+
   const typeSections = edhrec ? getTypeSections(edhrec) : [];
   const newCards = edhrec ? getNewCards(edhrec) : [];
   const mostPlayed = edhrec ? getMostPlayed(edhrec, 250) : [];
@@ -163,6 +168,7 @@ export default async function CommanderDecksPage({
     { id: "new-cards", label: "New Cards", show: newCards.length > 0 },
     ...typeSections.map((s) => ({ id: s.tag, label: s.label, show: true })),
     { id: "public-decks", label: "Public Decks", show: !!edhrecDecks && edhrecDecks.length > 0 },
+    { id: "trending", label: "Rising & Falling", show: !!trends && (trends.rising.length > 0 || trends.falling.length > 0) },
     { id: "site-decks", label: "Site Decks", show: true },
   ].filter((t) => t.show);
 
@@ -350,6 +356,8 @@ export default async function CommanderDecksPage({
           </p>
         </div>
       )}
+
+      {trends && <RisingFalling commander={card.name} trends={trends} />}
 
       <div id="site-decks" className="mt-12 scroll-mt-28">
         <h2 className="mb-4 text-xl font-bold text-foreground">

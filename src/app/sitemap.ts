@@ -4,6 +4,7 @@ import { SITE } from "@/lib/site";
 import { SHOP_ENABLED } from "@/lib/features";
 import { commanderNames } from "@/lib/commanderIndex";
 import { colorIdentityCategories, typalCategories, themeCategories } from "@/lib/categories";
+import { addDays, lastWeekEnd } from "@/lib/prices";
 
 // Every public page, for search engines: the main sections, browse pages, commanders with
 // public decks, the public decks themselves and the store's products. Always current.
@@ -19,6 +20,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/decks"), changeFrequency: "hourly", priority: 0.9 },
     ...(SHOP_ENABLED ? [{ url: u("/store"), changeFrequency: "weekly" as const, priority: 0.8 }] : []),
     { url: u("/prices"), changeFrequency: "daily", priority: 0.7 },
+    { url: u("/prices/movers"), changeFrequency: "daily", priority: 0.7 },
+    ...Array.from({ length: 12 }, (_, i) => addDays(lastWeekEnd(), -7 * i)).map((d) => ({ url: u(`/prices/movers/${d}`), changeFrequency: "yearly" as const, priority: 0.4 })),
+    { url: u("/challenge"), changeFrequency: "weekly", priority: 0.6 },
+    { url: u("/vote"), changeFrequency: "weekly", priority: 0.5 },
     ...(SHOP_ENABLED ? [{ url: u("/proxies"), changeFrequency: "monthly" as const, priority: 0.7 }] : []),
     { url: u("/play"), changeFrequency: "monthly", priority: 0.6 },
     { url: u("/premium"), changeFrequency: "monthly", priority: 0.5 },
@@ -32,6 +37,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((s): s is string => !!s)
     .map((slug) => ({ url: u(`/decks?category=${encodeURIComponent(slug)}`), changeFrequency: "daily" as const, priority: 0.5 }));
 
+  const [polls, challenges] = await Promise.all([
+    db.poll.findMany({ where: { opensAt: { lte: now } }, select: { slug: true, closesAt: true } }).catch(() => []),
+    db.challenge.findMany({ select: { slug: true, voteUntil: true } }).catch(() => []),
+  ]);
   const [decks, commanders, products] = await Promise.all([
     db.deck.findMany({ where: { isPublic: true }, select: { id: true, updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 20000 }).catch(() => []),
     db.deck.groupBy({ by: ["commanderName"], where: { isPublic: true }, _max: { updatedAt: true } }).catch(() => []),
@@ -43,6 +52,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...main,
     ...categories,
+    ...polls.map((p) => ({ url: u(`/vote/${p.slug}`), changeFrequency: p.closesAt > now ? ("daily" as const) : ("yearly" as const), priority: 0.4 })),
+    ...challenges.map((c) => ({ url: u(`/challenge/${c.slug}`), changeFrequency: c.voteUntil > now ? ("daily" as const) : ("yearly" as const), priority: 0.5 })),
     ...commanders
       .filter((c) => c.commanderName)
       .map((c) => ({ url: u(`/decks/${encodeURIComponent(c.commanderName)}`), lastModified: c._max.updatedAt ?? undefined, changeFrequency: "daily" as const, priority: 0.7 })),

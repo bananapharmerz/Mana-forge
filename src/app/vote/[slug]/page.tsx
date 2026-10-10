@@ -22,7 +22,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function PollPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const poll = await db.poll.findUnique({ where: { slug } });
-  if (!poll || poll.opensAt.getTime() > Date.now()) notFound();
+  const now = new Date();
+  if (!poll || poll.opensAt > now) notFound();
   const session = await auth();
   const uid = session?.user?.id;
   const [grouped, mine] = await Promise.all([
@@ -31,7 +32,7 @@ export default async function PollPage({ params }: { params: Promise<{ slug: str
   ]);
   const counts = new Map(grouped.map((g) => [g.optionId, g._count._all]));
   const options = pollOptions(poll.options);
-  const open = Date.now() < poll.closesAt.getTime();
+  const open = now < poll.closesAt;
   const showResults = !open || !!mine;
 
   return (

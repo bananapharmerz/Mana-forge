@@ -23,6 +23,7 @@ const BENEFITS = [
   { feature: "Price alerts by email", free: "—", premium: "Target prices + weekly deck moves" },
   { feature: "Deck value graph", free: "—", premium: "Week, month and year in the builder" },
   { feature: "Budget upgrade ideas", free: "—", premium: "In the deck builder" },
+  { feature: "Deck versions", free: "—", premium: "Save, compare and restore" },
   { feature: "Supporter badge", free: "—", premium: "On your public decks" },
 ];
 

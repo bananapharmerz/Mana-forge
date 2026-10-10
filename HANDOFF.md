@@ -96,3 +96,13 @@ admin hub that reads and edits this site's database.
 - Premium perks: price alert emails (src/lib/priceAlerts.ts, runs after each hourly price refresh; User.priceAlerts toggle on /premium), budget upgrades (src/app/actions/upgrades.ts + BudgetUpgradesPanel), SupporterBadge on public decks.
 - Play streams capped at 8 open per IP.
 - IP bans: src/lib/bans.ts (10 rate-limit strikes/hour → 24h, repeat → 7d), hashed IP only, /data/bans.json read by src/proxy.ts, /banned page with appeal code, email when signed in. Admin API /api/admin/bans needs ADMIN_API_KEY (32+ chars), 404 otherwise. Nexus Police Station lists bans and lifts them with the same key in nexus/.env.
+
+## 2026-10-10: community features (from the FBI competitor report)
+- Migration `20261010120000_community_features` (new tables Poll, PollVote, Challenge, ChallengeEntry, ChallengeVote, DeckSnapshot). Apply locally with `npx prisma migrate deploy` then `npx prisma generate`; the server applies it on start (scripts/start.sh).
+- **Community vote** `/vote`, `/vote/<slug>`: one-question polls, one vote per signed-in account, results after voting or when closed.
+- **Forge Challenge** `/challenge`, `/challenge/<slug>`: monthly deckbuilding contest. Phases from dates: entries open → admin picks finalists → community vote (no voting for your own deck, counts hidden until the end) → winner. Prizes (Premium months) are handed out by hand, e.g. a 100% Stripe promotion code.
+- Admin API for both (Nexus, `x-admin-key`): `GET /api/admin/community`; `POST {action:"createPoll"|"createChallenge"|"setFinalists", …}` (see the comment at the top of src/app/api/admin/community/route.ts).
+- **Rising & falling** on commander pages (src/lib/trending.ts): card share in this site's public decks built in the last 30 days vs before; hidden until there are 3+ decks on each side.
+- **Price movers** `/prices/movers` (last 7 days) and `/prices/movers/<Sunday YYYY-MM-DD>` (weekly archive, in the sitemap). Built from CardPriceHistory, no new data.
+- **Deck share image** `/api/deck-card/<deckId>` (1200×630, public decks only) is now the deck page's og:image; "Share deck" / "Save image" buttons on public deck pages.
+- **Deck versions** (Premium) under the deck builder: save, "what changed", restore (the current state is saved first), keeps the latest 30.

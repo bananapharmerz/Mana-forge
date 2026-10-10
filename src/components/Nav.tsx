@@ -15,6 +15,7 @@ const links = [
   { href: "/deck-builder", label: "My Decks" },
   { href: "/prices", label: "Prices" },
   { href: "/play", label: "Play" },
+  { href: "/challenge", label: "Challenge" },
   { href: "/proxies", label: "Proxies" },
   { href: "/store", label: "Store" },
 ].filter((l) => SHOP_ENABLED || !isShopPath(l.href));
