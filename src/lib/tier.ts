@@ -9,7 +9,7 @@ export const premiumPrice = () => `€${(PREMIUM_PRICE_CENTS / 100).toFixed(2)}`
 export type PremiumPlan = "month" | "year";
 export const PREMIUM_PLANS: Record<PremiumPlan, { cents: number; interval: "month" | "year"; label: string; per: string; note?: string }> = {
   month: { cents: PREMIUM_PRICE_CENTS, interval: "month", label: "Monthly", per: "/month" },
-  year: { cents: 2900, interval: "year", label: "Yearly", per: "/year", note: "Save 39%" },
+  year: { cents: 2999, interval: "year", label: "Yearly", per: "/year", note: "Save 37%" },
 };
 export const planPrice = (p: PremiumPlan) => `€${(PREMIUM_PLANS[p].cents / 100).toFixed(2).replace(/\.00$/, "")}`;
 // First-time subscribers get a free trial. Stripe takes the card at checkout and charges only when
