@@ -3,7 +3,9 @@ import PageHeader from "@/components/PageHeader";
 import { addDays, lastWeekEnd, moversForWeek, yesterday } from "@/lib/prices";
 import MoversView, { weekLabel } from "./MoversView";
 
-export const revalidate = 3600;
+// Always rendered on request: the build runs against an empty throwaway database, so a
+// prerendered copy said "no big moves" for up to an hour after every deploy.
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Commander price movers this week",
   description: "The Magic: The Gathering cards in Commander decks whose prices rose and fell most over the last 7 days, with 30-day price lines.",
