@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CommanderSpotlight from "@/components/CommanderSpotlight";
 import ForgeHero from "@/components/forge3d/ForgeHero";
 import ForgeStory from "@/components/forge3d/ForgeStory";
 import ForgeTrails from "@/components/forge3d/ForgeTrails";
@@ -80,6 +81,7 @@ export default async function Home() {
       <ForgeHero stats={stats} />
       <MobileStartBar />
       {(!userId || mine === 0) && <StarterDecks signedIn={!!userId} title={userId ? "Your first deck is one click away" : undefined} />}
+      <CommanderSpotlight />
       <ForgeStory />
       <ForgeTrails />
       <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6">
