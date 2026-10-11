@@ -308,3 +308,21 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .ember-flame, .ember-core, .ember-glow, .ember-sparks circle { animation: none; }
 }
+
+/* Homepage hero: Ember at the anvil (src/components/forge3d/ForgeEmberScene.tsx). */
+.forge-spark { opacity: 0; animation: forge-spark 3s ease-out infinite; }
+@keyframes forge-spark {
+  0% { opacity: 0; transform: translate(0, 0) scale(1); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--drift, 0px), -260px) scale(0.4); }
+}
+.forge-bob { animation: forge-bob 3.2s ease-in-out infinite; }
+@keyframes forge-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.forge-strike { opacity: 0.15; animation: forge-strike 2.4s ease-in-out infinite; }
+@keyframes forge-strike { 0%, 70%, 100% { opacity: 0.15; } 78% { opacity: 0.85; } }
+.forge-heat { animation: forge-heat 4s ease-in-out infinite; }
+@keyframes forge-heat { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .forge-spark, .forge-bob, .forge-strike, .forge-heat { animation: none; }
+  .forge-spark { opacity: 0.6; }
+}

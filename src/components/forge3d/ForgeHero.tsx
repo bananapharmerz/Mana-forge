@@ -1,16 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import CursorGlow from "@/components/fx/CursorGlow";
+import ForgeEmberScene from "./ForgeEmberScene";
 
-// Homepage hero: a dark, cinematic band with a floating Mana Forge card in a mana vortex,
-// fading into the parchment site below. three.js loads only in the browser, after first paint.
+// Homepage hero: a dark, cinematic band with Ember at work on the anvil (sparks, forge glow),
+// fading into the parchment site below. It used to be a floating 3D card in a mana vortex; Ember
+// says "forge" at a glance, shows up instantly (plain SVG and CSS) and is the same on every device.
 
 export default function ForgeHero({ stats }: { stats: { label: string; value: string }[] }) {
-  const host = useRef<HTMLDivElement>(null);
-  const [ready, setReady] = useState(false);
-  const [noGl, setNoGl] = useState(false);
   const copy = useRef<HTMLDivElement>(null);
 
   // Parallax: the headline drifts up and fades a little slower than the page scrolls.
@@ -34,27 +33,6 @@ export default function ForgeHero({ stats }: { stats: { label: string; value: st
     };
   }, []);
 
-  useEffect(() => {
-    let dispose: (() => void) | undefined;
-    let cancelled = false;
-    (async () => {
-      const { webglAvailable, prefersReducedMotion } = await import("./stage");
-      if (!webglAvailable()) return setNoGl(true);
-      const { mountHero } = await import("./heroScene");
-      if (cancelled || !host.current) return;
-      try {
-        dispose = mountHero(host.current, { still: prefersReducedMotion() });
-        requestAnimationFrame(() => setReady(true));
-      } catch {
-        setNoGl(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-      dispose?.();
-    };
-  }, []);
-
   return (
     <section className="relative isolate overflow-hidden bg-[#09060f] text-[#f3e9cf]">
       {/* Backdrop glow, also the fallback when 3D isn't available. */}
@@ -66,18 +44,12 @@ export default function ForgeHero({ stats }: { stats: { label: string; value: st
             "radial-gradient(60% 55% at 72% 45%, rgba(193,65,12,0.35), transparent 60%), radial-gradient(50% 60% at 20% 20%, rgba(91,42,134,0.45), transparent 65%), radial-gradient(80% 60% at 50% 110%, rgba(224,178,82,0.18), transparent 60%)",
         }}
       />
-      <div
-        ref={host}
-        aria-hidden
-        className={`absolute inset-0 -z-10 transition-opacity duration-[1400ms] ${ready ? "opacity-100" : "opacity-0"}`}
-      />
-      {/* On phones the card sits above the headline; keep the text readable over it. */}
+      {/* Ember at the anvil: above the headline on phones, beside it on bigger screens. */}
+      <ForgeEmberScene className="absolute left-1/2 top-2 -z-10 aspect-[4/5] w-[min(52vw,240px)] -translate-x-1/2 md:left-auto md:right-[6%] md:top-1/2 md:w-[clamp(320px,34vw,470px)] md:translate-x-0 md:-translate-y-1/2" />
+      {/* On phones Ember sits above the headline; keep the text readable below it. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[62%] bg-gradient-to-b from-transparent via-[#09060f]/80 to-[#09060f] md:hidden" />
-      {noGl && (
-        <div aria-hidden className="absolute right-[8%] top-1/2 -z-10 hidden h-80 w-56 -translate-y-1/2 rotate-6 rounded-2xl border border-[#e0b252]/40 bg-gradient-to-b from-[#3b1d55] to-[#120a1c] shadow-[0_0_80px_-10px_rgba(255,140,40,0.6)] md:block" />
-      )}
 
-      <div className="mx-auto flex min-h-[min(86vh,800px)] max-w-7xl flex-col justify-end px-4 pb-40 pt-[70vw] sm:px-6 md:justify-center md:pb-36 md:pt-20">
+      <div className="mx-auto flex min-h-[min(86vh,800px)] max-w-7xl flex-col justify-start px-4 pb-28 pt-[min(66vw,310px)] sm:px-6 md:justify-center md:pb-36 md:pt-20">
         <div ref={copy} className="relative z-[2] max-w-xl will-change-transform">
           <p className="mb-4 text-xs font-semibold uppercase tracking-[0.32em] text-[#e0b252]">Free Commander deck builder</p>
           <h1 className="font-display text-5xl font-semibold leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
