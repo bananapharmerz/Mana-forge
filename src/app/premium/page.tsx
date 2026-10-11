@@ -38,6 +38,9 @@ export default function PremiumPage() {
   const [error, setError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
   const [startNow, setStartNow] = useState(false);
+  // The button stays clickable: a greyed-out button that does nothing on tap loses people who
+  // don't spot the box. Tapping it without the tick points at the box instead.
+  const [needTick, setNeedTick] = useState(false);
   const [plan, setPlan] = useState<PremiumPlan>("year");
 
   const [alerts, setAlerts] = useState<boolean | null>(null);
@@ -55,6 +58,11 @@ export default function PremiumPage() {
   }, [status]);
 
   async function handleUpgrade() {
+    if (!startNow) {
+      setNeedTick(true);
+      document.getElementById("premium-consent")?.focus();
+      return;
+    }
     setLoading(true);
     setError(null);
     setNotConfigured(false);
@@ -230,11 +238,15 @@ export default function PremiumPage() {
                   </button>
                 ))}
               </div>
-              <label className="mb-4 flex items-start gap-2 text-left text-xs text-muted">
+              <label className={`mb-4 flex items-start gap-2 rounded-lg text-left text-xs text-muted ${needTick && !startNow ? "p-2 ring-2 ring-gold" : ""}`}>
                 <input
+                  id="premium-consent"
                   type="checkbox"
                   checked={startNow}
-                  onChange={(e) => setStartNow(e.target.checked)}
+                  onChange={(e) => {
+                    setStartNow(e.target.checked);
+                    if (e.target.checked) setNeedTick(false);
+                  }}
                   className="mt-0.5 accent-[var(--color-gold)]"
                 />
                 {trial ? (
@@ -257,11 +269,16 @@ export default function PremiumPage() {
               </label>
               <button
                 onClick={handleUpgrade}
-                disabled={loading || !startNow}
+                disabled={loading}
                 className="w-full rounded-lg bg-gold px-8 py-3 text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-50"
               >
                 {loading ? "Redirecting to Stripe..." : trial ? `Start ${TRIAL_DAYS}-day free trial` : `Upgrade for ${planPrice(plan)}${PREMIUM_PLANS[plan].per}`}
               </button>
+              {needTick && !startNow && (
+                <p role="alert" className="mt-2 text-center text-xs font-semibold text-gold-bright">
+                  Tick the box above first: it confirms you want Premium to start now (German law asks for it).
+                </p>
+              )}
               {trial && (
                 <p className="mt-2 text-center text-xs text-muted">
                   €0 today. Then {planPrice(plan)}{PREMIUM_PLANS[plan].per}. We email you 3 days before.
