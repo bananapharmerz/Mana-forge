@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { adminAllowed } from "@/lib/adminKey";
 import { hit, ipFrom } from "@/lib/rateLimit";
-import { trafficDays } from "@/lib/traffic";
+import { localDay, trafficDays } from "@/lib/traffic";
 
 // For Nexus's Activity panel: real people vs bots per day, and which Premium plan members
 // chose. Real people = distinct visitors whose browser ran the analytics beacon (bots almost
@@ -47,11 +47,12 @@ async function plans() {
 export async function GET(req: Request) {
   if (!hit(`admin-traffic:${ipFrom(req.headers)}`, 30, 60 * 1000) || !adminAllowed(req)) return notFound();
   const days = trafficDays(7);
-  const since = new Date(`${days[0].day}T00:00:00Z`);
+  // Germany is UTC+1 or +2, so start a few hours early and let the day key sort it out.
+  const since = new Date(Date.parse(`${days[0].day}T00:00:00Z`) - 3 * 3600000);
   const visits = await db.hit.findMany({ where: { at: { gte: since }, kind: "view" }, select: { at: true, visitor: true } });
   const people = new Map<string, Set<string>>();
   for (const v of visits) {
-    const d = v.at.toISOString().slice(0, 10);
+    const d = localDay(v.at);
     (people.get(d) ?? people.set(d, new Set()).get(d)!).add(v.visitor);
   }
   const [members, premium] = await Promise.all([db.user.count(), db.user.count({ where: { tier: "premium" } })]);

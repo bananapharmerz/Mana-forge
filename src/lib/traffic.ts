@@ -36,6 +36,12 @@ export function botName(ua: string | null): string | null {
 }
 
 const KEEP_DAYS = 60;
+
+// Days run midnight to midnight in Germany (where the owner is), so "today" starts at 00:00 there.
+const DAY_FMT = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit" });
+/** The calendar day (YYYY-MM-DD) in Germany for a moment in time. */
+export const localDay = (t: number | Date = Date.now()) => DAY_FMT.format(t);
+const minusDays = (day: string, n: number) => new Date(Date.parse(`${day}T12:00:00Z`) - n * 86400000).toISOString().slice(0, 10);
 const file = () => path.join(path.dirname(process.env.DATABASE_PATH || path.join(process.cwd(), "dev.db")), "traffic.json");
 const g = globalThis as unknown as { __mfTraffic?: { days: Record<string, TrafficDay>; dirty: boolean; timer?: ReturnType<typeof setInterval> } };
 
@@ -74,7 +80,7 @@ function flush() {
 /** Called for each page request (from src/proxy.ts). Cheap: two counters in memory. */
 export function countPage(ua: string | null) {
   const s = state();
-  const day = new Date().toISOString().slice(0, 10);
+  const day = localDay();
   const d = (s.days[day] ??= { pages: 0, bots: 0, by: {} });
   d.pages++;
   const bot = botName(ua);
@@ -88,8 +94,9 @@ export function countPage(ua: string | null) {
 export function trafficDays(n = 7): { day: string; pages: number; bots: number; by: Record<string, number> }[] {
   const s = state();
   const out = [];
+  const today = localDay();
   for (let i = n - 1; i >= 0; i--) {
-    const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const day = minusDays(today, i);
     out.push({ day, ...(s.days[day] ?? { pages: 0, bots: 0, by: {} }) });
   }
   return out;
