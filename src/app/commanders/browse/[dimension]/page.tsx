@@ -1,3 +1,4 @@
+import BreadcrumbLd from "@/components/BreadcrumbLd";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BrowseSearchList, { type BrowseItem } from "@/components/BrowseSearchList";
@@ -97,6 +98,7 @@ export default async function BrowseDimensionPage({
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <BreadcrumbLd trail={[["Commanders", "/commanders"], [meta.title.replace(/^Browse by /, "Commanders by "), `/commanders/browse/${dimension}`]]} />
       <Link href={base} className="text-xs text-muted underline hover:text-gold-bright">
         ← Back to {backLabel}
       </Link>

@@ -7,6 +7,7 @@ import { cardPriceDetail } from "@/lib/prices";
 import { SITE } from "@/lib/site";
 import PriceChart from "../../PriceChart";
 import WatchButton from "./WatchButton";
+import BreadcrumbLd from "@/components/BreadcrumbLd";
 
 // One printing's price page: today's price and its history (1 week, 1 month, 1 year).
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!ID.test(id)) return { title: "Card not found", robots: { index: false } };
   const c = await db.cardPrice.findUnique({ where: { scryfallId: id }, select: { name: true, setName: true, usd: true } });
   if (!c) return { title: "Card not found", robots: { index: false } };
-  const title = `${c.name}${c.setName ? ` (${c.setName})` : ""} price history`;
+  const title = `${c.name} price${c.setName ? ` (${c.setName})` : ""}: today, chart & history`;
   const description = `${c.name}${c.setName ? ` from ${c.setName}` : ""}: ${c.usd !== null ? `$${c.usd.toFixed(2)} today. ` : ""}Daily price chart for the last week, month and year, with alerts when it drops.`;
   return { title, description, alternates: { canonical: `/prices/card/${id}` }, openGraph: { title: `${title} · ${SITE.name}`, description } };
 }
@@ -35,6 +36,7 @@ export default async function CardPricePage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <BreadcrumbLd trail={[["Card prices", "/prices"], [card.name, `/prices/card/${id}`]]} />
       <Link href="/prices" className="text-xs text-muted underline hover:text-gold-bright">
         ← Card prices
       </Link>

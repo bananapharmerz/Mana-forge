@@ -41,6 +41,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     db.poll.findMany({ where: { opensAt: { lte: now } }, select: { slug: true, closesAt: true } }).catch(() => []),
     db.challenge.findMany({ select: { slug: true, voteUntil: true } }).catch(() => []),
   ]);
+  // Every tracked card's price page ("<card> price" searches), newest price first.
+  const prices = await db.cardPrice.findMany({ where: { usd: { not: null } }, select: { scryfallId: true, updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 20000 }).catch(() => []);
   const [decks, commanders, products] = await Promise.all([
     db.deck.findMany({ where: { isPublic: true }, select: { id: true, updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 20000 }).catch(() => []),
     db.deck.groupBy({ by: ["commanderName"], where: { isPublic: true }, _max: { updatedAt: true } }).catch(() => []),
@@ -58,6 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((c) => c.commanderName)
       .map((c) => ({ url: u(`/decks/${encodeURIComponent(c.commanderName)}`), lastModified: c._max.updatedAt ?? undefined, changeFrequency: "daily" as const, priority: 0.7 })),
     ...otherCommanders.map((n) => ({ url: u(`/decks/${encodeURIComponent(n)}`), changeFrequency: "weekly" as const, priority: 0.6 })),
+    ...prices.map((p) => ({ url: u(`/prices/card/${p.scryfallId}`), lastModified: p.updatedAt, changeFrequency: "daily" as const, priority: 0.4 })),
     ...decks.map((d) => ({ url: u(`/decks/view/${d.id}`), lastModified: d.updatedAt, changeFrequency: "weekly" as const, priority: 0.5 })),
     ...products.map((p) => ({ url: u(`/store/${p.id}`), lastModified: p.createdAt, changeFrequency: "weekly" as const, priority: 0.6 })),
   ];

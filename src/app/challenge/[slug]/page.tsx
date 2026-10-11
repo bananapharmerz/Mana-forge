@@ -1,3 +1,4 @@
+import BreadcrumbLd from "@/components/BreadcrumbLd";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -94,6 +95,7 @@ export default async function ChallengePage({ params }: { params: Promise<{ slug
 
   return (
     <>
+      <BreadcrumbLd trail={[["Forge Challenge", "/challenge"], [ch.title, `/challenge/${slug}`]]} />
       <PageHeader title={ch.title} description={ch.theme} width="max-w-5xl" />
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <ol className="mb-8 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">

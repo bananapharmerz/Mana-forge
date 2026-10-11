@@ -1,3 +1,4 @@
+import BreadcrumbLd from "@/components/BreadcrumbLd";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
@@ -30,6 +31,7 @@ export default async function MoversWeekPage({ params }: { params: Promise<{ wee
   const archive = Array.from({ length: 12 }, (_, i) => addDays(last, -7 * i));
   return (
     <>
+      <BreadcrumbLd trail={[["Card prices", "/prices"], ["Price movers", "/prices/movers"], [weekLabel(w), `/prices/movers/${week}`]]} />
       <PageHeader title={`Price movers: ${weekLabel(w)}`} description="Cards in Commander decks that gained or lost the most that week." width="max-w-6xl" />
       <MoversView w={w} archive={archive} current={week} />
     </>

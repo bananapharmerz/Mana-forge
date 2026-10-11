@@ -1,3 +1,4 @@
+import { SOCIALS } from "@/lib/socials";
 import type { Metadata, Viewport } from "next";
 import OfflineNotice from "@/components/OfflineNotice";
 import BackToTop from "@/components/BackToTop";
@@ -48,8 +49,9 @@ export const viewport: Viewport = { themeColor: SITE.themeColor, interactiveWidg
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
-    { "@type": "WebSite", "@id": `${SITE.url}/#website`, url: SITE.url, name: SITE.name, description: SITE.description, potentialAction: { "@type": "SearchAction", target: `${SITE.url}/commanders?q={search_term_string}`, "query-input": "required name=search_term_string" } },
-    { "@type": "Organization", "@id": `${SITE.url}/#org`, name: SITE.name, url: SITE.url, logo: `${SITE.url}/icon` },
+    // alternateName feeds the site name Google shows above results; sameAs links the social profiles.
+    { "@type": "WebSite", "@id": `${SITE.url}/#website`, url: SITE.url, name: SITE.name, alternateName: ["Mana Forge Hub", "manaforgehub"], description: SITE.description, potentialAction: { "@type": "SearchAction", target: `${SITE.url}/commanders?q={search_term_string}`, "query-input": "required name=search_term_string" } },
+    { "@type": "Organization", "@id": `${SITE.url}/#org`, name: SITE.name, url: SITE.url, logo: `${SITE.url}/icon`, sameAs: SOCIALS.map((s) => s.url) },
   ],
 };
 
