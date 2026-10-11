@@ -4,10 +4,12 @@ import { emailEnabled, emailHtml, esc, sendEmail } from "@/lib/email";
 import { inChunks, today } from "@/lib/prices";
 import { SITE } from "@/lib/site";
 import { legalInfo } from "@/lib/legal";
+import { FREE_PRICE_ALERTS } from "@/lib/tier";
 
-// Premium perk: after each price refresh, email Premium members (who haven't turned it off)
-//  - when a card on their watchlist drops to the target price they set (once, until it climbs back), and
-//  - at most once a week, the cards in their decks whose price moved a lot over the last 7 days.
+// After each price refresh, email members (who haven't turned it off, with a confirmed address)
+//  - when a card on their watchlist drops to the target price they set (once, until it climbs back):
+//    every target for Premium, the first FREE_PRICE_ALERTS targets they set for free members, and
+//  - Premium only: at most once a week, the cards in their decks whose price moved a lot in 7 days.
 const MOVE_MIN_USD = 2;
 const MOVE_MIN_PCT = 0.2;
 const DIGEST_EVERY_MS = 7 * 86400000;
@@ -41,15 +43,21 @@ export async function runPriceAlerts(): Promise<{ emailed: number }> {
 
   if (!emailEnabled()) return { emailed: 0 };
   const users = await db.user.findMany({
-    where: { tier: "premium", priceAlerts: true, emailVerifiedAt: { not: null } }, // only confirmed addresses get mail
-    select: { id: true, email: true, priceDigestAt: true },
+    where: { priceAlerts: true, emailVerifiedAt: { not: null } }, // only confirmed addresses get mail
+    select: { id: true, email: true, priceDigestAt: true, tier: true },
   });
   let emailed = 0;
   const weekAgo = today(Date.now() - DIGEST_EVERY_MS);
 
   for (const u of users) {
     // 1. Watchlist targets reached.
-    const watches = await db.priceWatch.findMany({ where: { userId: u.id, targetUsd: { not: null }, alertedAt: null } });
+    const premium = u.tier === "premium";
+    // Free members: only their first few targets (oldest first), so adding more doesn't swap them around.
+    const counted = premium
+      ? null
+      : (await db.priceWatch.findMany({ where: { userId: u.id, targetUsd: { not: null } }, orderBy: { createdAt: "asc" }, take: FREE_PRICE_ALERTS, select: { id: true } })).map((w) => w.id);
+    if (counted && !counted.length) continue;
+    const watches = await db.priceWatch.findMany({ where: { userId: u.id, targetUsd: { not: null }, alertedAt: null, ...(counted ? { id: { in: counted } } : {}) } });
     const prices = new Map(
       (await db.cardPrice.findMany({ where: { scryfallId: { in: watches.map((w) => w.scryfallId) } }, select: { scryfallId: true, usd: true } })).map((p) => [p.scryfallId, p.usd])
     );
@@ -60,7 +68,7 @@ export async function runPriceAlerts(): Promise<{ emailed: number }> {
 
     // 2. Big weekly moves in their decks.
     let moves: { up: Move[]; down: Move[] } = { up: [], down: [] };
-    const digestDue = !u.priceDigestAt || Date.now() - u.priceDigestAt.getTime() >= DIGEST_EVERY_MS;
+    const digestDue = premium && (!u.priceDigestAt || Date.now() - u.priceDigestAt.getTime() >= DIGEST_EVERY_MS);
     if (digestDue) {
       const decks = await db.deck.findMany({ where: { ownerId: u.id }, select: { commanderData: true, partnerCommanderData: true, companionData: true, cards: true } });
       const ids = [...deckIds(decks.flatMap((d) => [d.commanderData, d.partnerCommanderData, d.companionData, d.cards]))];
@@ -103,7 +111,11 @@ export async function runPriceAlerts(): Promise<{ emailed: number }> {
       : "Big price moves in your decks this week";
     const L = legalInfo();
     const unsub = unsubscribeUrl(u.id);
-    const footer = `You're getting this as a Premium member with price alerts on. <a href="${esc(unsub)}" style="color:#7a7488">Unsubscribe in one click</a>, or change it on <a href="${esc(SITE.url)}/premium" style="color:#7a7488">your Premium page</a>.<br>${esc(SITE.name)} · ${esc(L.owner)} · ${esc(L.address)}`;
+    const upsell = premium
+      ? ""
+      : `<p style="margin-top:20px;font-size:13px;color:#7a7488">Free accounts get alerts for ${FREE_PRICE_ALERTS} target prices. <a href="${esc(SITE.url)}/premium" style="color:#b8892e">Premium</a> watches every card and emails you the big weekly price moves in your decks.</p>`;
+    if (upsell) sections.push(upsell);
+    const footer = `You're getting this because you set a target price on your watchlist${premium ? " (Premium, price alerts on)" : ""}. <a href="${esc(unsub)}" style="color:#7a7488">Unsubscribe in one click</a>, or change it on <a href="${esc(SITE.url)}/premium" style="color:#7a7488">your Premium page</a>.<br>${esc(SITE.name)} · ${esc(L.owner)} · ${esc(L.address)}`;
     const ok = await sendEmail({
       to: u.email,
       subject,

@@ -17,6 +17,10 @@ export const planPrice = (p: PremiumPlan) => `€${(PREMIUM_PLANS[p].cents / 100
 export const TRIAL_DAYS = 7;
 export const PREMIUM_VAT_NOTE = "Final price. No VAT is charged under § 19 UStG (small business).";
 
+// Free members get a taste of price alerts: an email when one of their first few watchlist targets
+// is hit. Premium gets every target plus the weekly "big moves in your decks" digest.
+export const FREE_PRICE_ALERTS = 3;
+
 export function deckLimitFor(tier: string): number {
   return tier === "premium" ? Infinity : FREE_TIER_DECK_LIMIT;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { FREE_PRICE_ALERTS } from "@/lib/tier";
 import CardSearchBox from "@/components/CardSearchBox";
 import { autocompleteCardNames } from "@/lib/scryfall";
 import { addWatch, removeWatch, setWatchTarget } from "@/app/actions/prices";
@@ -79,7 +80,10 @@ export default function Watchlist({ rows, premium = false }: { rows: WatchRow[];
       </div>
       {!premium && rows.some((r) => r.targetUsd !== null) && (
         <div className="border-b border-border p-3">
-          <TrialNudge compact>Don&apos;t check back every day: Premium emails you the moment a card hits your target.</TrialNudge>
+          <TrialNudge compact>
+            We email you when one of your first {FREE_PRICE_ALERTS} target prices is hit (confirmed email needed). Premium watches every card and adds a weekly
+            email of the big price moves in your decks.
+          </TrialNudge>
         </div>
       )}
       {rows.length === 0 ? (

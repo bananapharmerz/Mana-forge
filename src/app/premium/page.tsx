@@ -15,14 +15,14 @@ import {
   getTrialOffer,
   setPriceAlerts,
 } from "@/app/actions/premium";
-import { FREE_TIER_DECK_LIMIT, PREMIUM_PLANS, PREMIUM_VAT_NOTE, TRIAL_DAYS, planPrice, type PremiumPlan } from "@/lib/tier";
+import { FREE_PRICE_ALERTS, FREE_TIER_DECK_LIMIT, PREMIUM_PLANS, PREMIUM_VAT_NOTE, TRIAL_DAYS, planPrice, type PremiumPlan } from "@/lib/tier";
 import { SITE } from "@/lib/site";
 
 const BENEFITS = [
   { feature: "Saved decks", free: "Up to 10", premium: "Unlimited" },
   { feature: "Ads", free: "Shown across the site", premium: "None, anywhere" },
   { feature: "Starting a game", free: "30s wait", premium: "Instant" },
-  { feature: "Price alerts by email", free: "—", premium: "Target prices + weekly deck moves" },
+  { feature: "Price alerts by email", free: `${FREE_PRICE_ALERTS} target prices`, premium: "Every target + weekly deck moves" },
   { feature: "Deck value graph", free: "—", premium: "Week, month and year in the builder" },
   { feature: "Budget upgrade ideas", free: "—", premium: "In the deck builder" },
   { feature: "Deck versions", free: "—", premium: "Save, compare and restore" },
