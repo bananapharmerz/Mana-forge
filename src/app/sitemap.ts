@@ -18,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/"), changeFrequency: "daily", priority: 1, lastModified: now },
     { url: u("/commanders"), changeFrequency: "daily", priority: 0.9 },
     { url: u("/decks"), changeFrequency: "hourly", priority: 0.9 },
+    { url: u("/import"), changeFrequency: "monthly", priority: 0.7 },
     ...(SHOP_ENABLED ? [{ url: u("/store"), changeFrequency: "weekly" as const, priority: 0.8 }] : []),
     { url: u("/prices"), changeFrequency: "daily", priority: 0.7 },
     { url: u("/prices/movers"), changeFrequency: "daily", priority: 0.7 },

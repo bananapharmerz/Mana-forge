@@ -196,13 +196,23 @@ export default function DeckBuilderIndexClient({
         }
         width="max-w-5xl"
       >
-        <button
-          onClick={() => setShowNew((s) => !s)}
-          disabled={atLimit}
-          className="rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-[#d4a23e] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          New deck
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setShowNew((s) => !s)}
+            disabled={atLimit}
+            className="rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-[#d4a23e] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            New deck
+          </button>
+          {!atLimit && (
+            <Link
+              href="/import"
+              className="rounded-lg border border-gold/60 px-5 py-2.5 text-sm font-semibold text-[#f5ecd6] hover:border-gold hover:bg-gold/10"
+            >
+              Import a deck
+            </Link>
+          )}
+        </div>
       </PageHeader>
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <div className="empty:hidden mb-8">
@@ -302,6 +312,12 @@ export default function DeckBuilderIndexClient({
             >
               Search any commander
             </button>
+            <Link
+              href="/import"
+              className="ml-2 mt-4 inline-block rounded-lg border border-border px-5 py-2.5 text-sm font-semibold text-foreground hover:border-gold"
+            >
+              Import from Moxfield or Archidekt
+            </Link>
           </div>
           <StartGrid />
           {starter}
