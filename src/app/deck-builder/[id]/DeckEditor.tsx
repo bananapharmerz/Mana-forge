@@ -34,6 +34,7 @@ import { hasSecondCommanderMechanic } from "@/lib/partnerMechanics";
 import { saveGuestDeck } from "@/lib/guestDeck";
 import GuestSaveBanner from "@/components/GuestSaveBanner";
 import BudgetUpgradesPanel from "@/components/BudgetUpgradesPanel";
+import FirstDeckNudge from "@/components/FirstDeckNudge";
 import { ManaCost } from "@/components/ManaText";
 import {
   CATEGORY_ORDER,
@@ -46,7 +47,17 @@ import {
 
 const BASIC_LANDS = ["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"];
 
-export default function DeckEditor({ initialDeck, guest = false }: { initialDeck: Deck; guest?: boolean }) {
+export default function DeckEditor({
+  initialDeck,
+  guest = false,
+  premium = false,
+  firstDeck = false,
+}: {
+  initialDeck: Deck;
+  guest?: boolean;
+  premium?: boolean;
+  firstDeck?: boolean;
+}) {
   const [deck, setDeck] = useState<Deck>(initialDeck);
   // A guest deck lives only in this browser until the visitor signs up and saves it.
   useEffect(() => {
@@ -449,7 +460,7 @@ export default function DeckEditor({ initialDeck, guest = false }: { initialDeck
 
           <DeckValuePanel value={value} />
 
-          <BudgetUpgradesPanel deckId={deck.id} guest={guest} onAdd={addCard} />
+          <BudgetUpgradesPanel deckId={deck.id} guest={guest} locked={!premium} onAdd={addCard} />
 
           <div className="mt-4">
             <CardBackPicker value={deck.cardBackUrl} onChange={changeCardBack} />
@@ -568,6 +579,7 @@ export default function DeckEditor({ initialDeck, guest = false }: { initialDeck
           </div>
         </div>
       </div>
+      {firstDeck && !guest && <FirstDeckNudge ready={saveState === "saved" && size >= 10} />}
     </div>
   );
 }

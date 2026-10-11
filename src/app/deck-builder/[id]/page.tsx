@@ -6,7 +6,7 @@ import { GUEST_DECK_ID } from "@/lib/guestDeckId";
 import DeckEditor from "./DeckEditor";
 import GuestDeckEditor from "./GuestDeckEditor";
 import PriceChart from "@/app/prices/PriceChart";
-import TrialNudge from "@/components/TrialNudge";
+import PremiumLockedPreview, { SampleValueChart } from "@/components/PremiumLockedPreview";
 import { deckValueHistory } from "@/lib/prices";
 import DeckSnapshotsPanel from "@/components/DeckSnapshotsPanel";
 
@@ -29,6 +29,8 @@ export default async function DeckBuilderEditPage({
   // Premium: the deck's value over time. Free members see what they'd get.
   const user = await db.user.findUnique({ where: { id: session.user.id }, select: { tier: true } });
   const premium = user?.tier === "premium";
+  // Free member on their very first deck: the editor shows a one-time Premium hello once it saves.
+  const firstDeck = !premium && (await db.deck.count({ where: { ownerId: session.user.id } })) === 1;
   const value = premium
     ? await deckValueHistory(
         [deck.commander, deck.partner, deck.companion, ...deck.cards]
@@ -42,7 +44,7 @@ export default async function DeckBuilderEditPage({
 
   return (
     <>
-      <DeckEditor initialDeck={deck} />
+      <DeckEditor initialDeck={deck} premium={premium} firstDeck={firstDeck} />
       <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
         <h2 className="mb-2 font-display text-2xl font-semibold text-foreground">What this deck is worth</h2>
         {premium ? (
@@ -55,7 +57,9 @@ export default async function DeckBuilderEditPage({
             <p className="text-sm text-muted">Add some cards and save; the value graph appears once they have prices.</p>
           )
         ) : (
-          <TrialNudge>See what your deck is worth over the last week, month and year, and get an email when its price moves.</TrialNudge>
+          <PremiumLockedPreview pitch="See what this deck is worth over the last week, month and year, and get an email when its price moves.">
+            <SampleValueChart />
+          </PremiumLockedPreview>
         )}
       </section>
       <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">

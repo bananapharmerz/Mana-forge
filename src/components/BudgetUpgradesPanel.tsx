@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import TrialNudge from "@/components/TrialNudge";
+import PremiumLockedPreview from "@/components/PremiumLockedPreview";
 import { getBudgetUpgrades, type Upgrade } from "@/app/actions/upgrades";
 
 const CAPS = [1, 3, 5, 10];
@@ -11,17 +11,19 @@ const CAPS = [1, 3, 5, 10];
 export default function BudgetUpgradesPanel({
   deckId,
   guest,
+  locked: lockedAtStart,
   onAdd,
 }: {
   deckId: string;
   guest?: boolean;
+  locked?: boolean;
   onAdd: (name: string) => void | Promise<void>;
 }) {
   const [cap, setCap] = useState(3);
   const [busy, setBusy] = useState(false);
   const [list, setList] = useState<Upgrade[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [locked, setLocked] = useState(!!guest);
+  const [locked, setLocked] = useState(!!guest || !!lockedAtStart);
   const [added, setAdded] = useState<Set<string>>(new Set());
 
   async function find(next = cap) {
@@ -40,9 +42,9 @@ export default function BudgetUpgradesPanel({
         Budget upgrades <span className="text-gold-bright">· Premium</span>
       </h3>
       {locked ? (
-        <TrialNudge compact>
-          See the cards most decks with this commander play that you don&apos;t have yet, under a price you pick.
-        </TrialNudge>
+        <PremiumLockedPreview compact pitch="The cards most decks with this commander play that you don't have yet, under a price you pick.">
+          <SampleUpgrades />
+        </PremiumLockedPreview>
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-1 text-xs">
@@ -100,5 +102,31 @@ export default function BudgetUpgradesPanel({
         </>
       )}
     </div>
+  );
+}
+
+// Made-up rows for the locked preview; real suggestions only come from the server for Premium.
+function SampleUpgrades() {
+  const rows = [
+    ["Arcane Signet", "0.89", 82],
+    ["Swords to Plowshares", "1.49", 61],
+    ["Command Tower", "0.35", 94],
+    ["Beast Within", "0.79", 47],
+  ] as const;
+  return (
+    <ul className="flex flex-col gap-2 py-1">
+      {rows.map(([n, usd, pct]) => (
+        <li key={n} className="flex items-center gap-2">
+          <div className="h-[45px] w-8 rounded-sm bg-gold/30" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs text-foreground">{n}</p>
+            <p className="text-[11px] text-muted">
+              ${usd} · in {pct}% of decks
+            </p>
+          </div>
+          <span className="rounded border border-border px-2 py-0.5 text-[11px]">Add</span>
+        </li>
+      ))}
+    </ul>
   );
 }
