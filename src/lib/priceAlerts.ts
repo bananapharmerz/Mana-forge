@@ -115,7 +115,7 @@ export async function runPriceAlerts(): Promise<{ emailed: number }> {
       ? ""
       : `<p style="margin-top:20px;font-size:13px;color:#7a7488">Free accounts get alerts for ${FREE_PRICE_ALERTS} target prices. <a href="${esc(SITE.url)}/premium" style="color:#b8892e">Premium</a> watches every card and emails you the big weekly price moves in your decks.</p>`;
     if (upsell) sections.push(upsell);
-    const footer = `You're getting this because you set a target price on your watchlist${premium ? " (Premium, price alerts on)" : ""}. <a href="${esc(unsub)}" style="color:#7a7488">Unsubscribe in one click</a>, or change it on <a href="${esc(SITE.url)}/premium" style="color:#7a7488">your Premium page</a>.<br>${esc(SITE.name)} · ${esc(L.owner)} · ${esc(L.address)}`;
+    const footer = `You're getting this because you set a target price on your watchlist${premium ? " (Premium, price alerts on)" : ""}. <a href="${esc(unsub)}" style="color:#7a7488">Unsubscribe in one click</a>, or change it on <a href="${esc(SITE.url)}/account" style="color:#7a7488">your account page</a>.<br>${esc(SITE.name)} · ${esc(L.owner)} · ${esc(L.address)}`;
     const ok = await sendEmail({
       to: u.email,
       subject,

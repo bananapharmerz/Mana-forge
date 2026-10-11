@@ -19,16 +19,16 @@ export default async function UnsubscribePage({ searchParams }: { searchParams: 
       <h1 className="mt-2 font-display text-3xl font-semibold text-foreground">{title}</h1>
       <p className="mt-3 text-sm text-muted">{text}</p>
       {extra}
-      <Link href={weekly ? "/account" : "/premium"} className="mt-6 inline-block text-sm text-gold-bright underline">
-        {weekly ? "Your account" : "Premium page"}
+      <Link href="/account" className="mt-6 inline-block text-sm text-gold-bright underline">
+        Your account
       </Link>
     </div>
   );
   if (done)
     return weekly
       ? box("happy", "You're unsubscribed", "The weekly roundup is off. You can turn it back on any time on your account page.")
-      : box("happy", "You're unsubscribed", "Price alert emails are off. You can turn them back on any time on the Premium page.");
-  if (!valid) return box("oops", "That link doesn't work", weekly ? "It may be incomplete. You can turn the weekly roundup off on your account page when you're signed in." : "It may be incomplete. You can turn price alerts off on the Premium page when you're signed in.");
+      : box("happy", "You're unsubscribed", "Price alert emails are off. You can turn them back on any time on your account page.");
+  if (!valid) return box("oops", "That link doesn't work", weekly ? "It may be incomplete. You can turn the weekly roundup off on your account page when you're signed in." : "It may be incomplete. You can turn price alerts off on your account page when you're signed in.");
   return box(
     "thinking",
     weekly ? "Stop the weekly roundup?" : "Stop price alert emails?",

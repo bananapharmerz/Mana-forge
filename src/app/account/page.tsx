@@ -8,6 +8,7 @@ import PageHeader from "@/components/PageHeader";
 import AccountActions from "./AccountActions";
 import InviteFriends from "@/components/InviteFriends";
 import WeeklyEmailToggle from "@/components/WeeklyEmailToggle";
+import PriceAlertsToggle from "@/components/PriceAlertsToggle";
 import { FRIEND_MONTHS, FRIEND_PERCENT, REWARD_CENTS, inviteLink, referralCodeFor } from "@/lib/referral";
 
 export const metadata: Metadata = { title: "Your account", robots: { index: false, follow: false } };
@@ -15,7 +16,7 @@ export const metadata: Metadata = { title: "Your account", robots: { index: fals
 export default async function AccountPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login?callbackUrl=/account");
-  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { email: true, name: true, tier: true, createdAt: true, stripeSubscriptionId: true, emailVerifiedAt: true, weeklyEmail: true } });
+  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { email: true, name: true, tier: true, createdAt: true, stripeSubscriptionId: true, emailVerifiedAt: true, weeklyEmail: true, priceAlerts: true } });
   if (!user) redirect("/login?callbackUrl=/account");
   const [decks, code, joined, paid] = await Promise.all([
     db.deck.count({ where: { ownerId: session.user.id } }),
@@ -52,6 +53,7 @@ export default async function AccountPage() {
         </dl>
         {code && <InviteFriends link={inviteLink(code)} joined={joined} paid={paid} percent={FRIEND_PERCENT} months={FRIEND_MONTHS} reward={`€${(REWARD_CENTS / 100).toFixed(2)}`} />}
         <WeeklyEmailToggle initial={user.weeklyEmail} verified={!!user.emailVerifiedAt} />
+        <PriceAlertsToggle initial={user.priceAlerts} premium={user.tier === "premium"} />
         <AccountActions premium={user.tier === "premium" && !!user.stripeSubscriptionId} />
       </div>
     </>
