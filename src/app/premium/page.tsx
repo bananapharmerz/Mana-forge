@@ -19,14 +19,14 @@ import { FREE_PRICE_ALERTS, FREE_TIER_DECK_LIMIT, PREMIUM_PLANS, PREMIUM_VAT_NOT
 import { SITE } from "@/lib/site";
 
 const BENEFITS = [
-  { feature: "Saved decks", free: "Up to 10", premium: "Unlimited" },
-  { feature: "Ads", free: "Shown across the site", premium: "None, anywhere" },
-  { feature: "Starting a game", free: "30s wait", premium: "Instant" },
-  { feature: "Price alerts by email", free: `${FREE_PRICE_ALERTS} target prices`, premium: "Every target + weekly deck moves" },
-  { feature: "Deck value graph", free: "—", premium: "Week, month and year in the builder" },
-  { feature: "Budget upgrade ideas", free: "—", premium: "In the deck builder" },
-  { feature: "Deck versions", free: "—", premium: "Save, compare and restore" },
-  { feature: "Supporter badge", free: "—", premium: "On your public decks" },
+  { feature: "Build without a deck limit", free: "Up to 10 decks", premium: "Unlimited decks" },
+  { feature: "A clean, ad-free site", free: "Ads across the site", premium: "No ads, anywhere" },
+  { feature: "Jump straight into a game", free: "30s wait", premium: "Instant" },
+  { feature: "Catch a card before it spikes", free: `${FREE_PRICE_ALERTS} cards watched`, premium: "Every card, plus weekly deck moves" },
+  { feature: "See what your deck is worth", free: "—", premium: "Week, month and year, in the builder" },
+  { feature: "Find cheaper cards that still fit", free: "—", premium: "Budget upgrade picks in the builder" },
+  { feature: "Never lose a good version", free: "—", premium: "Save, compare and restore any version" },
+  { feature: "Back the site you use", free: "—", premium: "Supporter badge on your public decks" },
 ];
 
 export default function PremiumPage() {
@@ -94,7 +94,7 @@ export default function PremiumPage() {
     <>
       <PageHeader
         title={`${SITE.name} Premium`}
-        description={`Unlimited decks, no ads, instant games, and tools that save you money on cards. Try it free for ${TRIAL_DAYS} days, then ${planPrice("month")} a month or ${planPrice("year")} a year.`}
+        description={`Build without the 10-deck cap, play with no ads and no waiting, and see what every card in your deck is worth — and when it moves. Free for ${TRIAL_DAYS} days.`}
         width="max-w-5xl"
       >
         <Ember mood="hyped" size={130} className="hidden sm:block" title="Ember, excited about Premium" />
