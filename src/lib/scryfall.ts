@@ -49,7 +49,7 @@ export function cardPriceUsd(card: ScryfallCard): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-interface ScryfallSearchResponse {
+export interface ScryfallSearchResponse {
   object: "list" | "error";
   total_cards?: number;
   has_more?: boolean;
