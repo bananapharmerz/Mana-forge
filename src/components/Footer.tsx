@@ -43,6 +43,8 @@ export default function Footer() {
           { href: "/challenge", label: "Forge Challenge" },
           { href: "/vote", label: "Community vote" },
           { href: "/prices/movers", label: "Price movers" },
+          { href: "/commanders/budget", label: "Budget commanders" },
+          { href: "/prices/budget-staples", label: "Budget staples" },
         ].map((l) => (
           <Link key={l.href} href={l.href} className="underline hover:text-gold-bright">
             {l.label}

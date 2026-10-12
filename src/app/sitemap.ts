@@ -24,6 +24,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(SHOP_ENABLED ? [{ url: u("/store"), changeFrequency: "weekly" as const, priority: 0.8 }] : []),
     { url: u("/prices"), changeFrequency: "daily", priority: 0.7 },
     { url: u("/prices/movers"), changeFrequency: "daily", priority: 0.7 },
+    { url: u("/prices/budget-staples"), changeFrequency: "weekly", priority: 0.7 },
+    { url: u("/commanders/budget"), changeFrequency: "weekly", priority: 0.7 },
     ...Array.from({ length: 12 }, (_, i) => addDays(lastWeekEnd(), -7 * i)).map((d) => ({ url: u(`/prices/movers/${d}`), changeFrequency: "yearly" as const, priority: 0.4 })),
     { url: u("/challenge"), changeFrequency: "weekly", priority: 0.6 },
     { url: u("/vote"), changeFrequency: "weekly", priority: 0.5 },
