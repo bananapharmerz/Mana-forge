@@ -108,6 +108,55 @@ export const MIGRATIONS: Record<string, Migration> = {
     description:
       "Moving from TappedOut? Bring your Commander decks to Mana Forge in seconds — paste a text or MTGO export and keep building, with live card prices and deck-value tracking. Free, no account needed to try.",
   },
+  deckstats: {
+    slug: "deckstats",
+    name: "Deckstats",
+    intro:
+      "Deckstats is a capable, long-running builder. If you'd like your Commander decks somewhere with live price and value tracking and commander-first browsing, bringing them over is quick.",
+    steps: [
+      "Open your deck on Deckstats.",
+      "Click Export and choose a plain-text, one-card-per-line format.",
+      "Copy the list (keep your commander under a Commander line).",
+      "Paste it in the box below.",
+    ],
+    note: "Keep your Deckstats copy — just pull a deck in here and compare.",
+    title: "Switching from Deckstats? Import your Commander decks free",
+    description:
+      "Moving from Deckstats? Bring your Commander decks to Mana Forge in seconds — paste your export and keep building, with live card prices and deck-value tracking. Free, no account needed to try.",
+  },
+  mtggoldfish: {
+    slug: "mtggoldfish",
+    name: "MTGGoldfish",
+    heading: "Import your MTGGoldfish deck",
+    intro:
+      "Have a decklist on MTGGoldfish? Bring it into Mana Forge to build it out, track what it's worth and share it.",
+    steps: [
+      "Open the deck on MTGGoldfish.",
+      "Use the download / arrow and pick a plain-text (.txt) export, or copy the list.",
+      "Paste it in the box below — one card per line.",
+      "Pick your commander if we ask.",
+    ],
+    note: "MTGGoldfish is great for prices; Mana Forge keeps the price view attached to the deck you're building.",
+    title: "Import an MTGGoldfish deck to Mana Forge — free",
+    description:
+      "Bring a MTGGoldfish decklist into Mana Forge — paste the export and build, price and share your Commander deck. Free, no account needed to try.",
+  },
+  deckbox: {
+    slug: "deckbox",
+    name: "Deckbox",
+    intro:
+      "Deckbox has been a staple for collections and decks for years. If you'd like your Commander decks somewhere with live value tracking and commander-first browsing, moving one over is quick.",
+    steps: [
+      "Open your deck on Deckbox.",
+      "Use Export / copy to clipboard and choose a plain-text list.",
+      "Copy the list.",
+      "Paste it in the box below — pick your commander if we ask.",
+    ],
+    note: "No need to change anything on Deckbox — pull a deck in and keep the original.",
+    title: "Switching from Deckbox? Import your Commander decks free",
+    description:
+      "Moving from Deckbox? Bring your Commander decks to Mana Forge in seconds — paste your export and keep building, with live card prices and deck-value tracking. Free, no account needed to try.",
+  },
 };
 
 export const MIGRATION_SLUGS = Object.keys(MIGRATIONS);
