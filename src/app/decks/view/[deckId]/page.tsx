@@ -14,6 +14,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import ReportDeckButton from "@/components/ReportDeckButton";
 import ShareDeckButton from "@/components/ShareDeckButton";
 import BuyDeckPanel from "@/components/BuyDeckPanel";
+import GameChangersPanel from "@/components/GameChangersPanel";
 import PriceChart from "@/app/prices/PriceChart";
 import { deckValueHistory } from "@/lib/prices";
 import PartnerCardStack from "@/components/PartnerCardStack";
@@ -201,6 +202,8 @@ export default async function ViewDeckPage({
             <p className="text-2xl font-bold text-foreground">{size}/100</p>
             <p className="text-xs text-muted">cards in deck</p>
           </div>
+
+          <GameChangersPanel cards={[deck.commander, deck.partner, ...deck.cards].flatMap((c) => (c ? [c.name] : []))} />
 
           <div className="mt-4 flex items-center gap-2">
             {isOwnDeck ? (
