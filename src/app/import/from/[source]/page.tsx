@@ -64,7 +64,7 @@ export default async function MigrationPage({ params }: { params: Promise<{ sour
         <div className="grid gap-8 md:grid-cols-[1fr_280px]">
           <div>
             <h2 className="mb-3 font-display text-xl font-semibold text-foreground">
-              Bring a {m.name} deck over in about 30 seconds
+              Bring your {m.name} deck over in about 30 seconds
             </h2>
             <ol className="mb-6 flex flex-col gap-2">
               {m.steps.map((step, i) => (
