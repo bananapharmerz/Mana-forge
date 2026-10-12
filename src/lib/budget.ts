@@ -62,8 +62,32 @@ const COMMANDERS = "is:commander legal:commander game:paper -is:digital";
 // Cards that see play in Commander, other than commanders themselves. Basics can't be "staples".
 const STAPLES = "legal:commander game:paper -is:digital -t:basic -is:commander";
 
-export async function budgetCommanders(): Promise<BudgetTier[]> {
-  const [under1, under5] = await tiers(COMMANDERS, [
+// One budget-commander page per mono colour, colorless, and each two-colour pair ("budget Boros
+// commanders"). `id` is the exact colour identity for Scryfall's id= filter.
+export const BUDGET_COLORS: { slug: string; name: string; id: string }[] = [
+  { slug: "white", name: "White", id: "w" },
+  { slug: "blue", name: "Blue", id: "u" },
+  { slug: "black", name: "Black", id: "b" },
+  { slug: "red", name: "Red", id: "r" },
+  { slug: "green", name: "Green", id: "g" },
+  { slug: "colorless", name: "Colorless", id: "c" },
+  { slug: "azorius", name: "Azorius (white-blue)", id: "wu" },
+  { slug: "dimir", name: "Dimir (blue-black)", id: "ub" },
+  { slug: "rakdos", name: "Rakdos (black-red)", id: "br" },
+  { slug: "gruul", name: "Gruul (red-green)", id: "rg" },
+  { slug: "selesnya", name: "Selesnya (green-white)", id: "gw" },
+  { slug: "orzhov", name: "Orzhov (white-black)", id: "wb" },
+  { slug: "izzet", name: "Izzet (blue-red)", id: "ur" },
+  { slug: "golgari", name: "Golgari (black-green)", id: "bg" },
+  { slug: "boros", name: "Boros (red-white)", id: "rw" },
+  { slug: "simic", name: "Simic (green-blue)", id: "gu" },
+];
+
+export const budgetColor = (slug: string) => BUDGET_COLORS.find((c) => c.slug === slug);
+
+export async function budgetCommanders(identity?: string): Promise<BudgetTier[]> {
+  const query = identity ? `${COMMANDERS} id=${identity}` : COMMANDERS;
+  const [under1, under5] = await tiers(query, [
     { min: 0.01, max: 1, take: 30 },
     { min: 1.01, max: 5, take: 30 },
   ]);

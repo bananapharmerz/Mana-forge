@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import BudgetList from "@/components/BudgetList";
+import BudgetColorNav from "@/components/BudgetColorNav";
 import { budgetCommanders } from "@/lib/budget";
 
 // Prices come from Scryfall at request time (cached an hour); the build has no network to rely on.
@@ -30,6 +31,7 @@ export default async function BudgetCommandersPage() {
           build it with a budget in mind, or enter it in the{" "}
           <Link href="/challenge" className="underline hover:text-gold-bright">$50 deck challenge</Link>.
         </p>
+        <BudgetColorNav />
         <BudgetList tiers={tiers} href={(name) => `/decks/${encodeURIComponent(name)}`} />
         <p className="mt-8 text-sm text-muted">
           Need cheap cards to go with it? See the{" "}

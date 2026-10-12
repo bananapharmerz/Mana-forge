@@ -6,6 +6,7 @@ import { commanderNames } from "@/lib/commanderIndex";
 import { colorIdentityCategories, typalCategories, themeCategories } from "@/lib/categories";
 import { addDays, lastWeekEnd } from "@/lib/prices";
 import { MIGRATION_SLUGS } from "@/lib/migrations";
+import { BUDGET_COLORS } from "@/lib/budget";
 
 // Every public page, for search engines: the main sections, browse pages, commanders with
 // public decks, the public decks themselves and the store's products. Always current.
@@ -26,6 +27,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/prices/movers"), changeFrequency: "daily", priority: 0.7 },
     { url: u("/prices/budget-staples"), changeFrequency: "weekly", priority: 0.7 },
     { url: u("/commanders/budget"), changeFrequency: "weekly", priority: 0.7 },
+    ...BUDGET_COLORS.map((c) => ({ url: u(`/commanders/budget/${c.slug}`), changeFrequency: "weekly" as const, priority: 0.6 })),
+    { url: u("/commanders/popular"), changeFrequency: "daily", priority: 0.7 },
     ...Array.from({ length: 12 }, (_, i) => addDays(lastWeekEnd(), -7 * i)).map((d) => ({ url: u(`/prices/movers/${d}`), changeFrequency: "yearly" as const, priority: 0.4 })),
     { url: u("/challenge"), changeFrequency: "weekly", priority: 0.6 },
     { url: u("/vote"), changeFrequency: "weekly", priority: 0.5 },
