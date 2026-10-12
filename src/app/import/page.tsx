@@ -53,6 +53,17 @@ export default async function ImportPage() {
               <p className="text-xs leading-relaxed text-muted">{how}</p>
             </div>
           ))}
+          <div className="border-t border-border pt-4 text-xs text-muted">
+            Step-by-step guides:{" "}
+            <Link href="/import/from/moxfield" className="underline hover:text-gold-bright">
+              switching from Moxfield
+            </Link>{" "}
+            ·{" "}
+            <Link href="/import/from/archidekt" className="underline hover:text-gold-bright">
+              from Archidekt
+            </Link>
+            .
+          </div>
         </aside>
       </div>
     </>

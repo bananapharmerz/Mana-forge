@@ -5,6 +5,7 @@ import { SHOP_ENABLED } from "@/lib/features";
 import { commanderNames } from "@/lib/commanderIndex";
 import { colorIdentityCategories, typalCategories, themeCategories } from "@/lib/categories";
 import { addDays, lastWeekEnd } from "@/lib/prices";
+import { MIGRATION_SLUGS } from "@/lib/migrations";
 
 // Every public page, for search engines: the main sections, browse pages, commanders with
 // public decks, the public decks themselves and the store's products. Always current.
@@ -19,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/commanders"), changeFrequency: "daily", priority: 0.9 },
     { url: u("/decks"), changeFrequency: "hourly", priority: 0.9 },
     { url: u("/import"), changeFrequency: "monthly", priority: 0.7 },
+    ...MIGRATION_SLUGS.map((s) => ({ url: u(`/import/from/${s}`), changeFrequency: "monthly" as const, priority: 0.6 })),
     ...(SHOP_ENABLED ? [{ url: u("/store"), changeFrequency: "weekly" as const, priority: 0.8 }] : []),
     { url: u("/prices"), changeFrequency: "daily", priority: 0.7 },
     { url: u("/prices/movers"), changeFrequency: "daily", priority: 0.7 },
