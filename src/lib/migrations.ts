@@ -11,6 +11,9 @@ export type Migration = {
   slug: string;
   // The other tool, as people write it.
   name: string;
+  // Optional H1 override. Defaults to "Switching from <name>?" — fine for a rival deck
+  // builder, but a game client like Arena/MTGO reads better as "Import your <name> deck".
+  heading?: string;
   // One line under the title.
   intro: string;
   // How to get a decklist out of that tool, step by step.
@@ -54,6 +57,56 @@ export const MIGRATIONS: Record<string, Migration> = {
     title: "Switching from Archidekt? Import your Commander decks free",
     description:
       "Moving from Archidekt? Bring your Commander decks to Mana Forge in seconds — paste your list or a public Archidekt link and keep building, with live card prices and deck-value tracking. Free, no account needed to try.",
+  },
+  arena: {
+    slug: "arena",
+    name: "MTG Arena",
+    heading: "Import your MTG Arena deck",
+    intro:
+      "Exported a deck from MTG Arena? Bring the list into Mana Forge to build it out, see what it's worth and share it — set codes and all.",
+    steps: [
+      "Open your deck in MTG Arena.",
+      "Click Export (top-right of the deck view).",
+      "The list is copied to your clipboard — there's no file to save.",
+      "Paste it in the box below.",
+    ],
+    note: "Arena's export uses set codes and collector numbers; Mana Forge reads them and matches each card.",
+    title: "Import an MTG Arena deck to Mana Forge — free",
+    description:
+      "Exported a deck from MTG Arena? Paste the list into Mana Forge to build, price and share it — free, no account needed to try, with Commander prices and deck-value tracking.",
+  },
+  mtgo: {
+    slug: "mtgo",
+    name: "MTGO",
+    heading: "Import your MTGO deck",
+    intro:
+      "Have a decklist from Magic Online? Bring it into Mana Forge to build it out, track what it's worth and share it.",
+    steps: [
+      "In MTGO, open the deck in the Deck Editor.",
+      "Right-click the deck → Export (or use the deck's Export button).",
+      "Open the saved .txt list and copy its contents.",
+      "Paste it in the box below — one card per line.",
+    ],
+    note: "A plain “1 Card Name” per line is all Mana Forge needs, so any MTGO text export works.",
+    title: "Import an MTGO (Magic Online) deck to Mana Forge — free",
+    description:
+      "Bring a Magic Online decklist into Mana Forge — paste your MTGO text export and build, price and share your deck. Free, no account needed to try.",
+  },
+  tappedout: {
+    slug: "tappedout",
+    name: "TappedOut",
+    intro:
+      "TappedOut has been around forever. If you'd like your Commander decks somewhere with live price and value tracking and commander-first browsing, moving a deck over is quick.",
+    steps: [
+      "Open your deck on TappedOut.",
+      "Use Export (the download / ▼ menu) and pick a plain-text or MTGO format.",
+      "Copy the list.",
+      "Paste it in the box below — pick your commander if we ask.",
+    ],
+    note: "No need to take anything down on TappedOut. Pull a deck in here and keep the original.",
+    title: "Switching from TappedOut? Import your Commander decks free",
+    description:
+      "Moving from TappedOut? Bring your Commander decks to Mana Forge in seconds — paste a text or MTGO export and keep building, with live card prices and deck-value tracking. Free, no account needed to try.",
   },
 };
 

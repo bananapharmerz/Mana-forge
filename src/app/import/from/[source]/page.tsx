@@ -52,7 +52,7 @@ export default async function MigrationPage({ params }: { params: Promise<{ sour
   return (
     <>
       <PageHeader
-        title={`Switching from ${m.name}?`}
+        title={m.heading ?? `Switching from ${m.name}?`}
         description={m.intro}
         width="max-w-5xl"
       />

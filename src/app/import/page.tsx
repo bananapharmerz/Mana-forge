@@ -55,14 +55,11 @@ export default async function ImportPage() {
           ))}
           <div className="border-t border-border pt-4 text-xs text-muted">
             Step-by-step guides:{" "}
-            <Link href="/import/from/moxfield" className="underline hover:text-gold-bright">
-              switching from Moxfield
-            </Link>{" "}
-            ·{" "}
-            <Link href="/import/from/archidekt" className="underline hover:text-gold-bright">
-              from Archidekt
-            </Link>
-            .
+            <Link href="/import/from/moxfield" className="underline hover:text-gold-bright">Moxfield</Link>{" · "}
+            <Link href="/import/from/archidekt" className="underline hover:text-gold-bright">Archidekt</Link>{" · "}
+            <Link href="/import/from/arena" className="underline hover:text-gold-bright">MTG Arena</Link>{" · "}
+            <Link href="/import/from/mtgo" className="underline hover:text-gold-bright">MTGO</Link>{" · "}
+            <Link href="/import/from/tappedout" className="underline hover:text-gold-bright">TappedOut</Link>.
           </div>
         </aside>
       </div>
