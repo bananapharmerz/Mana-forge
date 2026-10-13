@@ -34,12 +34,17 @@ model User {
   referredById         String?
   referralRewardedAt   DateTime?
   referralRewards      Int      @default(0)
+  // Community feed: set when the member accepts the 16+ community rules. Required to post.
+  communityOptInAt     DateTime?
   createdAt            DateTime @default(now())
   decks                Deck[]
   orders               Order[]
   proxyOrders          ProxyOrder[]
   favorites            Favorite[]
   priceWatches         PriceWatch[]
+  posts                Post[]
+  postComments         PostComment[]
+  postVotes            PostVote[]
 
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
@@ -67,6 +72,7 @@ model Deck {
   updatedAt            DateTime @updatedAt
   favorites            Favorite[]
   snapshots            DeckSnapshot[]
+  feedPosts            Post[]
 
   @@index([commanderName])
   @@index([ownerId])
@@ -412,4 +418,72 @@ model DeckSnapshot {
   createdAt DateTime @default(now())
 
   @@index([deckId, createdAt])
+}
+
+// ---- Community feed (deck-anchored social) --------------------------------------------------
+// A public feed where members share a deck or a short post, upvote and comment. Moderation:
+// every post and comment is reportable to Nexus, the admin can hide or remove them, and automod
+// plus rate limits keep spam down. Posting needs a confirmed account that has accepted the 16+
+// community rules (User.communityOptInAt).
+
+model Post {
+  id        String        @id @default(cuid())
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  kind      String // "deck" | "text"
+  body      String? // the post's words (optional for a pure deck share)
+  deckId    String? // set for a deck-share post
+  deck      Deck?         @relation(fields: [deckId], references: [id], onDelete: SetNull)
+  score     Int           @default(0) // cached upvote count, kept in step with PostVote rows
+  commentCount Int        @default(0) // cached visible-comment count
+  status    String        @default("visible") // "visible" | "hidden" | "removed"
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  votes     PostVote[]
+  comments  PostComment[]
+
+  @@index([status, createdAt])
+  @@index([authorId])
+}
+
+model PostVote {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  status    String   @default("visible") // "visible" | "hidden" | "removed"
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+}
+
+// A member flagged a post or comment (spam, offensive, stolen art…). Nexus shows open reports;
+// the admin hides/removes the content or dismisses the report.
+model PostReport {
+  id         String   @id @default(cuid())
+  postId     String? // set when a post was reported
+  commentId  String? // set when a comment was reported
+  reason     String // "spam" | "offensive" | "copyright" | "other"
+  details    String?
+  reporterId String? // signed-in reporter, if any
+  ipHash     String? // hashed IP, only to stop one person spamming reports
+  status     String   @default("open") // "open" | "actioned" | "dismissed"
+  createdAt  DateTime @default(now())
+
+  @@index([status, createdAt])
 }

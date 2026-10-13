@@ -31,6 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/commanders/popular"), changeFrequency: "daily", priority: 0.7 },
     ...Array.from({ length: 12 }, (_, i) => addDays(lastWeekEnd(), -7 * i)).map((d) => ({ url: u(`/prices/movers/${d}`), changeFrequency: "yearly" as const, priority: 0.4 })),
     { url: u("/challenge"), changeFrequency: "weekly", priority: 0.6 },
+    { url: u("/community"), changeFrequency: "hourly", priority: 0.6 },
     { url: u("/vote"), changeFrequency: "weekly", priority: 0.5 },
     ...(SHOP_ENABLED ? [{ url: u("/proxies"), changeFrequency: "monthly" as const, priority: 0.7 }] : []),
     { url: u("/play"), changeFrequency: "monthly", priority: 0.6 },
