@@ -92,9 +92,16 @@ const FACES: Record<EmberMood, React.ReactNode> = {
   ),
 };
 
-export default function Ember({ mood = "happy", size = 160, className, title, costume = "none" }: { mood?: EmberMood; size?: number; className?: string; title?: string; costume?: EmberCostume }) {
+// In October, every Ember wears her witch hat site-wide unless a costume is passed explicitly.
+// Auto-reverts on 1 November — no cleanup needed. Pass costume="none" to opt a single Ember out.
+function seasonalCostume(): EmberCostume {
+  return new Date().getMonth() === 9 ? "witch" : "none"; // getMonth(): 9 = October
+}
+
+export default function Ember({ mood = "happy", size = 160, className, title, costume }: { mood?: EmberMood; size?: number; className?: string; title?: string; costume?: EmberCostume }) {
   // Every Ember uses the same gradients, so repeated ids on one page are harmless.
   const id = "ember";
+  const worn = costume ?? seasonalCostume();
   return (
     <svg width={size} height={size} viewBox="0 0 400 400" className={className} role="img" aria-label={title ?? `Ember, the Mana Forge mascot (${mood})`}>
       <defs>
@@ -137,7 +144,7 @@ export default function Ember({ mood = "happy", size = 160, className, title, co
         <circle cx="298" cy="104" r="3.5" />
       </g>
       {FACES[mood]}
-      {costume === "witch" && WITCH_HAT}
+      {worn === "witch" && WITCH_HAT}
     </svg>
   );
 }
