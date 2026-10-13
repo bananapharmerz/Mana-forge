@@ -11,9 +11,8 @@ import {
   removeOwn,
   reportContent,
   votePost,
-  MAX_POST,
-  MAX_COMMENT,
 } from "@/app/actions/feed";
+import { MAX_COMMENT, MAX_POST } from "@/lib/feedConstants";
 
 export type FeedComment = { id: string; body: string; author: string; ago: string; mine: boolean };
 export type FeedPost = {

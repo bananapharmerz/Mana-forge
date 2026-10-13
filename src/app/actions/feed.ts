@@ -7,11 +7,10 @@ import { db } from "@/lib/db";
 import { text } from "@/lib/validate";
 import { clientIp, hit, TOO_MANY } from "@/lib/rateLimit";
 import { screen } from "@/lib/automod";
+import { MAX_COMMENT, MAX_POST } from "@/lib/feedConstants";
 
 type Result = { ok: true } | { ok: false; error: string };
 
-export const MAX_POST = 1000;
-export const MAX_COMMENT = 500;
 const REASONS = ["spam", "offensive", "copyright", "other"] as const;
 type Reason = (typeof REASONS)[number];
 
