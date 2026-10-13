@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useCart } from "./CartProvider";
 import { useProxyProject } from "./ProxyProjectProvider";
+import Ember from "./Ember";
 import { SITE } from "@/lib/site";
 import { isShopPath, SHOP_ENABLED } from "@/lib/features";
 
@@ -33,6 +34,7 @@ export default function Nav() {
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href="/" className="flex items-center gap-2 shrink-0">
+          <Ember size={34} mood="happy" costume="witch" title={`${SITE.name} mascot`} className="shrink-0" />
           <span className="text-lg font-bold tracking-tight text-gold-bright">
             {SITE.name}
           </span>

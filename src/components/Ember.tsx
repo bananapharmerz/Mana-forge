@@ -1,6 +1,20 @@
 // Ember, Mana Forge's mascot: a little forge-fire spirit. Pure SVG, so it's sharp at any size.
 // mood: "happy" (default), "hyped" (wins, good news), "thinking" (loading), "oops" (errors, empty).
 export type EmberMood = "happy" | "hyped" | "thinking" | "oops";
+// costume: optional seasonal dress-up. "witch" = an original little purple-banded witch hat (Halloween).
+export type EmberCostume = "none" | "witch";
+
+// An original witch hat (no licensed characters): a tilted purple-black cone with a gold-buckled band.
+const WITCH_HAT = (
+  <g className="ember-hat" transform="rotate(-9 205 96)">
+    <ellipse cx="205" cy="128" rx="106" ry="23" fill="#17112e" />
+    <ellipse cx="205" cy="123" rx="106" ry="19" fill="#2a2150" />
+    <path d="M151 125 Q 176 50 214 24 Q 236 56 261 125 Q 206 139 151 125 Z" fill="#241a44" />
+    <path d="M214 24 Q 236 56 261 125 Q 237 131 215 131 Z" fill="#1a1333" />
+    <path d="M164 108 Q 206 121 256 108 L 252 126 Q 206 137 168 126 Z" fill="#7a2bd0" />
+    <rect x="197" y="108" width="18" height="19" rx="3" fill="none" stroke="#ffd27a" strokeWidth="4" />
+  </g>
+);
 
 const ARMS_DOWN = (
   <>
@@ -78,7 +92,7 @@ const FACES: Record<EmberMood, React.ReactNode> = {
   ),
 };
 
-export default function Ember({ mood = "happy", size = 160, className, title }: { mood?: EmberMood; size?: number; className?: string; title?: string }) {
+export default function Ember({ mood = "happy", size = 160, className, title, costume = "none" }: { mood?: EmberMood; size?: number; className?: string; title?: string; costume?: EmberCostume }) {
   // Every Ember uses the same gradients, so repeated ids on one page are harmless.
   const id = "ember";
   return (
@@ -123,6 +137,7 @@ export default function Ember({ mood = "happy", size = 160, className, title }: 
         <circle cx="298" cy="104" r="3.5" />
       </g>
       {FACES[mood]}
+      {costume === "witch" && WITCH_HAT}
     </svg>
   );
 }
