@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "Contact us",
   description: "Questions, bugs, account or Premium help: send the Mana Forge team a message.",
   alternates: { canonical: "/contact" },
-  openGraph: { title: "Contact us · Mana Forge", description: "Questions, bugs, account or Premium help: send the Mana Forge team a message." },
+  openGraph: { images: ["/opengraph-image"], title: "Contact us · Mana Forge", description: "Questions, bugs, account or Premium help: send the Mana Forge team a message." },
 };
 
 export default function ContactPage() {

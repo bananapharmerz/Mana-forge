@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "Community — share decks & talk Magic",
   description: `The ${SITE.name} community: share your Commander decks, post a hot take, upvote and talk Magic with other players.`,
   alternates: { canonical: "/community" },
-  openGraph: {
+  openGraph: { images: ["/opengraph-image"],
     title: `${SITE.name} Community`,
     description: "Share decks, post, upvote and talk Magic with other Commander players.",
     url: "/community",

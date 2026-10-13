@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESC,
   alternates: { canonical: PATH },
-  openGraph: { type: "article", title: TITLE, description: DESC, url: PATH },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESC },
+  openGraph: { images: ["/opengraph-image"], type: "article", title: TITLE, description: DESC, url: PATH },
+  twitter: { images: ["/twitter-image"], card: "summary_large_image", title: TITLE, description: DESC },
 };
 
 export default function HalloweenPage() {

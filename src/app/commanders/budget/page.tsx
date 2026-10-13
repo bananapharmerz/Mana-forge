@@ -16,8 +16,8 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: "/commanders/budget" },
-  openGraph: { type: "article", title, description, url: "/commanders/budget" },
-  twitter: { card: "summary_large_image", title, description },
+  openGraph: { images: ["/opengraph-image"], type: "article", title, description, url: "/commanders/budget" },
+  twitter: { images: ["/twitter-image"], card: "summary_large_image", title, description },
 };
 
 export default async function BudgetCommandersPage() {

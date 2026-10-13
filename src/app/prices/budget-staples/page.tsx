@@ -15,8 +15,8 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: "/prices/budget-staples" },
-  openGraph: { type: "article", title, description, url: "/prices/budget-staples" },
-  twitter: { card: "summary_large_image", title, description },
+  openGraph: { images: ["/opengraph-image"], type: "article", title, description, url: "/prices/budget-staples" },
+  twitter: { images: ["/twitter-image"], card: "summary_large_image", title, description },
 };
 
 export default async function BudgetStaplesPage() {

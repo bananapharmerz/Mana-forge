@@ -26,7 +26,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   return {
     title,
     description,
-    openGraph: { title: `${title} · ${SITE.name}`, description },
+    openGraph: { images: ["/opengraph-image"], title: `${title} · ${SITE.name}`, description },
     alternates: { canonical: slug ? `/decks?category=${encodeURIComponent(slug)}` : "/decks" },
   };
 }

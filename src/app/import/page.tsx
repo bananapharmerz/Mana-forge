@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description:
     "Bring your Commander decks to Mana Forge in seconds. Paste a decklist from Moxfield, Archidekt, MTG Arena or MTGO, or an Archidekt link. Free, no account needed to try.",
   alternates: { canonical: "/import" },
-  openGraph: {
+  openGraph: { images: ["/opengraph-image"],
     title: "Import your Commander decks · Mana Forge",
     description: "Paste a decklist from Moxfield, Archidekt, Arena or MTGO and keep building on Mana Forge. Free.",
   },

@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const ch = await db.challenge.findUnique({ where: { slug }, select: { title: true, theme: true } });
   if (!ch) return { title: "Challenge not found", robots: { index: false } };
   const description = `${SITE.name} Forge Challenge: ${ch.theme}`.slice(0, 300);
-  return { title: `${ch.title} · Forge Challenge`, description, alternates: { canonical: `/challenge/${slug}` }, openGraph: { title: ch.title, description, url: `/challenge/${slug}` } };
+  return { title: `${ch.title} · Forge Challenge`, description, alternates: { canonical: `/challenge/${slug}` }, openGraph: { images: ["/opengraph-image"], title: ch.title, description, url: `/challenge/${slug}` } };
 }
 
 const STEPS: { phase: ChallengePhase; label: string }[] = [

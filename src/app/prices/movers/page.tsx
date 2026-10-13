@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "Commander price movers this week",
   description: "The Magic: The Gathering cards in Commander decks whose prices rose and fell most over the last 7 days, with 30-day price lines.",
   alternates: { canonical: "/prices/movers" },
-  openGraph: { title: "Commander price movers this week · Mana Forge", description: "The Commander cards whose prices rose and fell most over the last 7 days." },
+  openGraph: { images: ["/opengraph-image"], title: "Commander price movers this week · Mana Forge", description: "The Commander cards whose prices rose and fell most over the last 7 days." },
 };
 
 export default async function MoversPage() {

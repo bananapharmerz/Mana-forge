@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const poll = await db.poll.findUnique({ where: { slug }, select: { question: true, description: true } });
   if (!poll) return { title: "Poll not found", robots: { index: false } };
   const description = poll.description ?? `Vote in the ${SITE.name} community poll: ${poll.question}`;
-  return { title: `${poll.question} · Community vote`, description, alternates: { canonical: `/vote/${slug}` }, openGraph: { title: poll.question, description, url: `/vote/${slug}` } };
+  return { title: `${poll.question} · Community vote`, description, alternates: { canonical: `/vote/${slug}` }, openGraph: { images: ["/opengraph-image"], title: poll.question, description, url: `/vote/${slug}` } };
 }
 
 export default async function PollPage({ params }: { params: Promise<{ slug: string }> }) {

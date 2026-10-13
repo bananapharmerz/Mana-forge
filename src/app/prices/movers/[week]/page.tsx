@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ week: str
   const label = weekLabel({ startDay: addDays(week, -7), endDay: week });
   const title = `Commander price movers: ${label}`;
   const description = `The Magic: The Gathering cards in Commander decks whose prices rose and fell most in the week ${label}.`;
-  return { title, description, alternates: { canonical: `/prices/movers/${week}` }, openGraph: { title, description, url: `/prices/movers/${week}` } };
+  return { title, description, alternates: { canonical: `/prices/movers/${week}` }, openGraph: { images: ["/opengraph-image"], title, description, url: `/prices/movers/${week}` } };
 }
 
 export default async function MoversWeekPage({ params }: { params: Promise<{ week: string }> }) {

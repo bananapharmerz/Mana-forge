@@ -14,8 +14,8 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: "/commanders/popular" },
-  openGraph: { type: "article", title, description, url: "/commanders/popular" },
-  twitter: { card: "summary_large_image", title, description },
+  openGraph: { images: ["/opengraph-image"], type: "article", title, description, url: "/commanders/popular" },
+  twitter: { images: ["/twitter-image"], card: "summary_large_image", title, description },
 };
 
 export default async function PopularCommandersPage() {
