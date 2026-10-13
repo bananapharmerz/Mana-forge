@@ -1,6 +1,6 @@
 "use server";
 
-import { searchCards, getCardsByNames, type ScryfallCard } from "@/lib/scryfall";
+import { searchCards, getCardsByNames, slimCard, type ScryfallCard } from "@/lib/scryfall";
 import {
   extractPartnerWithName,
   partnerCandidateQuery,
@@ -61,7 +61,8 @@ export async function searchCommandersPage(query: string, page: number): Promise
     }
 
     return {
-      cards,
+      // These go straight into the page for the browser, so only the fields the cards use.
+      cards: cards.map(slimCard),
       hasMore: result.has_more ?? false,
       nextPage: page + 1,
       partnerCards,
