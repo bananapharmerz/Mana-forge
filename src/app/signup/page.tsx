@@ -90,6 +90,9 @@ export default function SignupPage() {
   return (
     <div className="forge-band relative flex min-h-[calc(100vh-9rem)] items-start justify-center px-4 py-14 sm:items-center">
       <div className="relative w-full max-w-sm rounded-2xl border border-[#3a2f1c] bg-surface px-6 py-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] sm:px-8">
+      <Link href="/" className="mb-5 inline-flex items-center gap-1 text-xs font-semibold text-gold-bright hover:underline">
+        ← Browse Mana Forge free — no account needed
+      </Link>
       {invited && (
         <p className="mb-4 rounded-lg border border-gold/50 bg-gold/10 px-3 py-2 text-sm text-foreground">
           🎁 A friend invited you: you get <b>50% off Premium for your first 3 months</b> (after the free trial) whenever you want it.
