@@ -331,19 +331,20 @@ body {
 /* Homepage hero: Ember hammering the anvil (src/components/forge3d/ForgeEmberScene.tsx).
    One 1.3s strike cycle drives the hammer swing, the anvil flash, Ember's dip and the spark
    burst, so the five-colour sparks fly off the moment the hammer lands. */
-.forge-hammer { transform-box: fill-box; transform-origin: 50% 12%; animation: forge-hammer 1.3s cubic-bezier(0.3, 0, 0.35, 1) infinite; }
+.forge-hammer { transform-box: fill-box; transform-origin: 50% 18%; animation: forge-hammer 1.3s cubic-bezier(0.3, 0, 0.35, 1) infinite; }
 @keyframes forge-hammer {
-  0%, 100% { transform: rotate(-48deg); }
-  32%      { transform: rotate(-58deg); } /* wind up */
-  47%      { transform: rotate(18deg); }  /* STRIKE — head lands on the anvil */
-  55%      { transform: rotate(9deg); }   /* bounce */
-  68%      { transform: rotate(13deg); }
+  0%, 100% { transform: rotate(-38deg); } /* raised */
+  30%      { transform: rotate(-48deg); } /* wind up */
+  47%      { transform: rotate(22deg); }  /* STRIKE — head taps the anvil */
+  55%      { transform: rotate(13deg); }  /* bounce */
+  68%      { transform: rotate(18deg); }
 }
+/* Sparks fly straight up off the top of the hero in thin streaks, bursting on the strike. */
 .forge-spark { opacity: 0; animation: forge-spark 1.3s ease-out infinite; }
 @keyframes forge-spark {
-  0%, 44% { opacity: 0; transform: translate(0, 0) scale(0.5); }
-  49% { opacity: 1; transform: translate(0, -2px) scale(1); }
-  100% { opacity: 0; transform: translate(var(--drift, 0px), calc(-1 * var(--rise, 120px))) scale(0.35); }
+  0%, 44% { opacity: 0; transform: translate(0, 0) scaleY(0.5); }
+  50% { opacity: 1; transform: translate(0, -6px) scaleY(1); }
+  100% { opacity: 0; transform: translate(var(--drift, 0px), calc(-1 * var(--rise, 260px))) scaleY(1.7); }
 }
 .forge-bob { animation: forge-bob 1.3s ease-in-out infinite; }
 @keyframes forge-bob { 0%, 100% { transform: translateY(-3px); } 46% { transform: translateY(2px); } 62% { transform: translateY(-3px); } }

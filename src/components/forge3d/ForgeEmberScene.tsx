@@ -5,11 +5,12 @@ import Ember from "@/components/Ember";
 // on every device. Animations stop for people who prefer reduced motion (see .forge-* in globals.css).
 
 const SPARKS = Array.from({ length: 22 }, (_, i) => ({
-  left: 56 + ((i * 7) % 12), // tight cluster near the strike point on the anvil face
+  left: 54 + ((i * 7) % 14), // cluster near the strike point on the anvil face
   delay: ((i * 0.017) % 0.12).toFixed(3), // a hair of stagger so the burst isn't robotic
-  drift: (i % 2 ? 1 : -1) * (18 + ((i * 17) % 80)), // fan out sideways on impact (px)
-  rise: 80 + ((i * 29) % 90), // how high it flies (px)
-  size: 3 + (i % 3),
+  drift: (i % 2 ? 1 : -1) * (6 + ((i * 11) % 22)), // only a slight lean — mostly straight up
+  rise: 200 + ((i * 37) % 150), // fly up and off the top of the hero
+  w: 2 + (i % 2), // thin
+  h: 10 + (i % 3) * 5, // tall streak (so they read as lines, not dots)
   // The sparks fly off the strike in all five mana colors (W, U, B, R, G) with a little forge
   // gold — "every color, one forge" expressed in the one hero.
   hue: ["#f6efd0", "#49a3e0", "#9a73d6", "#ff5a3c", "#49b56a", "#ffc061"][i % 6],
@@ -31,10 +32,10 @@ export default function ForgeEmberScene({ className = "relative" }: { className?
             style={
               {
                 left: `${s.left}%`,
-                width: s.size,
-                height: s.size,
+                width: s.w,
+                height: s.h,
                 background: s.hue,
-                boxShadow: `0 0 ${s.size * 3}px ${s.hue}`,
+                boxShadow: `0 0 ${s.w * 4}px ${s.hue}`,
                 animationDelay: `${s.delay}s`,
                 "--drift": `${s.drift}px`,
                 "--rise": `${s.rise}px`,
@@ -49,16 +50,19 @@ export default function ForgeEmberScene({ className = "relative" }: { className?
         <Ember mood="happy" size={400} className="h-auto w-full drop-shadow-[0_20px_40px_rgba(255,120,40,0.35)]" title="Ember, the Mana Forge mascot, at the anvil" />
       </div>
 
-      {/* The hammer Ember swings down onto the anvil face. Grip at the top (the pivot, see
-          .forge-hammer transform-origin); the head at the bottom is what strikes. */}
-      <svg viewBox="0 0 100 150" className="forge-hammer absolute left-[47%] top-[42%] w-[18%]">
+      {/* The hammer Ember swings. A flame fist grips the handle (the pivot, at Ember's hand —
+          see .forge-hammer transform-origin); the head at the bottom taps the anvil. */}
+      <svg viewBox="0 0 100 170" className="forge-hammer absolute left-[57%] top-[33%] w-[20%]">
+        {/* flame fist gripping the handle */}
+        <circle cx="50" cy="30" r="16" fill="#ff8a3d" />
+        <circle cx="44" cy="25" r="6" fill="#ffc061" opacity="0.6" />
         {/* handle */}
-        <rect x="45" y="16" width="11" height="104" rx="5.5" fill="#7a4f27" />
-        <rect x="47.5" y="18" width="3.5" height="100" rx="1.75" fill="#9c6c3a" />
+        <rect x="44" y="28" width="12" height="100" rx="6" fill="#7a4f27" />
+        <rect x="46.5" y="30" width="3.5" height="96" rx="1.75" fill="#9c6c3a" />
         {/* head (the striking end) */}
-        <rect x="22" y="104" width="56" height="30" rx="6" fill="#565c67" />
-        <rect x="22" y="104" width="56" height="9" rx="4" fill="#79808d" />
-        <rect x="22" y="127" width="56" height="7" rx="3" fill="#383c44" />
+        <rect x="22" y="124" width="56" height="30" rx="6" fill="#565c67" />
+        <rect x="22" y="124" width="56" height="9" rx="4" fill="#79808d" />
+        <rect x="22" y="147" width="56" height="7" rx="3" fill="#383c44" />
       </svg>
 
       {/* The anvil */}
