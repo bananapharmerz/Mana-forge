@@ -82,6 +82,16 @@ function zoneName(zone: PileZone) {
 // everyone else arranged around it, but the color always identifies the same real player.
 const PLAYER_SEAT_COLORS = ["#dbeafe", "#fee2e2", "#fef9c3", "#dcfce7"]; // blue, red, yellow, green
 
+// A seat color as a translucent rgba, for a soft inner glow that identifies the seat without the
+// harsh contrast a solid fill (or hard border) gives in dark mode.
+function withAlpha(hex: string, a: number): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 const DICE_KINDS: DiceKind[] = ["coin", "d4", "d6", "d8", "d10", "d12", "d20"];
 const DICE_LABEL: Record<DiceKind, string> = {
   coin: "Coin",
@@ -1091,7 +1101,7 @@ export default function PlayRoomPage({
       <div className="relative flex min-h-0 flex-1 flex-col gap-3">
         <div
           className="grid min-h-0 shrink-0 gap-3"
-          style={{ height: "30%", gridTemplateColumns: `repeat(${opponentSlots.length}, minmax(0, 1fr))` }}
+          style={{ height: "24%", gridTemplateColumns: `repeat(${opponentSlots.length}, minmax(0, 1fr))` }}
         >
           {opponentSlots.map((p, i) => renderSeat(p, "bl", p?.id ?? `opp-${i}`))}
         </div>
@@ -1116,8 +1126,8 @@ export default function PlayRoomPage({
 
       {me && (
         <div
-          className="-mt-3 shrink-0 rounded-b-xl border-2 border-t-0 bg-surface/40 p-2"
-          style={mySeatColor ? { borderColor: mySeatColor } : undefined}
+          className="-mt-3 shrink-0 rounded-b-xl border border-t-0 border-border bg-surface/40 p-2"
+          style={mySeatColor ? { boxShadow: `inset 0 0 26px -8px ${withAlpha(mySeatColor, 0.5)}` } : undefined}
         >
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -1432,8 +1442,8 @@ export default function PlayRoomPage({
             {me.hand.map((c, i) => {
               const n = me.hand.length;
               const offset = i - (n - 1) / 2;
-              const rot = Math.max(-12, Math.min(12, offset * 2.2));
-              const ty = Math.abs(offset) * 2;
+              const rot = Math.max(-16, Math.min(16, offset * 3.2));
+              const ty = Math.abs(offset) * 3.2;
               return (
               <div
                 key={c.instanceId}
@@ -1441,7 +1451,7 @@ export default function PlayRoomPage({
                 onContextMenu={(e) => openCardMenu(e, c)}
                 {...hoverProps(c)}
                 className="arena-hand-card w-24 shrink-0 cursor-grab touch-none select-none overflow-hidden rounded border border-border hover:border-gold"
-                style={{ "--rot": `${rot}deg`, "--ty": `${ty}px`, marginLeft: i === 0 ? 0 : "-1.25rem", zIndex: i } as CSSProperties}
+                style={{ "--rot": `${rot}deg`, "--ty": `${ty}px`, marginLeft: i === 0 ? 0 : "-1.5rem", zIndex: i } as CSSProperties}
                 title={`Drag ${c.name} to the field, deck, graveyard, or exile — or click to play`}
               >
                 {c.imageUrl ? (
@@ -2287,8 +2297,8 @@ function PlayerBox({
 
   return (
     <div
-      className="card-frame relative flex flex-col overflow-hidden border-2 p-2"
-      style={seatColor ? { borderColor: seatColor } : undefined}
+      className="card-frame relative flex flex-col overflow-hidden p-2"
+      style={seatColor ? { boxShadow: `inset 0 0 30px -6px ${withAlpha(seatColor, 0.55)}` } : undefined}
     >
       <div
         style={{ order: headerOrder }}
