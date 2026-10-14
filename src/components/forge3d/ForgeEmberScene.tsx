@@ -5,7 +5,7 @@ import Ember from "@/components/Ember";
 // on every device. Animations stop for people who prefer reduced motion (see .forge-* in globals.css).
 
 const SPARKS = Array.from({ length: 22 }, (_, i) => ({
-  left: 50 + ((i * 7) % 11), // tight cluster near the strike point on the anvil face
+  left: 56 + ((i * 7) % 12), // tight cluster near the strike point on the anvil face
   delay: ((i * 0.017) % 0.12).toFixed(3), // a hair of stagger so the burst isn't robotic
   drift: (i % 2 ? 1 : -1) * (18 + ((i * 17) % 80)), // fan out sideways on impact (px)
   rise: 80 + ((i * 29) % 90), // how high it flies (px)
@@ -49,15 +49,16 @@ export default function ForgeEmberScene({ className = "relative" }: { className?
         <Ember mood="happy" size={400} className="h-auto w-full drop-shadow-[0_20px_40px_rgba(255,120,40,0.35)]" title="Ember, the Mana Forge mascot, at the anvil" />
       </div>
 
-      {/* The hammer Ember swings down onto the anvil face (pivots at the grip; see .forge-hammer). */}
-      <svg viewBox="0 0 100 150" className="forge-hammer absolute left-[46%] top-[24%] w-[22%]">
+      {/* The hammer Ember swings down onto the anvil face. Grip at the top (the pivot, see
+          .forge-hammer transform-origin); the head at the bottom is what strikes. */}
+      <svg viewBox="0 0 100 150" className="forge-hammer absolute left-[52%] top-[26%] w-[20%]">
         {/* handle */}
-        <rect x="45" y="46" width="11" height="96" rx="5.5" fill="#7a4f27" />
-        <rect x="47.5" y="48" width="3.5" height="92" rx="1.75" fill="#9c6c3a" />
-        {/* head */}
-        <rect x="22" y="22" width="56" height="30" rx="6" fill="#565c67" />
-        <rect x="22" y="22" width="56" height="9" rx="4" fill="#79808d" />
-        <rect x="22" y="45" width="56" height="7" rx="3" fill="#383c44" />
+        <rect x="45" y="16" width="11" height="104" rx="5.5" fill="#7a4f27" />
+        <rect x="47.5" y="18" width="3.5" height="100" rx="1.75" fill="#9c6c3a" />
+        {/* head (the striking end) */}
+        <rect x="22" y="104" width="56" height="30" rx="6" fill="#565c67" />
+        <rect x="22" y="104" width="56" height="9" rx="4" fill="#79808d" />
+        <rect x="22" y="127" width="56" height="7" rx="3" fill="#383c44" />
       </svg>
 
       {/* The anvil */}

@@ -331,14 +331,13 @@ body {
 /* Homepage hero: Ember hammering the anvil (src/components/forge3d/ForgeEmberScene.tsx).
    One 1.3s strike cycle drives the hammer swing, the anvil flash, Ember's dip and the spark
    burst, so the five-colour sparks fly off the moment the hammer lands. */
-.forge-hammer { transform-box: fill-box; transform-origin: 52% 88%; animation: forge-hammer 1.3s cubic-bezier(0.3, 0, 0.35, 1) infinite; }
+.forge-hammer { transform-box: fill-box; transform-origin: 50% 12%; animation: forge-hammer 1.3s cubic-bezier(0.3, 0, 0.35, 1) infinite; }
 @keyframes forge-hammer {
-  0%   { transform: rotate(-50deg); }
-  30%  { transform: rotate(-56deg); }
-  46%  { transform: rotate(14deg); }
-  54%  { transform: rotate(7deg); }
-  66%  { transform: rotate(11deg); }
-  100% { transform: rotate(-50deg); }
+  0%, 100% { transform: rotate(-48deg); }
+  32%      { transform: rotate(-58deg); } /* wind up */
+  47%      { transform: rotate(18deg); }  /* STRIKE — head lands on the anvil */
+  55%      { transform: rotate(9deg); }   /* bounce */
+  68%      { transform: rotate(13deg); }
 }
 .forge-spark { opacity: 0; animation: forge-spark 1.3s ease-out infinite; }
 @keyframes forge-spark {
