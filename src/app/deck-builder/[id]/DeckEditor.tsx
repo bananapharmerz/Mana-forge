@@ -12,6 +12,7 @@ import BuyDeckPanel from "@/components/BuyDeckPanel";
 import PartnerCardStack from "@/components/PartnerCardStack";
 import DeckValuePanel from "@/components/DeckValuePanel";
 import GameChangersPanel from "@/components/GameChangersPanel";
+import DeckBuddy from "@/components/DeckBuddy";
 import { useLivePrices } from "@/components/useLivePrices";
 import { currentPrice, deckValue, signedPct, weekChange } from "@/lib/livePrice";
 import {
@@ -458,6 +459,12 @@ export default function DeckEditor({
             <p className="text-2xl font-bold text-foreground">{size}/100</p>
             <p className="text-xs text-muted">cards in deck</p>
           </div>
+
+          <DeckBuddy
+            commander={deck.commander?.name}
+            have={[deck.partner, deck.companion, ...deck.cards].flatMap((c) => (c ? [c.name] : []))}
+            onAdd={addCard}
+          />
 
           <GameChangersPanel cards={[deck.commander, deck.partner, ...deck.cards].flatMap((c) => (c ? [c.name] : []))} />
 

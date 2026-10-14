@@ -32,6 +32,8 @@ export interface EdhrecCommanderData {
     themes: { name: string; count: number }[];
     similar: string[];
     combos: string[];
+    /** Every combo EDHREC lists for this commander (not just the 3 the guide shows). */
+    allCombos: string[];
   };
 }
 
@@ -80,6 +82,10 @@ export async function getEdhrecCommanderData(name: string): Promise<EdhrecComman
           .map((c: { value?: unknown }) => c?.value)
           .filter((v: unknown): v is string => typeof v === "string" && v.includes("+"))
           .slice(0, 3),
+        allCombos: (Array.isArray(data?.panels?.combocounts) ? data.panels.combocounts : [])
+          .map((c: { value?: unknown }) => c?.value)
+          .filter((v: unknown): v is string => typeof v === "string" && v.includes("+"))
+          .slice(0, 40),
       },
     };
   } catch {
@@ -151,6 +157,27 @@ export function getMostPlayed(data: EdhrecCommanderData, cap = 200): EdhrecCardV
   return Array.from(seen.values())
     .sort((a, b) => playRate(b) - playRate(a))
     .slice(0, cap);
+}
+
+export interface CommanderCombo {
+  pieces: string[]; // the card names that make up the combo
+  label: string; // EDHREC's raw combo label
+}
+
+// The known combos EDHREC lists for this commander, each split into its card-name pieces.
+// Powers the build assistant's "you already run one piece of this combo — add the other".
+export function getCommanderCombos(data: EdhrecCommanderData): CommanderCombo[] {
+  const out: CommanderCombo[] = [];
+  const seen = new Set<string>();
+  for (const label of data.overview.allCombos) {
+    const pieces = label.split(/\s*\+\s*/).map((p) => p.trim()).filter(Boolean);
+    if (pieces.length < 2) continue;
+    const key = pieces.map((p) => p.toLowerCase()).sort().join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ pieces, label });
+  }
+  return out;
 }
 
 export interface EdhrecPublicDeck {
