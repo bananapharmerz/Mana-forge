@@ -4,13 +4,15 @@ import Ember from "@/components/Ember";
 // SVG and CSS (no three.js), so it shows straight away, costs almost nothing to load and is the same
 // on every device. Animations stop for people who prefer reduced motion (see .forge-* in globals.css).
 
-const SPARKS = Array.from({ length: 16 }, (_, i) => ({
+const SPARKS = Array.from({ length: 22 }, (_, i) => ({
   left: 30 + ((i * 37) % 40), // % across the anvil top
   delay: ((i * 0.53) % 3.2).toFixed(2),
   dur: (2.4 + ((i * 0.71) % 1.8)).toFixed(2),
   drift: ((i % 2 ? 1 : -1) * (12 + ((i * 13) % 50))).toFixed(0),
   size: 3 + (i % 3),
-  hue: ["#ffd27a", "#ffb347", "#ff8a3d", "#fff1c9"][i % 4],
+  // The sparks rise off the anvil in all five mana colors (W, U, B, R, G) with a little forge
+  // gold — "every color, one forge" expressed in the one hero.
+  hue: ["#f6efd0", "#49a3e0", "#9a73d6", "#ff5a3c", "#49b56a", "#ffc061"][i % 6],
 }));
 
 // Pass a positioning class (absolute …); it defaults to relative.
