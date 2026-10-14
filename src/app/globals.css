@@ -335,12 +335,12 @@ body {
    head reaching down-left to the anvil face. The swing pivots at the hand (view-box origin). */
 .forge-hammer { transform-box: view-box; transform-origin: 322px 202px; animation: forge-hammer 1.3s cubic-bezier(0.35, 0, 0.3, 1) infinite; }
 @keyframes forge-hammer {
-  0%   { transform: rotate(-44deg); } /* raised — head up by Ember's shoulder */
-  40%  { transform: rotate(-50deg); } /* cock back a touch */
-  50%  { transform: rotate(3deg); }   /* STRIKE — head lands on the anvil face */
-  58%  { transform: rotate(-8deg); }  /* bounce off the steel */
-  74%  { transform: rotate(-30deg); }
-  100% { transform: rotate(-44deg); }
+  0%   { transform: rotate(38deg); } /* raised — head up by Ember's shoulder */
+  42%  { transform: rotate(42deg); } /* cock back a touch */
+  50%  { transform: rotate(2deg); }  /* STRIKE — head lands on the anvil face */
+  58%  { transform: rotate(12deg); } /* bounce off the steel */
+  74%  { transform: rotate(28deg); }
+  100% { transform: rotate(38deg); }
 }
 /* Sparks fly straight up off the top of the hero in thin streaks, bursting on the strike. */
 .forge-spark { opacity: 0; animation: forge-spark 1.3s ease-out infinite; }
@@ -358,7 +358,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .forge-spark, .forge-bob, .forge-strike, .forge-heat, .forge-hammer { animation: none; }
   .forge-spark { opacity: 0.6; }
-  .forge-hammer { transform: rotate(3deg); } /* resting on the anvil */
+  .forge-hammer { transform: rotate(2deg); } /* resting on the anvil */
 }
 
 /* ---- Pack opening (components/PackOpener) ------------------------------------------------- */
