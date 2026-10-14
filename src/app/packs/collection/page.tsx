@@ -24,6 +24,7 @@ type Card = {
   name: string;
   rarity: string;
   colors: string | null;
+  isLand: boolean | null;
   priceUsd: number | null;
   quantity: number;
   foilQuantity: number;
@@ -43,12 +44,15 @@ const colorRank = (colors: string | null) => {
   if (colors.length === 1) return COLOR_ORDER.indexOf(colors) + 1;
   return 6;
 };
+// Lands are their own category at the very end, whatever their colour identity.
+const landRank = (c: Card) => (c.isLand ? 1 : 0);
 
 const SORTS: { key: string; label: string; cmp: (a: Card, b: Card) => number }[] = [
   {
     key: "set",
     label: "Set → color → rarity",
     cmp: (a, b) =>
+      landRank(a) - landRank(b) ||
       a.setName.localeCompare(b.setName) ||
       colorRank(a.colors) - colorRank(b.colors) ||
       (a.colors ?? "").localeCompare(b.colors ?? "") ||
@@ -60,6 +64,7 @@ const SORTS: { key: string; label: string; cmp: (a: Card, b: Card) => number }[]
     key: "color",
     label: "Color → rarity",
     cmp: (a, b) =>
+      landRank(a) - landRank(b) ||
       colorRank(a.colors) - colorRank(b.colors) ||
       (a.colors ?? "").localeCompare(b.colors ?? "") ||
       rarityScore(b) - rarityScore(a) ||
@@ -86,23 +91,33 @@ export default async function CollectionPage({ searchParams }: { searchParams: P
     take: 1000,
   })) as Card[];
 
-  // One-time backfill: older pulls have no stored color identity. Fetch it from Scryfall by
-  // printing id and persist, so set→color→rarity has real colors to work with.
-  const missing = cards.filter((c) => c.colors == null);
+  // One-time backfill: older pulls have no stored colour identity or land flag. Fetch them from
+  // Scryfall by printing id and persist, so set→color→rarity has real colours and lands drop into
+  // their own category at the end.
+  const missing = cards.filter((c) => c.colors == null || c.isLand == null);
   if (missing.length) {
     try {
       const found = await getCardsByIds(missing.map((c) => c.scryfallId));
-      const idToColors = new Map(found.map((c) => [c.id, (c.color_identity ?? []).join("")]));
+      const byId = new Map(found.map((c) => [c.id, c]));
       const writes: Promise<unknown>[] = [];
       for (const c of missing) {
-        const colors = idToColors.get(c.scryfallId);
-        if (colors == null) continue;
-        c.colors = colors;
-        writes.push(db.collectionCard.update({ where: { id: c.id }, data: { colors } }));
+        const sc = byId.get(c.scryfallId);
+        if (!sc) continue;
+        const data: { colors?: string; isLand?: boolean } = {};
+        if (c.colors == null) {
+          c.colors = (sc.color_identity ?? []).join("");
+          data.colors = c.colors;
+        }
+        if (c.isLand == null) {
+          const types = [sc.type_line ?? "", ...(sc.card_faces?.map((f) => f.type_line ?? "") ?? [])];
+          c.isLand = types.some((t) => /\bland\b/i.test(t));
+          data.isLand = c.isLand;
+        }
+        if (Object.keys(data).length) writes.push(db.collectionCard.update({ where: { id: c.id }, data }));
       }
       await Promise.all(writes);
     } catch {
-      // Scryfall busy — leave colors null this time; they sort last and backfill on a later load.
+      // Scryfall busy — leave the missing fields null this time; they backfill on a later load.
     }
   }
 
