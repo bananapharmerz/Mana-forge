@@ -41,13 +41,15 @@ export async function searchPartnerCandidates(
   }
 }
 
-export async function searchCommandersPage(query: string, page: number): Promise<CommandersPage> {
+export async function searchCommandersPage(query: string, page: number, order?: string): Promise<CommandersPage> {
   try {
     // Every search goes to Scryfall, so keep it to a sensible pace per visitor.
     if (!hit(`search:${await clientIp()}`, 60, 60 * 1000)) return { cards: [], hasMore: false, nextPage: page, partnerCards: {} };
     query = String(query ?? "").slice(0, 300);
     page = Math.min(100, Math.max(1, Math.floor(Number(page)) || 1));
-    const result = await searchCards(query, { page });
+    // Only a known-safe sort is passed through; anything else falls back to Scryfall's default.
+    const ord = order === "color" ? "color" : undefined;
+    const result = await searchCards(query, { page, order: ord });
     const cards = result.data ?? [];
 
     const partnerNames = Array.from(

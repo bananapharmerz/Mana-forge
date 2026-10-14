@@ -28,14 +28,26 @@ export const revalidate = 3600;
 export default async function CommandersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; q?: string; set?: string; setName?: string }>;
+  searchParams: Promise<{ category?: string; q?: string; set?: string; setName?: string; sort?: string }>;
 }) {
   const params = await searchParams;
   const categorySlug = params.category;
   const setCode = params.set;
   const setName = params.setName;
   const q = params.q?.trim();
+  const sort = params.sort === "color" ? "color" : undefined;
   const category = categorySlug ? findCategory(categorySlug) : undefined;
+
+  // Preserve the active filters when switching sort order.
+  const sortKeep = new URLSearchParams();
+  if (categorySlug) sortKeep.set("category", categorySlug);
+  if (setCode) sortKeep.set("set", setCode);
+  if (setName) sortKeep.set("setName", setName);
+  if (q) sortKeep.set("q", q);
+  const mostHref = `/commanders${sortKeep.toString() ? `?${sortKeep}` : ""}`;
+  const colorKeep = new URLSearchParams(sortKeep);
+  colorKeep.set("sort", "color");
+  const colorHref = `/commanders?${colorKeep}`;
 
   const baseQuery = category?.query ?? (setCode ? `is:commander e:${setCode}` : "is:commander");
   const query = q ? `${baseQuery} ${q}` : baseQuery;
@@ -43,7 +55,7 @@ export default async function CommandersPage({
   const moreOpen = Boolean(setCode) || [...typalCategories, ...themeCategories, ...multiCommanderCategories, ...companionCategories, ...productCategories].some((c) => c.slug === categorySlug);
   const activeLabel = category?.label ?? (setCode ? setName ?? setCode.toUpperCase() : undefined);
 
-  const [firstPage, session] = await Promise.all([searchCommandersPage(query, 1), auth()]);
+  const [firstPage, session] = await Promise.all([searchCommandersPage(query, 1, sort), auth()]);
 
   const user = session?.user?.id
     ? await db.user.findUnique({ where: { id: session.user.id } })
@@ -146,9 +158,28 @@ export default async function CommandersPage({
         </details>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-xs uppercase tracking-wide text-muted">Sort</span>
+        <Link
+          href={mostHref}
+          aria-current={!sort ? "true" : undefined}
+          className={!sort ? "rounded-full bg-gold px-3 py-1.5 text-xs font-bold text-black" : "rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:border-gold hover:text-foreground"}
+        >
+          Most played
+        </Link>
+        <Link
+          href={colorHref}
+          aria-current={sort === "color" ? "true" : undefined}
+          className={sort === "color" ? "rounded-full bg-gold px-3 py-1.5 text-xs font-bold text-black" : "rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:border-gold hover:text-foreground"}
+        >
+          Color identity
+        </Link>
+      </div>
+
       <CommandersFeed
-        key={query}
+        key={`${query}|${sort ?? ""}`}
         query={query}
+        order={sort}
         initialCards={firstPage.cards}
         initialHasMore={firstPage.hasMore}
         initialNextPage={firstPage.nextPage}

@@ -16,6 +16,7 @@ export default function CommandersFeed({
   initialNextPage,
   initialPartnerCards,
   tier,
+  order,
 }: {
   query: string;
   initialCards: ScryfallCard[];
@@ -23,6 +24,7 @@ export default function CommandersFeed({
   initialNextPage: number;
   initialPartnerCards?: Record<string, DeckCard>;
   tier?: string | null;
+  order?: string;
 }) {
   const [cards, setCards] = useState(initialCards);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -32,7 +34,7 @@ export default function CommandersFeed({
 
   async function loadMore() {
     setLoading(true);
-    const result = await searchCommandersPage(query, page);
+    const result = await searchCommandersPage(query, page, order);
     setCards((prev) => {
       const existingIds = new Set(prev.map((c) => c.id));
       const fresh = result.cards.filter((c) => !existingIds.has(c.id));
