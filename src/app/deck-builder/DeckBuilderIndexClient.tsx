@@ -204,6 +204,12 @@ export default function DeckBuilderIndexClient({
           >
             New deck
           </button>
+          <Link
+            href="/deck-doctor"
+            className="rounded-lg border border-gold/60 px-5 py-2.5 text-sm font-semibold text-[#f5ecd6] hover:border-gold hover:bg-gold/10"
+          >
+            Brew a deck
+          </Link>
           {!atLimit && (
             <Link
               href="/import"
