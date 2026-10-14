@@ -5,12 +5,12 @@ import Ember from "@/components/Ember";
 // on every device. Animations stop for people who prefer reduced motion (see .forge-* in globals.css).
 
 const SPARKS = Array.from({ length: 22 }, (_, i) => ({
-  left: 30 + ((i * 37) % 40), // % across the anvil top
-  delay: ((i * 0.53) % 3.2).toFixed(2),
-  dur: (2.4 + ((i * 0.71) % 1.8)).toFixed(2),
-  drift: ((i % 2 ? 1 : -1) * (12 + ((i * 13) % 50))).toFixed(0),
+  left: 50 + ((i * 7) % 11), // tight cluster near the strike point on the anvil face
+  delay: ((i * 0.017) % 0.12).toFixed(3), // a hair of stagger so the burst isn't robotic
+  drift: (i % 2 ? 1 : -1) * (18 + ((i * 17) % 80)), // fan out sideways on impact (px)
+  rise: 80 + ((i * 29) % 90), // how high it flies (px)
   size: 3 + (i % 3),
-  // The sparks rise off the anvil in all five mana colors (W, U, B, R, G) with a little forge
+  // The sparks fly off the strike in all five mana colors (W, U, B, R, G) with a little forge
   // gold — "every color, one forge" expressed in the one hero.
   hue: ["#f6efd0", "#49a3e0", "#9a73d6", "#ff5a3c", "#49b56a", "#ffc061"][i % 6],
 }));
@@ -36,18 +36,29 @@ export default function ForgeEmberScene({ className = "relative" }: { className?
                 background: s.hue,
                 boxShadow: `0 0 ${s.size * 3}px ${s.hue}`,
                 animationDelay: `${s.delay}s`,
-                animationDuration: `${s.dur}s`,
                 "--drift": `${s.drift}px`,
+                "--rise": `${s.rise}px`,
               } as React.CSSProperties
             }
           />
         ))}
       </div>
 
-      {/* Ember, standing on the anvil with the hammer */}
+      {/* Ember, standing at the anvil */}
       <div className="forge-bob absolute inset-x-[14%] top-[19%]">
         <Ember mood="happy" size={400} className="h-auto w-full drop-shadow-[0_20px_40px_rgba(255,120,40,0.35)]" title="Ember, the Mana Forge mascot, at the anvil" />
       </div>
+
+      {/* The hammer Ember swings down onto the anvil face (pivots at the grip; see .forge-hammer). */}
+      <svg viewBox="0 0 100 150" className="forge-hammer absolute left-[46%] top-[24%] w-[22%]">
+        {/* handle */}
+        <rect x="45" y="46" width="11" height="96" rx="5.5" fill="#7a4f27" />
+        <rect x="47.5" y="48" width="3.5" height="92" rx="1.75" fill="#9c6c3a" />
+        {/* head */}
+        <rect x="22" y="22" width="56" height="30" rx="6" fill="#565c67" />
+        <rect x="22" y="22" width="56" height="9" rx="4" fill="#79808d" />
+        <rect x="22" y="45" width="56" height="7" rx="3" fill="#383c44" />
+      </svg>
 
       {/* The anvil */}
       <svg viewBox="0 0 400 170" className="absolute inset-x-0 bottom-0 h-auto w-full">

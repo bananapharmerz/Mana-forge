@@ -328,22 +328,34 @@ body {
   .ember-flame, .ember-core, .ember-glow, .ember-sparks circle { animation: none; }
 }
 
-/* Homepage hero: Ember at the anvil (src/components/forge3d/ForgeEmberScene.tsx). */
-.forge-spark { opacity: 0; animation: forge-spark 3s ease-out infinite; }
-@keyframes forge-spark {
-  0% { opacity: 0; transform: translate(0, 0) scale(1); }
-  10% { opacity: 1; }
-  100% { opacity: 0; transform: translate(var(--drift, 0px), -260px) scale(0.4); }
+/* Homepage hero: Ember hammering the anvil (src/components/forge3d/ForgeEmberScene.tsx).
+   One 1.3s strike cycle drives the hammer swing, the anvil flash, Ember's dip and the spark
+   burst, so the five-colour sparks fly off the moment the hammer lands. */
+.forge-hammer { transform-box: fill-box; transform-origin: 52% 88%; animation: forge-hammer 1.3s cubic-bezier(0.3, 0, 0.35, 1) infinite; }
+@keyframes forge-hammer {
+  0%   { transform: rotate(-50deg); }
+  30%  { transform: rotate(-56deg); }
+  46%  { transform: rotate(14deg); }
+  54%  { transform: rotate(7deg); }
+  66%  { transform: rotate(11deg); }
+  100% { transform: rotate(-50deg); }
 }
-.forge-bob { animation: forge-bob 3.2s ease-in-out infinite; }
-@keyframes forge-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-.forge-strike { opacity: 0.15; animation: forge-strike 2.4s ease-in-out infinite; }
-@keyframes forge-strike { 0%, 70%, 100% { opacity: 0.15; } 78% { opacity: 0.85; } }
+.forge-spark { opacity: 0; animation: forge-spark 1.3s ease-out infinite; }
+@keyframes forge-spark {
+  0%, 44% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+  49% { opacity: 1; transform: translate(0, -2px) scale(1); }
+  100% { opacity: 0; transform: translate(var(--drift, 0px), calc(-1 * var(--rise, 120px))) scale(0.35); }
+}
+.forge-bob { animation: forge-bob 1.3s ease-in-out infinite; }
+@keyframes forge-bob { 0%, 100% { transform: translateY(-3px); } 46% { transform: translateY(2px); } 62% { transform: translateY(-3px); } }
+.forge-strike { opacity: 0.12; animation: forge-strike 1.3s ease-out infinite; }
+@keyframes forge-strike { 0%, 42%, 100% { opacity: 0.12; } 48% { opacity: 0.95; } 62% { opacity: 0.3; } }
 .forge-heat { animation: forge-heat 4s ease-in-out infinite; }
 @keyframes forge-heat { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .forge-spark, .forge-bob, .forge-strike, .forge-heat { animation: none; }
+  .forge-spark, .forge-bob, .forge-strike, .forge-heat, .forge-hammer { animation: none; }
   .forge-spark { opacity: 0.6; }
+  .forge-hammer { transform: rotate(-24deg); }
 }
 
 /* ---- Pack opening (components/PackOpener) ------------------------------------------------- */
