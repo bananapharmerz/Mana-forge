@@ -333,11 +333,11 @@ body {
    burst, so the five-colour sparks fly off the moment the hammer lands. */
 .forge-hammer { transform-box: fill-box; transform-origin: 50% 18%; animation: forge-hammer 1.3s cubic-bezier(0.3, 0, 0.35, 1) infinite; }
 @keyframes forge-hammer {
-  0%, 100% { transform: rotate(-38deg); } /* raised */
-  30%      { transform: rotate(-48deg); } /* wind up */
-  47%      { transform: rotate(22deg); }  /* STRIKE — head taps the anvil */
-  55%      { transform: rotate(13deg); }  /* bounce */
-  68%      { transform: rotate(18deg); }
+  0%, 100% { transform: rotate(-16deg); } /* raised, head stays near the anvil */
+  30%      { transform: rotate(-24deg); } /* wind up */
+  47%      { transform: rotate(14deg); }  /* STRIKE — head taps the anvil */
+  55%      { transform: rotate(6deg); }   /* bounce */
+  68%      { transform: rotate(10deg); }
 }
 /* Sparks fly straight up off the top of the hero in thin streaks, bursting on the strike. */
 .forge-spark { opacity: 0; animation: forge-spark 1.3s ease-out infinite; }
