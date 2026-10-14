@@ -32,6 +32,11 @@ export interface ScryfallCard {
   edhrec_rank?: number;
   scryfall_uri: string;
   set_name: string;
+  set?: string;
+  rarity?: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
+  collector_number?: string;
+  finishes?: string[];
+  booster?: boolean;
   artist?: string;
   prices?: {
     usd?: string | null;
@@ -51,6 +56,7 @@ type CardPrices = NonNullable<ScryfallCard["prices"]>;
 const CARD_KEYS: (keyof ScryfallCard)[] = [
   "id", "oracle_id", "name", "mana_cost", "cmc", "type_line", "oracle_text", "power", "toughness", "keywords",
   "color_identity", "legalities", "edhrec_rank", "scryfall_uri", "set_name", "artist",
+  "set", "rarity", "collector_number", "finishes", "booster",
 ];
 const FACE_KEYS: (keyof CardFace)[] = ["name", "type_line", "oracle_text", "power", "toughness", "artist"];
 const IMAGE_KEYS: (keyof CardImages)[] = ["small", "normal", "large", "art_crop", "border_crop"];

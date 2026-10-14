@@ -15,6 +15,7 @@ const links = [
   { href: "/decks", label: "Public Decks" },
   { href: "/deck-builder", label: "My Decks" },
   { href: "/prices", label: "Prices" },
+  { href: "/packs", label: "Open Packs" },
   { href: "/play", label: "Play" },
   { href: "/community", label: "Community" },
   { href: "/challenge", label: "Challenge" },
