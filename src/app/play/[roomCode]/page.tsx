@@ -1091,7 +1091,7 @@ export default function PlayRoomPage({
       <div className="relative flex min-h-0 flex-1 flex-col gap-3">
         <div
           className="grid min-h-0 shrink-0 gap-3"
-          style={{ height: "34%", gridTemplateColumns: `repeat(${opponentSlots.length}, minmax(0, 1fr))` }}
+          style={{ height: "30%", gridTemplateColumns: `repeat(${opponentSlots.length}, minmax(0, 1fr))` }}
         >
           {opponentSlots.map((p, i) => renderSeat(p, "bl", p?.id ?? `opp-${i}`))}
         </div>
@@ -1116,8 +1116,8 @@ export default function PlayRoomPage({
 
       {me && (
         <div
-          className="-mt-3 shrink-0 rounded-b-xl border border-t-0 border-border p-2"
-          style={mySeatColor ? { backgroundColor: mySeatColor } : undefined}
+          className="-mt-3 shrink-0 rounded-b-xl border-2 border-t-0 bg-surface/40 p-2"
+          style={mySeatColor ? { borderColor: mySeatColor } : undefined}
         >
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -2287,8 +2287,8 @@ function PlayerBox({
 
   return (
     <div
-      className="card-frame relative flex flex-col overflow-hidden p-2"
-      style={seatColor ? { backgroundColor: seatColor } : undefined}
+      className="card-frame relative flex flex-col overflow-hidden border-2 p-2"
+      style={seatColor ? { borderColor: seatColor } : undefined}
     >
       <div
         style={{ order: headerOrder }}
