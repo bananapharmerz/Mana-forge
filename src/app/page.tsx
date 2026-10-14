@@ -10,6 +10,8 @@ import { auth } from "@/auth";
 import WelcomeBack from "@/components/WelcomeBack";
 import StarterDecks from "@/components/StarterDecks";
 import MobileStartBar from "@/components/MobileStartBar";
+import ChallengeBanner, { type LiveChallenge } from "@/components/ChallengeBanner";
+import { challengePhase, fmtDay } from "@/lib/community";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
@@ -48,6 +50,12 @@ const features = [
     status: "live",
   },
   {
+    href: "/packs",
+    title: "Open Packs",
+    desc: "Rip virtual booster packs from any set — animated pulls, real prices, your best hits.",
+    status: "live",
+  },
+  {
     href: "/proxies",
     title: "Proxies",
     desc: "Design and order custom proxy cards, or print your own.",
@@ -75,8 +83,25 @@ export default async function Home() {
     ...(members >= 250 ? [{ label: "Players", value: members.toLocaleString() }] : []),
   ];
 
+  // Live Forge Challenges, surfaced as a home-page notification instead of a top-nav tab.
+  const challengeRows = await db.challenge
+    .findMany({ orderBy: { submitUntil: "desc" }, take: 6 })
+    .catch(() => []);
+  const PHASE_LABEL: Record<string, string> = { submitting: "Entries open", judging: "Picking finalists", voting: "Voting now" };
+  const liveChallenges: LiveChallenge[] = challengeRows
+    .map((c) => ({ c, phase: challengePhase(c) }))
+    .filter((x) => x.phase !== "done")
+    .map(({ c, phase }) => ({
+      slug: c.slug,
+      title: c.title,
+      phaseLabel: PHASE_LABEL[phase] ?? "Live now",
+      deadline: fmtDay(phase === "submitting" ? c.submitUntil : c.voteUntil),
+      isSubmitting: phase === "submitting",
+    }));
+
   return (
     <>
+      <ChallengeBanner challenges={liveChallenges} />
       {userId && mine > 0 && <WelcomeBack userId={userId} name={session?.user?.name} />}
       <ForgeHero stats={stats} />
       <MobileStartBar />

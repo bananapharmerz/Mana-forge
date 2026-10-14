@@ -18,7 +18,6 @@ const links = [
   { href: "/packs", label: "Open Packs" },
   { href: "/play", label: "Play" },
   { href: "/community", label: "Community" },
-  { href: "/challenge", label: "Challenge" },
   { href: "/proxies", label: "Proxies" },
   { href: "/store", label: "Store" },
 ].filter((l) => SHOP_ENABLED || !isShopPath(l.href));
