@@ -1007,15 +1007,57 @@ export default function PlayRoomPage({
     .filter((p): p is PlayerState => !!p);
   const mySeatColor = playerId ? PLAYER_SEAT_COLORS[room!.joinOrder.indexOf(playerId)] : undefined;
 
-  const layout = room!.maxPlayers <= 2 ? "halves" : "quadrants";
-  // I'm always bottom-right (my header/command zone face up-and-left, toward the table center).
-  // Everyone else fills the remaining seats in join order, each one's header/command zone facing
-  // whichever corner of their box is closest to that same center point.
-  const slots: (PlayerState | null)[] =
-    layout === "halves"
-      ? [others[0] ?? null, me]
-      : [others[0] ?? null, others[1] ?? null, others[2] ?? null, me];
-  const corners: Corner[] = layout === "halves" ? ["bl", "tl"] : ["br", "bl", "tr", "tl"];
+  // Opponents share a compact row across the top; the local player takes the large lower area so
+  // their own battlefield dominates (Arena-style), however many are seated (Commander is up to
+  // four). Open seats up to the room's capacity show as placeholders in that top row.
+  const opponentSlots: (PlayerState | null)[] = Array.from(
+    { length: Math.max(1, room!.maxPlayers - 1) },
+    (_, i) => others[i] ?? null
+  );
+
+  // One seat, with all the wiring both an opponent box and the local box need. Opponents sit with
+  // their header/command zone at the bottom of their box (facing down toward the shared centre);
+  // the local player's sits at the top of theirs (facing up toward it).
+  const renderSeat = (seatPlayer: PlayerState | null, corner: Corner, key: string) => {
+    const seatIsMe = !!seatPlayer && seatPlayer.id === playerId;
+    return (
+      <PlayerBox
+        key={key}
+        player={seatPlayer}
+        isMe={seatIsMe}
+        corner={corner}
+        boardRef={seatIsMe ? boardRef : undefined}
+        dragging={dragging}
+        startDrag={startDrag}
+        onTap={(instanceId) => {
+          playTap();
+          sendAction("tap", { instanceId });
+        }}
+        onCounterDelta={(instanceId, delta) => sendAction("addCounters", { instanceId, delta })}
+        onDraw={() => {
+          playDraw();
+          sendAction("pileDraw", { source: "library" });
+        }}
+        onOpenPileMenu={openPileMenu}
+        onOpenZoneViewer={(p, tab) => setZoneViewer({ playerId: p.id, tab })}
+        onRevealedClick={(instanceId) => sendAction("revealedToHand", { instanceId })}
+        onCardContextMenu={openCardMenu}
+        hoverProps={hoverProps}
+        zoneViewer={zoneViewer}
+        zoneDrawerRef={zoneDrawerRef}
+        setZoneViewer={setZoneViewer}
+        startCrossDrag={startCrossDrag}
+        viewerId={playerId!}
+        shuffling={!!(seatPlayer && shuffleFlash[seatPlayer.id])}
+        seatColor={seatPlayer ? PLAYER_SEAT_COLORS[room!.joinOrder.indexOf(seatPlayer.id)] : undefined}
+        hoveredDropZone={hoveredDropZone}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
+        onStartMarquee={startMarquee}
+        onGroupTap={groupTap}
+      />
+    );
+  };
 
   return (
     <div
@@ -1046,48 +1088,16 @@ export default function PlayRoomPage({
         </div>
       </div>
 
-      <div
-        className={`relative grid min-h-0 flex-1 gap-3 ${
-          layout === "halves" ? "grid-rows-2" : "grid-cols-2 grid-rows-2"
-        }`}
-      >
-        {slots.map((player, i) => (
-          <PlayerBox
-            key={player?.id ?? `empty-${i}`}
-            player={player}
-            isMe={!!player && player.id === playerId}
-            corner={corners[i]}
-            boardRef={player?.id === playerId ? boardRef : undefined}
-            dragging={dragging}
-            startDrag={startDrag}
-            onTap={(instanceId) => {
-              playTap();
-              sendAction("tap", { instanceId });
-            }}
-            onCounterDelta={(instanceId, delta) => sendAction("addCounters", { instanceId, delta })}
-            onDraw={() => {
-              playDraw();
-              sendAction("pileDraw", { source: "library" });
-            }}
-            onOpenPileMenu={openPileMenu}
-            onOpenZoneViewer={(p, tab) => setZoneViewer({ playerId: p.id, tab })}
-            onRevealedClick={(instanceId) => sendAction("revealedToHand", { instanceId })}
-            onCardContextMenu={openCardMenu}
-            hoverProps={hoverProps}
-            zoneViewer={zoneViewer}
-            zoneDrawerRef={zoneDrawerRef}
-            setZoneViewer={setZoneViewer}
-            startCrossDrag={startCrossDrag}
-            viewerId={playerId!}
-            shuffling={!!(player && shuffleFlash[player.id])}
-            seatColor={player ? PLAYER_SEAT_COLORS[room!.joinOrder.indexOf(player.id)] : undefined}
-            hoveredDropZone={hoveredDropZone}
-            selectedIds={selectedIds}
-            onToggleSelect={toggleSelect}
-            onStartMarquee={startMarquee}
-            onGroupTap={groupTap}
-          />
-        ))}
+      <div className="relative flex min-h-0 flex-1 flex-col gap-3">
+        <div
+          className="grid min-h-0 shrink-0 gap-3"
+          style={{ height: "34%", gridTemplateColumns: `repeat(${opponentSlots.length}, minmax(0, 1fr))` }}
+        >
+          {opponentSlots.map((p, i) => renderSeat(p, "bl", p?.id ?? `opp-${i}`))}
+        </div>
+        <div className="flex min-h-0 flex-1 [&>*]:h-full [&>*]:w-full">
+          {renderSeat(me, "tl", "me")}
+        </div>
       </div>
 
       {/* Rubber-band selection rectangle — screen-fixed since the drag can range across the
@@ -1106,7 +1116,7 @@ export default function PlayRoomPage({
 
       {me && (
         <div
-          className="-mt-3 shrink-0 rounded-b-xl border border-t-0 border-border p-3 pt-4"
+          className="-mt-3 shrink-0 rounded-b-xl border border-t-0 border-border p-2"
           style={mySeatColor ? { backgroundColor: mySeatColor } : undefined}
         >
           <div className="mb-2 flex items-center justify-between">
@@ -1418,7 +1428,7 @@ export default function PlayRoomPage({
               </div>
             </div>
           </div>
-          <div className="relative flex items-end justify-center px-6 pt-8 pb-1" data-pile="hand">
+          <div className="relative flex items-end justify-center px-6 pt-6 pb-1" data-pile="hand">
             {me.hand.map((c, i) => {
               const n = me.hand.length;
               const offset = i - (n - 1) / 2;
@@ -1430,7 +1440,7 @@ export default function PlayRoomPage({
                 onPointerDown={(e) => startCrossDrag(c.instanceId, "play", c, e)}
                 onContextMenu={(e) => openCardMenu(e, c)}
                 {...hoverProps(c)}
-                className="arena-hand-card w-28 shrink-0 cursor-grab touch-none select-none overflow-hidden rounded border border-border hover:border-gold"
+                className="arena-hand-card w-24 shrink-0 cursor-grab touch-none select-none overflow-hidden rounded border border-border hover:border-gold"
                 style={{ "--rot": `${rot}deg`, "--ty": `${ty}px`, marginLeft: i === 0 ? 0 : "-1.25rem", zIndex: i } as CSSProperties}
                 title={`Drag ${c.name} to the field, deck, graveyard, or exile — or click to play`}
               >
@@ -1438,7 +1448,7 @@ export default function PlayRoomPage({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={c.imageUrl} alt={c.name} className="w-full" draggable={false} />
                 ) : (
-                  <div className="flex h-40 items-center justify-center bg-surface-raised p-1 text-center text-xs text-muted">
+                  <div className="flex h-32 items-center justify-center bg-surface-raised p-1 text-center text-xs text-muted">
                     {c.name}
                   </div>
                 )}
