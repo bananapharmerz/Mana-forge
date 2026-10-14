@@ -342,12 +342,15 @@ body {
   74%  { transform: rotate(28deg); }
   100% { transform: rotate(38deg); }
 }
-/* Sparks fly straight up off the top of the hero in thin streaks, bursting on the strike. */
-.forge-spark { opacity: 0; animation: forge-spark 1.3s ease-out infinite; }
-@keyframes forge-spark {
-  0%, 44% { opacity: 0; transform: translate(0, 0) scaleY(0.5); }
-  50% { opacity: 1; transform: translate(0, -6px) scaleY(1); }
-  100% { opacity: 0; transform: translate(var(--drift, 0px), calc(-1 * var(--rise, 260px))) scaleY(1.7); }
+/* Her forearm pumps about the shoulder (322,202 hand; 286,252 shoulder) in step with the strike. */
+.forge-arm { transform-box: view-box; transform-origin: 286px 252px; animation: forge-arm 1.3s cubic-bezier(0.35, 0, 0.3, 1) infinite; }
+@keyframes forge-arm {
+  0%   { transform: rotate(-7deg); } /* arm up with the wind-up */
+  42%  { transform: rotate(-9deg); }
+  50%  { transform: rotate(5deg); }  /* drives down on the strike */
+  58%  { transform: rotate(1deg); }
+  74%  { transform: rotate(-4deg); }
+  100% { transform: rotate(-7deg); }
 }
 .forge-bob { animation: forge-bob 1.3s ease-in-out infinite; }
 @keyframes forge-bob { 0%, 100% { transform: translateY(-3px); } 46% { transform: translateY(2px); } 62% { transform: translateY(-3px); } }
@@ -356,9 +359,9 @@ body {
 .forge-heat { animation: forge-heat 4s ease-in-out infinite; }
 @keyframes forge-heat { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .forge-spark, .forge-bob, .forge-strike, .forge-heat, .forge-hammer { animation: none; }
-  .forge-spark { opacity: 0.6; }
+  .forge-arm, .forge-bob, .forge-strike, .forge-heat, .forge-hammer { animation: none; }
   .forge-hammer { transform: rotate(2deg); } /* resting on the anvil */
+  .forge-arm { transform: rotate(5deg); } /* arm down at the anvil */
 }
 
 /* ---- Pack opening (components/PackOpener) ------------------------------------------------- */

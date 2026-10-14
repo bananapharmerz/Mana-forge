@@ -6,7 +6,7 @@ export type EmberCostume = "none" | "witch";
 
 // An original witch hat (no licensed characters): a tilted purple-black cone with a gold-buckled band.
 const WITCH_HAT = (
-  <g className="ember-hat" transform="rotate(-9 205 96)">
+  <g className="ember-hat" transform="translate(0 76) rotate(-8 205 170)">
     <ellipse cx="205" cy="128" rx="106" ry="23" fill="#17112e" />
     <ellipse cx="205" cy="123" rx="106" ry="19" fill="#2a2150" />
     <path d="M151 125 Q 176 50 214 24 Q 236 56 261 125 Q 206 139 151 125 Z" fill="#241a44" />
@@ -16,10 +16,12 @@ const WITCH_HAT = (
   </g>
 );
 
+const ARM_LEFT = <path d="M116 250 C 92 248, 80 230, 84 214" fill="none" stroke="#ff8a3d" strokeWidth="14" strokeLinecap="round" />;
+const ARM_RIGHT = <path d="M284 250 C 306 246, 318 228, 326 206" fill="none" stroke="#ff8a3d" strokeWidth="14" strokeLinecap="round" />;
 const ARMS_DOWN = (
   <>
-    <path d="M116 250 C 92 248, 80 230, 84 214" fill="none" stroke="#ff8a3d" strokeWidth="14" strokeLinecap="round" />
-    <path d="M284 250 C 306 246, 318 228, 326 206" fill="none" stroke="#ff8a3d" strokeWidth="14" strokeLinecap="round" />
+    {ARM_LEFT}
+    {ARM_RIGHT}
   </>
 );
 const SPARKS = (
@@ -29,6 +31,16 @@ const SPARKS = (
     <path d="M60 300 l7 -12 l7 12 l-7 12 z" fill="#8f7bd0" />
     <path d="M330 300 l8 -14 l8 14 l-8 14 z" fill="#e0533a" />
     <path d="M120 70 l6 -10 l6 10 l-6 10 z" fill="#3c9a5a" />
+  </>
+);
+// The happy pose with no tool in her right hand — the homepage hero draws its own swinging
+// hammer and animated arm over this (see ForgeEmberScene), so her built-in hammer would double up.
+const HAPPY_FORGING = (
+  <>
+    <Eyes />
+    <path d="M184 284 Q 200 300 216 284" fill="none" stroke="#2a1608" strokeWidth="5" strokeLinecap="round" />
+    {ARM_LEFT}
+    {SPARKS}
   </>
 );
 function Eyes({ dx = 0, dy = 0 }: { dx?: number; dy?: number }) {
@@ -98,7 +110,7 @@ function seasonalCostume(): EmberCostume {
   return new Date().getMonth() === 9 ? "witch" : "none"; // getMonth(): 9 = October
 }
 
-export default function Ember({ mood = "happy", size = 160, className, title, costume }: { mood?: EmberMood; size?: number; className?: string; title?: string; costume?: EmberCostume }) {
+export default function Ember({ mood = "happy", size = 160, className, title, costume, forging = false }: { mood?: EmberMood; size?: number; className?: string; title?: string; costume?: EmberCostume; forging?: boolean }) {
   // Every Ember uses the same gradients, so repeated ids on one page are harmless.
   const id = "ember";
   const worn = costume ?? seasonalCostume();
@@ -143,7 +155,7 @@ export default function Ember({ mood = "happy", size = 160, className, title, co
         <circle cx="120" cy="112" r="3" />
         <circle cx="298" cy="104" r="3.5" />
       </g>
-      {FACES[mood]}
+      {mood === "happy" && forging ? HAPPY_FORGING : FACES[mood]}
       {worn === "witch" && WITCH_HAT}
     </svg>
   );
