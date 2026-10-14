@@ -333,24 +333,24 @@ body {
    burst, so the five-colour sparks fly off the moment the hammer lands. */
 /* The hammer is drawn in Ember's own 400x400 viewBox, grip glued to her hand (322,202),
    head reaching down-left to the anvil face. The swing pivots at the hand (view-box origin). */
-.forge-hammer { transform-box: view-box; transform-origin: 322px 202px; animation: forge-hammer 1.3s cubic-bezier(0.35, 0, 0.3, 1) infinite; }
+.forge-hammer { transform-box: view-box; transform-origin: 316px 306px; animation: forge-hammer 1.3s cubic-bezier(0.35, 0, 0.3, 1) infinite; }
 @keyframes forge-hammer {
-  0%   { transform: rotate(115deg); } /* hammer raised high overhead */
-  34%  { transform: rotate(123deg); } /* wind up a touch higher */
-  50%  { transform: rotate(2deg); }   /* STRIKE straight down onto the anvil */
-  57%  { transform: rotate(20deg); }  /* bounce up off the steel */
-  74%  { transform: rotate(72deg); }  /* lift back up */
-  100% { transform: rotate(115deg); } /* overhead again */
+  0%   { transform: rotate(106deg); } /* wrist at waist, head raised up top */
+  32%  { transform: rotate(114deg); } /* cock it a touch higher */
+  50%  { transform: rotate(2deg); }   /* STRIKE — flick down onto the anvil */
+  57%  { transform: rotate(14deg); }  /* bounce up off the steel */
+  74%  { transform: rotate(60deg); }  /* lift back up */
+  100% { transform: rotate(106deg); } /* up top again */
 }
-/* Her forearm pumps about the shoulder (322,202 hand; 286,252 shoulder) in step with the strike. */
+/* Her arm holds at waist (hand ~316,306; shoulder 286,252); the wrist does the flicking, so the
+   forearm only gives a small pump about the shoulder on the strike. */
 .forge-arm { transform-box: view-box; transform-origin: 286px 252px; animation: forge-arm 1.3s cubic-bezier(0.35, 0, 0.3, 1) infinite; }
 @keyframes forge-arm {
-  0%   { transform: rotate(-18deg); } /* arm lifted for the overhead raise */
-  34%  { transform: rotate(-22deg); }
-  50%  { transform: rotate(7deg); }   /* drives down on the strike */
-  57%  { transform: rotate(1deg); }
-  74%  { transform: rotate(-10deg); }
-  100% { transform: rotate(-18deg); }
+  0%   { transform: rotate(-2deg); }
+  34%  { transform: rotate(-4deg); }
+  50%  { transform: rotate(4deg); }  /* small nudge down on the strike */
+  60%  { transform: rotate(0deg); }
+  100% { transform: rotate(-2deg); }
 }
 /* The steel head squashes on impact, then springs back — bouncy cartoon hit. */
 .forge-headhit { transform-box: fill-box; transform-origin: 50% 100%; animation: forge-headhit 1.3s ease-out infinite; }
@@ -392,7 +392,7 @@ body {
   .forge-arm, .forge-bob, .forge-strike, .forge-heat, .forge-hammer,
   .forge-headhit, .forge-anvil, .forge-star, .forge-smoke { animation: none; }
   .forge-hammer { transform: rotate(2deg); } /* resting on the anvil */
-  .forge-arm { transform: rotate(7deg); } /* arm down at the anvil */
+  .forge-arm { transform: rotate(4deg); } /* arm at the anvil */
   .forge-star, .forge-smoke { opacity: 0; } /* no burst when motion is off */
 }
 

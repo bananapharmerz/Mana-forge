@@ -1120,7 +1120,10 @@ export default function PlayRoomPage({
           <>
             <div
               className="grid min-h-0 shrink-0 gap-3"
-              style={{ height: "24%", gridTemplateColumns: `repeat(${opponentSlots.length}, minmax(0, 1fr))` }}
+              // One opponent (2-player) needs real room to show their battlefield (24% was a sliver),
+              // so give the top row a bigger share and shrink it as more opponents are seated. The
+              // local board (flex-1) still keeps the majority, and a seat can be zoomed with ⤢.
+              style={{ height: opponentSlots.length <= 1 ? "38%" : opponentSlots.length === 2 ? "34%" : "30%", gridTemplateColumns: `repeat(${opponentSlots.length}, minmax(0, 1fr))` }}
             >
               {opponentSlots.map((p, i) => renderSeat(p, "bl", p?.id ?? `opp-${i}`))}
             </div>

@@ -89,24 +89,24 @@ export default function ForgeEmberScene({ className = "relative" }: { className?
       <div className="forge-bob absolute inset-x-[14%] top-[19%]">
         <svg viewBox="0 0 400 400" className="h-auto w-full overflow-visible">
           <g className="forge-arm">
-            {/* flame forearm from her shoulder up to the hand */}
-            <path d="M286 252 Q 306 230 322 206" fill="none" stroke="#ff8a3d" strokeWidth="15" strokeLinecap="round" />
-            <path d="M292 248 Q 308 232 320 212" fill="none" stroke="#ffb15a" strokeWidth="5" strokeLinecap="round" opacity="0.5" />
+            {/* flame forearm hanging from her shoulder down to the hand at waist height */}
+            <path d="M286 252 Q 298 282 316 306" fill="none" stroke="#ff8a3d" strokeWidth="15" strokeLinecap="round" />
+            <path d="M292 258 Q 302 284 314 302" fill="none" stroke="#ffb15a" strokeWidth="5" strokeLinecap="round" opacity="0.5" />
             <g className="forge-hammer">
-              <g transform="rotate(25.7 322 202)">
-                {/* handle, running down from the hand */}
-                <rect x="314.5" y="200" width="15" height="152" rx="7" fill="#7a4f27" />
-                <rect x="319" y="202" width="4" height="146" rx="2" fill="#9c6c3a" />
-                {/* steel head at the striking end (centred ~322,386 locally); squashes on impact */}
+              <g transform="rotate(50 316 306)">
+                {/* handle, running down from the hand at the waist */}
+                <rect x="309" y="304" width="14" height="84" rx="7" fill="#7a4f27" />
+                <rect x="313" y="306" width="3.5" height="80" rx="1.75" fill="#9c6c3a" />
+                {/* steel head at the striking end (centred ~316,402 locally); squashes on impact */}
                 <g className="forge-headhit">
-                  <rect x="288" y="369" width="68" height="34" rx="7" fill="#565c67" />
-                  <rect x="288" y="369" width="68" height="10" rx="4" fill="#79808d" />
-                  <rect x="288" y="395" width="68" height="8" rx="3" fill="#383c44" />
+                  <rect x="290" y="389" width="52" height="26" rx="6" fill="#565c67" />
+                  <rect x="290" y="389" width="52" height="8" rx="4" fill="#79808d" />
+                  <rect x="290" y="409" width="52" height="6" rx="3" fill="#383c44" />
                 </g>
-                {/* flame fist gripping the handle, over the joint */}
-                <circle cx="320" cy="188" r="23" fill="#ff8a3d" />
-                <circle cx="322" cy="204" r="20" fill="#ff8a3d" />
-                <circle cx="315" cy="197" r="9" fill="#ffc061" opacity="0.65" />
+                {/* flame fist gripping the handle at the waist */}
+                <circle cx="314" cy="296" r="14" fill="#ff8a3d" />
+                <circle cx="316" cy="306" r="18" fill="#ff8a3d" />
+                <circle cx="311" cy="302" r="7" fill="#ffc061" opacity="0.6" />
               </g>
             </g>
           </g>
