@@ -17,6 +17,9 @@ export interface CommandersPage {
   // card, so the feed can render both halves of the pair as one stacked tile and the "+" can
   // select the pair together.
   partnerCards: Record<string, DeckCard>;
+  // How many commanders match in total (Scryfall's own count), so the page can say how big the
+  // list is. Missing when the search failed or was rate-limited.
+  total?: number;
 }
 
 // The cards a given commander can legally pair with (all of one pairing kind), most-played first,
@@ -68,6 +71,7 @@ export async function searchCommandersPage(query: string, page: number, order?: 
       hasMore: result.has_more ?? false,
       nextPage: page + 1,
       partnerCards,
+      total: result.total_cards ?? cards.length,
     };
   } catch {
     return { cards: [], hasMore: false, nextPage: page, partnerCards: {} };
