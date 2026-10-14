@@ -51,8 +51,8 @@ export default async function CommandersPage({
 
   return (
     <>
-      <PageHeader title={activeLabel ?? "Commanders"} description="Every legendary commander ever printed, most played first. Pick one to see its best cards and the decks built around it." width="max-w-7xl" />
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
+      <PageHeader title={activeLabel ?? "Commanders"} description="Every legendary commander ever printed, most played first. Pick one to see its best cards and the decks built around it." width="max-w-[1600px]" />
+      <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 sm:py-10">
       <form action="/commanders" method="GET" className="mb-6 flex gap-2">
         {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
         {setCode && <input type="hidden" name="set" value={setCode} />}

@@ -55,8 +55,8 @@ export default async function DecksIndexPage({
 
   return (
     <>
-      <PageHeader title={category ? `${category.label} decks` : "Public decks"} description={`Decks people are playing: ${SITE.name} players' decks first, then fresh lists from EDHREC. Publish yours and it shows up at the top.`} width="max-w-6xl" />
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <PageHeader title={category ? `${category.label} decks` : "Public decks"} description={`Decks people are playing: ${SITE.name} players' decks first, then fresh lists from EDHREC. Publish yours and it shows up at the top.`} width="max-w-[1600px]" />
+      <div className="mx-auto max-w-[1600px] px-4 py-10 sm:px-6">
       <FavoritesSection currentUserId={session?.user?.id} />
 
       <form action="/decks" method="GET" className="mb-6 flex gap-2">

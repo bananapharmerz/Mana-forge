@@ -22,12 +22,12 @@ export default async function PopularCommandersPage() {
   const top = await topCommandersThisMonth(50);
   return (
     <>
-      <PageHeader title={title} description="What the Commander community is building right now, updated daily." width="max-w-6xl" />
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <PageHeader title={title} description="What the Commander community is building right now, updated daily." width="max-w-[1600px]" />
+      <div className="mx-auto max-w-[1600px] px-4 py-10 sm:px-6">
         {top.length === 0 ? (
           <p className="text-sm text-muted">The list couldn&apos;t be loaded just now. Try again in a minute.</p>
         ) : (
-          <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
             {top.map((c) => (
               <li key={c.name} className="card-frame flex flex-col p-2">
                 <Link href={`/decks/${encodeURIComponent(c.page)}`} className="group flex flex-1 flex-col">

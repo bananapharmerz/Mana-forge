@@ -35,7 +35,7 @@ export default function BrowseSearchList({
 
       <p className="mt-2 text-xs text-muted">{filtered.length} results</p>
 
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7">
         {filtered.map((item) => (
           <Link
             key={item.key}
