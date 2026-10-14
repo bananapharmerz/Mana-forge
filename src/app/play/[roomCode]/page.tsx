@@ -1398,7 +1398,7 @@ export default function PlayRoomPage({
                 onPointerDown={(e) => startCrossDrag(c.instanceId, "play", c, e)}
                 onContextMenu={(e) => openCardMenu(e, c)}
                 {...hoverProps(c)}
-                className="w-28 shrink-0 cursor-grab touch-none select-none overflow-hidden rounded border border-border hover:border-gold"
+                className="arena-hand-card w-28 shrink-0 cursor-grab touch-none select-none overflow-hidden rounded border border-border hover:border-gold"
                 title={`Drag ${c.name} to the field, deck, graveyard, or exile — or click to play`}
               >
                 {c.imageUrl ? (
@@ -2306,7 +2306,7 @@ function PlayerBox({
       <div
         ref={boardRef}
         onPointerDown={isMe ? onStartMarquee : undefined}
-        className="relative order-1 flex-1 overflow-hidden rounded border border-border bg-surface"
+        className="relative order-1 flex-1 overflow-hidden rounded border border-border arena-mat"
       >
         {player.battlefield.map((c) => (
           <BattlefieldCard
@@ -2450,7 +2450,7 @@ function BattlefieldCard({
   return (
     <div
       data-instance-id={card.instanceId}
-      className={`absolute z-30 w-16 ${isDragging ? "opacity-30" : ""}`}
+      className={`arena-cast absolute z-30 w-16 ${isDragging ? "opacity-30" : ""}`}
       style={{
         left: `${card.x}%`,
         top: `${card.y}%`,
@@ -2461,9 +2461,9 @@ function BattlefieldCard({
         onPointerDown={readOnly ? undefined : onPointerDown}
         onClick={readOnly ? undefined : onTap}
         onContextMenu={onContextMenu}
-        className={`cursor-grab touch-none select-none rounded transition-transform ${
-          selected ? "ring-2 ring-blue-400 ring-offset-1 ring-offset-surface" : ""
-        }`}
+        className={`arena-card cursor-grab touch-none select-none rounded ${
+          selected ? "arena-selected" : ""
+        } ${card.tapped ? "arena-card-tapped" : ""}`}
         style={{ transform: card.tapped ? "rotate(90deg)" : undefined }}
         title={
           readOnly
