@@ -255,6 +255,37 @@ export async function getCardsByNames(names: string[]): Promise<ScryfallCard[]> 
   return parts.flat();
 }
 
+// Same as getCardsByNames but keyed by Scryfall printing id — used to backfill stored cards
+// (e.g. collection color identity) without re-deriving names. Returns in no guaranteed order;
+// callers map results back by card.id.
+export async function getCardsByIds(ids: string[]): Promise<ScryfallCard[]> {
+  if (ids.length === 0) return [];
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += 75) batches.push(ids.slice(i, i + 75));
+  const parts = await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        const res = await sfetch(`${SCRYFALL_API}/cards/collection`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "User-Agent": "mtg-hub/1.0",
+          },
+          body: JSON.stringify({ identifiers: batch.map((id) => ({ id })) }),
+          next: { revalidate: 3600 },
+        });
+        if (!res.ok) return [];
+        const json = await res.json();
+        return (json.data ?? []) as ScryfallCard[];
+      } catch {
+        return [];
+      }
+    })
+  );
+  return parts.flat();
+}
+
 export async function getAllPrintings(name: string): Promise<ScryfallCard[]> {
   // Scryfall's search excludes tokens (and other "extras") by default, so a token name would
   // otherwise come back with zero printings here even though it's a real, findable card.

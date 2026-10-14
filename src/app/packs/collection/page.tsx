@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { getCardsByIds } from "@/lib/scryfall";
 import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +20,10 @@ const money = (n: number | null) => (n == null ? "—" : `$${n.toFixed(2)}`);
 
 type Card = {
   id: string;
+  scryfallId: string;
   name: string;
   rarity: string;
+  colors: string | null;
   priceUsd: number | null;
   quantity: number;
   foilQuantity: number;
@@ -28,31 +31,45 @@ type Card = {
   imageUrl: string | null;
   scryfallUri: string | null;
   setName: string;
-  collectorNumber: string | null;
 };
 
 const qtyOf = (c: Card) => c.quantity + c.foilQuantity;
-// Collector number as a number; non-numeric (e.g. promos) sort to the end.
-const cnum = (s: string | null) => {
-  const n = parseInt(s ?? "", 10);
-  return Number.isFinite(n) ? n : 1e9;
+const rarityScore = (c: Card) => RARITY_RANK[c.rarity] ?? 0;
+// Color identity → sort bucket: mono W,U,B,R,G (1-5), multicolor (6), colorless/lands (7), unknown (8).
+const COLOR_ORDER = "WUBRG";
+const colorRank = (colors: string | null) => {
+  if (colors == null) return 8;
+  if (colors === "") return 7;
+  if (colors.length === 1) return COLOR_ORDER.indexOf(colors) + 1;
+  return 6;
 };
 
 const SORTS: { key: string; label: string; cmp: (a: Card, b: Card) => number }[] = [
   {
     key: "set",
-    label: "Set → color",
-    // Within a booster set, collector numbers run in color order (W,U,B,R,G, multi, colorless, lands).
+    label: "Set → color → rarity",
     cmp: (a, b) =>
       a.setName.localeCompare(b.setName) ||
-      cnum(a.collectorNumber) - cnum(b.collectorNumber) ||
-      (a.collectorNumber ?? "").localeCompare(b.collectorNumber ?? "") ||
+      colorRank(a.colors) - colorRank(b.colors) ||
+      (a.colors ?? "").localeCompare(b.colors ?? "") ||
+      rarityScore(b) - rarityScore(a) ||
+      (b.priceUsd ?? -1) - (a.priceUsd ?? -1) ||
+      a.name.localeCompare(b.name),
+  },
+  {
+    key: "color",
+    label: "Color → rarity",
+    cmp: (a, b) =>
+      colorRank(a.colors) - colorRank(b.colors) ||
+      (a.colors ?? "").localeCompare(b.colors ?? "") ||
+      rarityScore(b) - rarityScore(a) ||
+      (b.priceUsd ?? -1) - (a.priceUsd ?? -1) ||
       a.name.localeCompare(b.name),
   },
   { key: "value-desc", label: "Value ↓", cmp: (a, b) => (b.priceUsd ?? -1) - (a.priceUsd ?? -1) || a.name.localeCompare(b.name) },
   { key: "value-asc", label: "Value ↑", cmp: (a, b) => (a.priceUsd ?? Infinity) - (b.priceUsd ?? Infinity) || a.name.localeCompare(b.name) },
   { key: "name", label: "Name A–Z", cmp: (a, b) => a.name.localeCompare(b.name) },
-  { key: "rarity", label: "Rarity", cmp: (a, b) => (RARITY_RANK[b.rarity] ?? 0) - (RARITY_RANK[a.rarity] ?? 0) || (b.priceUsd ?? -1) - (a.priceUsd ?? -1) },
+  { key: "rarity", label: "Rarity", cmp: (a, b) => rarityScore(b) - rarityScore(a) || (b.priceUsd ?? -1) - (a.priceUsd ?? -1) },
   { key: "newest", label: "Newest", cmp: (a, b) => b.firstPulledAt.getTime() - a.firstPulledAt.getTime() },
   { key: "qty", label: "Most copies", cmp: (a, b) => qtyOf(b) - qtyOf(a) || (b.priceUsd ?? -1) - (a.priceUsd ?? -1) },
 ];
@@ -68,6 +85,26 @@ export default async function CollectionPage({ searchParams }: { searchParams: P
     where: { userId: session.user.id },
     take: 1000,
   })) as Card[];
+
+  // One-time backfill: older pulls have no stored color identity. Fetch it from Scryfall by
+  // printing id and persist, so set→color→rarity has real colors to work with.
+  const missing = cards.filter((c) => c.colors == null);
+  if (missing.length) {
+    try {
+      const found = await getCardsByIds(missing.map((c) => c.scryfallId));
+      const idToColors = new Map(found.map((c) => [c.id, (c.color_identity ?? []).join("")]));
+      const writes: Promise<unknown>[] = [];
+      for (const c of missing) {
+        const colors = idToColors.get(c.scryfallId);
+        if (colors == null) continue;
+        c.colors = colors;
+        writes.push(db.collectionCard.update({ where: { id: c.id }, data: { colors } }));
+      }
+      await Promise.all(writes);
+    } catch {
+      // Scryfall busy — leave colors null this time; they sort last and backfill on a later load.
+    }
+  }
 
   cards.sort(active.cmp);
 

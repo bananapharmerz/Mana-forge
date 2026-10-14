@@ -86,6 +86,7 @@ export async function POST(req: Request) {
             setCode: card.setCode,
             setName: card.setName,
             rarity: card.rarity,
+            colors: card.colors,
             imageUrl: card.image ?? null,
             collectorNumber: card.collectorNumber ?? null,
             scryfallUri: card.scryfallUri ?? null,
@@ -96,6 +97,7 @@ export async function POST(req: Request) {
           update: {
             quantity: { increment: nonfoil },
             foilQuantity: { increment: foil },
+            colors: card.colors,
             priceUsd: card.priceUsd ?? undefined,
           },
         });

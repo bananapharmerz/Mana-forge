@@ -66,6 +66,7 @@ model CollectionCard {
   setCode         String
   setName         String
   rarity          String // common | uncommon | rare | mythic
+  colors          String? // color identity letters in WUBRG order, e.g. "WU"; "" = colorless
   imageUrl        String?
   collectorNumber String?
   scryfallUri     String?

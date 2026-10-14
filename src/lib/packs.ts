@@ -21,6 +21,7 @@ export interface PackCard {
   image?: string;
   backImage?: string;
   rarity: PackRarity;
+  colors: string; // color identity letters in WUBRG order, "" = colorless
   foil: boolean;
   setCode: string;
   setName: string;
@@ -130,6 +131,7 @@ function toPackCard(card: ScryfallCard, rarity: PackRarity, foil: boolean, setNa
     image: front,
     backImage: back,
     rarity,
+    colors: (card.color_identity ?? []).join(""),
     foil,
     setCode: card.set ?? "",
     setName,
