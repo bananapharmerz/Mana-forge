@@ -76,7 +76,7 @@ export default function Watchlist({ rows, premium = false }: { rows: WatchRow[];
           <CardSearchBox placeholder="Add a card to watch…" fetchSuggestions={autocompleteCardNames} onSelect={add} />
         </div>
         {pending && <span className="text-xs text-muted">Working…</span>}
-        {msg && !pending && <span className={`text-xs ${msg.ok ? "text-emerald-600" : "text-red-600"}`}>{msg.text}</span>}
+        {msg && !pending && <span className={`text-xs ${msg.ok ? "text-up" : "text-down"}`}>{msg.text}</span>}
       </div>
       {!premium && rows.some((r) => r.targetUsd !== null) && (
         <div className="border-b border-border p-3">
@@ -112,14 +112,14 @@ export default function Watchlist({ rows, premium = false }: { rows: WatchRow[];
                 <span className="w-20 shrink-0 text-right">
                   <span className="block font-mono text-sm text-foreground">{r.usd === null ? "—" : usd(r.usd)}</span>
                   {change !== null && Math.abs(change) >= 0.005 && (
-                    <span className={`block text-[11px] ${change > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    <span className={`block text-[11px] ${change > 0 ? "text-up" : "text-down"}`}>
                       {change > 0 ? "▲" : "▼"} {signedPct(change)} wk
                     </span>
                   )}
                 </span>
                 <span className="flex w-full items-center justify-end gap-3 sm:w-auto">
                   <TargetEditor row={r} onDone={notify} />
-                  <button onClick={() => remove(r.id)} disabled={pending} aria-label={`Stop watching ${r.name}`} className="text-xs text-muted hover:text-red-600 disabled:opacity-50">
+                  <button onClick={() => remove(r.id)} disabled={pending} aria-label={`Stop watching ${r.name}`} className="text-xs text-muted hover:text-down disabled:opacity-50">
                     ✕
                   </button>
                 </span>

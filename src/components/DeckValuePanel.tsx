@@ -17,7 +17,7 @@ export default function DeckValuePanel({ value }: { value: DeckValue }) {
           {value.missingPriceCount > 0 && ` · ${value.missingPriceCount} unpriced`}
         </p>
         {moved && (
-          <p className={`mt-1 text-xs font-semibold ${change > 0 ? "text-emerald-600" : "text-red-600"}`}>
+          <p className={`mt-1 text-xs font-semibold ${change > 0 ? "text-up" : "text-down"}`}>
             {change > 0 ? "▲" : "▼"} {signedUsd(change)} ({signedPct(pct)}) this week
           </p>
         )}
@@ -29,7 +29,7 @@ export default function DeckValuePanel({ value }: { value: DeckValue }) {
             {value.movers.map((m) => (
               <li key={m.card.scryfallId} className="flex items-center justify-between gap-2 text-xs">
                 <span className="truncate text-foreground">{m.card.name}</span>
-                <span className={`shrink-0 font-mono ${m.change > 0 ? "text-emerald-600" : "text-red-600"}`}>{signedUsd(m.change)}</span>
+                <span className={`shrink-0 font-mono ${m.change > 0 ? "text-up" : "text-down"}`}>{signedUsd(m.change)}</span>
               </li>
             ))}
           </ul>

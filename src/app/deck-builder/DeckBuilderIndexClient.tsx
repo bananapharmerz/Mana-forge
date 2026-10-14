@@ -252,7 +252,7 @@ export default function DeckBuilderIndexClient({
           {commanderName && (
             <p className="text-sm text-gold-bright">Selected: {commanderName}</p>
           )}
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-down">{error}</p>}
           <button
             onClick={handleCreate}
             disabled={creating}
@@ -324,7 +324,7 @@ export default function DeckBuilderIndexClient({
         </section>
       ) : (
         <>
-          {error && !showNew && <p className="mb-4 text-sm text-red-600">{error}</p>}
+          {error && !showNew && <p className="mb-4 text-sm text-down">{error}</p>}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             {decks.map((deck) => (
               <div key={deck.id} className="card-frame flex flex-col gap-2 p-4">
@@ -352,7 +352,7 @@ export default function DeckBuilderIndexClient({
                   <button
                     onClick={() => handleDelete(deck.id)}
                     aria-live="polite"
-                    className={`rounded-md border px-3 py-1.5 text-xs ${armed === deck.id ? "border-red-600 bg-red-600 text-white" : "border-border text-muted hover:border-red-600 hover:text-red-600"}`}
+                    className={`rounded-md border px-3 py-1.5 text-xs ${armed === deck.id ? "border-red-600 bg-red-600 text-white" : "border-border text-muted hover:border-red-600 hover:text-down"}`}
                   >
                     {armed === deck.id ? "Tap again to delete" : "Delete"}
                   </button>

@@ -341,7 +341,7 @@ export default function DeckEditor({
           </p>
           {deck.partner && (
             <p className="text-center">
-              <button onClick={removePartner} className="text-[11px] text-muted underline hover:text-red-600">
+              <button onClick={removePartner} className="text-[11px] text-muted underline hover:text-down">
                 Remove partner
               </button>
             </p>
@@ -366,7 +366,7 @@ export default function DeckEditor({
               <p className="text-center">
                 <button
                   onClick={removeCompanion}
-                  className="text-[11px] text-muted underline hover:text-red-600"
+                  className="text-[11px] text-muted underline hover:text-down"
                 >
                   Remove companion
                 </button>
@@ -518,7 +518,7 @@ export default function DeckEditor({
               ))}
             </div>
           </div>
-          {addError && <p className="mt-2 text-sm text-red-600">{addError}</p>}
+          {addError && <p className="mt-2 text-sm text-down">{addError}</p>}
 
           <div className="mt-8 flex flex-col gap-6">
             {grouped.length === 0 && (
@@ -570,7 +570,7 @@ export default function DeckEditor({
                       )}
                       <button
                         onClick={() => removeCard(c.name)}
-                        className="text-xs text-muted hover:text-red-600"
+                        className="text-xs text-muted hover:text-down"
                       >
                         Remove
                       </button>
@@ -592,7 +592,7 @@ function CardPriceCell({ price, quantity, change }: { price: number | null; quan
   const big = change && Math.abs(change.pct) >= 0.05 && Math.abs(change.change) >= 0.1;
   return (
     <span className="flex w-24 shrink-0 items-center justify-end gap-1 text-right text-xs text-muted" title={change ? `${signedPct(change.pct)} this week` : undefined}>
-      {big && <span className={change!.change > 0 ? "text-emerald-600" : "text-red-600"}>{change!.change > 0 ? "▲" : "▼"}</span>}
+      {big && <span className={change!.change > 0 ? "text-up" : "text-down"}>{change!.change > 0 ? "▲" : "▼"}</span>}
       {price === null ? "—" : `$${(price * quantity).toFixed(2)}`}
     </span>
   );

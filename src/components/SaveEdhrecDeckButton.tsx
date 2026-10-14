@@ -39,7 +39,7 @@ export default function SaveEdhrecDeckButton({
       >
         {state === "saved" ? "Saved to My Decks ✓" : state === "saving" ? "Building deck..." : "Save to My Decks"}
       </button>
-      {error && <p className="mt-1 text-[10px] text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-[10px] text-down">{error}</p>}
     </div>
   );
 }

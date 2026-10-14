@@ -127,7 +127,7 @@ export default async function CommandersPage({
           q={q}
         />
         <div>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Set</h3>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Set</h2>
           <div className="flex flex-wrap items-center gap-1.5">
             {setCode && (
               <span className="rounded-full border border-gold bg-gold px-3 py-1 text-xs font-medium text-black">

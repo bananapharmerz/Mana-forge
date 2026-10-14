@@ -56,7 +56,7 @@ function ResetForm() {
         <PasswordInput id="rp-again" required minLength={8} maxLength={128} autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} className={field} />
       </div>
       {error && (
-        <p className="text-sm text-red-600">
+        <p className="text-sm text-down">
           {error} {error.includes("new one") && <Link href="/forgot-password" className="underline">Get a new link</Link>}
         </p>
       )}

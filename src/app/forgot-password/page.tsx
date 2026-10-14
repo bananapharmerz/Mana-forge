@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
             <label htmlFor="fp-email" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Email</label>
             <input id="fp-email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={field} />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-down">{error}</p>}
           <button type="submit" disabled={busy} className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-50">
             {busy ? "Sending…" : "Send reset link"}
           </button>

@@ -141,7 +141,7 @@ export default async function ChallengePage({ params }: { params: Promise<{ slug
                       {phase === "done" ? (
                         <p className="text-sm font-semibold text-foreground">{e._count.votes} vote{e._count.votes === 1 ? "" : "s"}</p>
                       ) : myVote ? (
-                        myVote.entryId === e.id && <p className="text-sm font-semibold text-emerald-600">Your vote ✓</p>
+                        myVote.entryId === e.id && <p className="text-sm font-semibold text-up">Your vote ✓</p>
                       ) : uid ? (
                         e.userId !== uid && <ChallengeVoteButton challengeId={ch.id} entryId={e.id} />
                       ) : (

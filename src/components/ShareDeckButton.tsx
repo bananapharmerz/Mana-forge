@@ -41,7 +41,7 @@ export default function ShareDeckButton({ deckId, name }: { deckId: string; name
           Save image
         </a>
       </div>
-      {msg && <p className="mt-1 break-all text-[11px] text-emerald-600">{msg}</p>}
+      {msg && <p className="mt-1 break-all text-[11px] text-up">{msg}</p>}
     </div>
   );
 }

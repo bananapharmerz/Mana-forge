@@ -61,7 +61,7 @@ export default function CartPage() {
                 </p>
                 <button
                   onClick={() => removeItem(item.productId)}
-                  className="text-xs text-muted hover:text-red-600"
+                  className="text-xs text-muted hover:text-down"
                 >
                   Remove
                 </button>

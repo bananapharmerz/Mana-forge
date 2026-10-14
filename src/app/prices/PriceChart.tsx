@@ -103,7 +103,7 @@ export default function PriceChart({ history, current, currentFoil, target, toda
           </div>
         )}
         {range !== "now" && change !== null && (
-          <span className={`ml-auto text-sm font-semibold ${change >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+          <span className={`ml-auto text-sm font-semibold ${change >= 0 ? "text-up" : "text-down"}`}>
             {change >= 0 ? "▲" : "▼"} {Math.abs(change).toFixed(1)}% over {RANGES.find((r) => r.id === range)!.label === "1W" ? "the week" : RANGES.find((r) => r.id === range)!.label === "1M" ? "the month" : "the year"}
           </span>
         )}
@@ -118,7 +118,7 @@ export default function PriceChart({ history, current, currentFoil, target, toda
           {now !== null && yv != null && (
             <div>
               <p className="text-xs uppercase tracking-wide text-muted">Since yesterday</p>
-              <p className={`text-2xl font-semibold ${now >= yv ? "text-emerald-600" : "text-red-600"}`}>
+              <p className={`text-2xl font-semibold ${now >= yv ? "text-up" : "text-down"}`}>
                 {now >= yv ? "▲" : "▼"} {money(Math.abs(now - yv))} ({Math.abs(pct(now, yv)).toFixed(1)}%)
               </p>
             </div>

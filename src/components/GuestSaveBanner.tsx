@@ -38,7 +38,7 @@ export default function GuestSaveBanner({ compact = false }: { compact?: boolean
         >
           {busy ? "Saving..." : "Save to my account"}
         </button>
-        {error && <p className="text-red-600">{error}</p>}
+        {error && <p className="text-down">{error}</p>}
       </div>
     );
   }

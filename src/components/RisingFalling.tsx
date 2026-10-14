@@ -16,7 +16,7 @@ function List({ title, rows, up }: { title: string; rows: TrendCard[]; up: boole
               <span className="ml-auto shrink-0 text-right text-xs">
                 <span className="text-muted">{pct(t.olderPct)} → </span>
                 <span className="font-semibold text-foreground">{pct(t.recentPct)}</span>
-                <span className={`ml-2 font-semibold ${up ? "text-emerald-600" : "text-red-600"}`}>{up ? "▲" : "▼"}</span>
+                <span className={`ml-2 font-semibold ${up ? "text-up" : "text-down"}`}>{up ? "▲" : "▼"}</span>
               </span>
             </li>
           ))}

@@ -40,7 +40,7 @@ export default function Nav() {
             {SITE.name}
           </span>
         </Link>
-        <nav className="hidden flex-wrap items-center gap-1 sm:gap-2 lg:flex">
+        <nav aria-label="Primary" className="hidden flex-wrap items-center gap-1 sm:gap-2 lg:flex">
           {links.map((link) => {
             const active = pathname === link.href || pathname.startsWith(link.href + "/");
             return (
@@ -139,7 +139,7 @@ export default function Nav() {
       </div>
 
       {open && (
-        <nav id="mobile-menu" className="border-t border-border bg-background px-4 pb-4 pt-2 lg:hidden">
+        <nav id="mobile-menu" aria-label="Mobile" className="border-t border-border bg-background px-4 pb-4 pt-2 lg:hidden">
           <ul className="flex flex-col">
             {[...links, { href: "/premium", label: "Premium" }].map((link) => {
               const active = pathname === link.href || pathname.startsWith(link.href + "/");

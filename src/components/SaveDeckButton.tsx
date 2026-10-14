@@ -43,7 +43,7 @@ export default function SaveDeckButton({ deckId, signedIn = true }: { deckId: st
       >
         {state === "saved" ? "Saved to My Decks ✓" : state === "saving" ? "Saving..." : "Save to My Decks"}
       </button>
-      {error && <p className="mt-1 text-[10px] text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-[10px] text-down">{error}</p>}
     </div>
   );
 }

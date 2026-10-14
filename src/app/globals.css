@@ -11,6 +11,9 @@
   --muted: #a1947a;
   --gold: #d2a142;
   --gold-bright: #f4ce71;
+  /* Up/down (gains/losses, success/error) — lighter on dark so they pass WCAG contrast. */
+  --up: #3fcf5f;
+  --down: #ff6d76;
 
   --mana-w: #f8f6d8;
   --mana-u: #0e68ab;
@@ -30,6 +33,8 @@
   --muted: #766c53;
   --gold: #b5872a;
   --gold-bright: #7c5814;
+  --up: #0a6e2e;
+  --down: #c01616;
 }
 
 @theme inline {
@@ -41,6 +46,8 @@
   --color-muted: var(--muted);
   --color-gold: var(--gold);
   --color-gold-bright: var(--gold-bright);
+  --color-up: var(--up);
+  --color-down: var(--down);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-cormorant), Georgia, "Times New Roman", serif;

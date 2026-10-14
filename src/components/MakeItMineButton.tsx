@@ -56,7 +56,7 @@ export default function MakeItMineButton({ deckId, signedIn, large = false }: { 
       >
         {busy ? "Copying…" : "Make it mine"}
       </button>
-      {error && <p className="mt-1 text-[10px] text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-[10px] text-down">{error}</p>}
     </div>
   );
 }

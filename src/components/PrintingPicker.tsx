@@ -115,7 +115,7 @@ export default function PrintingPicker({
                 </button>
               </div>
             </div>
-            {customError && <p className="text-xs text-red-600">{customError}</p>}
+            {customError && <p className="text-xs text-down">{customError}</p>}
           </div>
         )}
 

@@ -139,7 +139,7 @@ export default function ProxiesPage() {
                   </button>
                   <button
                     onClick={() => removeCard(c.scryfallId)}
-                    className="text-xs text-muted hover:text-red-600"
+                    className="text-xs text-muted hover:text-down"
                   >
                     Remove
                   </button>

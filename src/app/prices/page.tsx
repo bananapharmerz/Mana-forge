@@ -36,7 +36,7 @@ function MoverList({ title, rows, up }: { title: string; rows: Mover[]; up: bool
               </span>
               <span className="shrink-0 text-right">
                 <span className="block font-mono text-foreground">{usd(m.usd)}</span>
-                <span className={`block text-[11px] font-semibold ${up ? "text-emerald-600" : "text-red-600"}`}>
+                <span className={`block text-[11px] font-semibold ${up ? "text-up" : "text-down"}`}>
                   {up ? "▲" : "▼"} {signedPct(m.pct)}
                 </span>
               </span>

@@ -38,7 +38,7 @@ export default function Footer() {
         Coast Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials
         used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
       </p>
-      <nav className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1">
+      <nav aria-label="Footer" className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1">
         {[
           { href: "/challenge", label: "Forge Challenge" },
           { href: "/vote", label: "Community vote" },

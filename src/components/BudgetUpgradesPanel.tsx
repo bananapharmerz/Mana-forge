@@ -72,7 +72,7 @@ export default function BudgetUpgradesPanel({
             </button>
           )}
           {busy && list && <p className="text-xs text-muted">Looking...</p>}
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-down">{error}</p>}
           {list && !busy && list.length === 0 && <p className="text-xs text-muted">Nothing new under ${cap}. Try a higher price.</p>}
           {list && list.length > 0 && (
             <ul className="flex flex-col gap-2">

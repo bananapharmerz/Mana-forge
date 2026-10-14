@@ -99,7 +99,7 @@ export default function FavoriteButton(props: Props) {
         </svg>
       </button>
       {error && (
-        <p className="absolute right-0 top-full z-50 mt-1 w-40 rounded-md border border-red-600/40 bg-surface p-1.5 text-right text-[10px] text-red-600 shadow-lg">
+        <p className="absolute right-0 top-full z-50 mt-1 w-40 rounded-md border border-red-600/40 bg-surface p-1.5 text-right text-[10px] text-down shadow-lg">
           {error}
         </p>
       )}

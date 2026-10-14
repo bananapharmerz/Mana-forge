@@ -31,7 +31,7 @@ function Table({ title, rows, spark, up }: { title: string; rows: Mover[]; spark
               <span className="w-24 shrink-0 text-right">
                 <span className="block font-mono text-foreground">{usd(m.usd)}</span>
                 <span className="block text-[11px] text-muted">from {usd(m.weekAgoUsd)}</span>
-                <span className={`block text-[11px] font-semibold ${up ? "text-emerald-600" : "text-red-600"}`}>{up ? "▲" : "▼"} {signedPct(m.pct)}</span>
+                <span className={`block text-[11px] font-semibold ${up ? "text-up" : "text-down"}`}>{up ? "▲" : "▼"} {signedPct(m.pct)}</span>
               </span>
             </li>
           ))}

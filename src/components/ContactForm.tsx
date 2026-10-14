@@ -98,7 +98,7 @@ export default function ContactForm() {
         <Link href="/legal/privacy" className="underline hover:text-gold-bright">Privacy policy</Link>.
       </p>
       <Turnstile onToken={setHuman} resetKey={humanReset} />
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-down">{error}</p>}
       <button
         type="submit"
         disabled={busy}

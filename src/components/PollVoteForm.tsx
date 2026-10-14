@@ -33,7 +33,7 @@ export default function PollVoteForm({ pollId, options }: { pollId: string; opti
           {o.label}
         </label>
       ))}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-down">{error}</p>}
       <button type="submit" disabled={busy} className="mt-2 self-start rounded-md bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-50">
         {busy ? "Voting…" : "Vote"}
       </button>

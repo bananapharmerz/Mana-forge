@@ -77,7 +77,7 @@ export default function ChallengeEnterForm({
         How does it fit the theme?
         <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={600} rows={3} placeholder="A sentence or two: the deck's plan and your take on the theme." className="mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground placeholder:text-muted focus:border-gold focus:outline-none sm:text-sm" />
       </label>
-      {msg && <p className={`text-sm ${msg.ok ? "text-emerald-600" : "text-red-600"}`}>{msg.text}</p>}
+      {msg && <p className={`text-sm ${msg.ok ? "text-up" : "text-down"}`}>{msg.text}</p>}
       <div className="flex flex-wrap gap-2">
         <button type="submit" disabled={busy || !deckId} className="rounded-md bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-50">
           {busy ? "Saving…" : current ? "Update my entry" : "Enter this deck"}

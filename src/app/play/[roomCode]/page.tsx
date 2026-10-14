@@ -980,7 +980,7 @@ export default function PlayRoomPage({
         )}
         <p className="mt-2 text-xs text-muted">You&apos;ll start with a fresh 7-card hand.</p>
 
-        {joinError && <p className="mt-3 text-xs text-red-600">{joinError}</p>}
+        {joinError && <p className="mt-3 text-xs text-down">{joinError}</p>}
 
         <button
           onClick={handleJoin}

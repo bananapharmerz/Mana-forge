@@ -43,7 +43,7 @@ export function SampleValueChart() {
     <div className="card-frame p-4">
       <div className="mb-2 flex items-baseline justify-between">
         <span className="text-2xl font-bold text-foreground">$74.20</span>
-        <span className="text-sm font-semibold text-green-500">+18.4% this month</span>
+        <span className="text-sm font-semibold text-up">+18.4% this month</span>
       </div>
       <svg viewBox={`0 0 ${w} ${h}`} className="h-40 w-full" preserveAspectRatio="none">
         <path d={`${line} L${w},${h} L0,${h} Z`} fill="currentColor" className="text-gold/20" />

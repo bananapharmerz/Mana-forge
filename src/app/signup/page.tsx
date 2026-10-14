@@ -162,7 +162,7 @@ export default function SignupPage() {
           </span>
         </label>
         <Turnstile onToken={setHuman} resetKey={humanReset} />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-down">{error}</p>}
         <button
           type="submit"
           disabled={loading}

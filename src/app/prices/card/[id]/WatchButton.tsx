@@ -39,7 +39,7 @@ export default function WatchButton({ scryfallId, name, signedIn, watching }: { 
       >
         {state === "busy" ? "Adding…" : "Watch this card"}
       </button>
-      {msg && <p className="mt-1 text-xs text-red-600">{msg}</p>}
+      {msg && <p className="mt-1 text-xs text-down">{msg}</p>}
     </div>
   );
 }

@@ -99,7 +99,7 @@ function RulesGate({ onDone }: { onDone: () => void }) {
       >
         {busy ? "..." : "Agree & join"}
       </button>
-      {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
+      {err && <p className="mt-2 text-sm text-down">{err}</p>}
     </div>
   );
 }
@@ -180,7 +180,7 @@ function Composer({ decks, onDone }: { decks: DeckOpt[]; onDone: () => void }) {
           {busy ? "Posting..." : "Post"}
         </button>
       </div>
-      {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
+      {err && <p className="mt-2 text-sm text-down">{err}</p>}
     </div>
   );
 }
@@ -290,7 +290,7 @@ function CommentSection({ post, signedIn, onChange }: { post: FeedPost; signedIn
           </button>
         </div>
       )}
-      {err && <p className="mt-1 text-xs text-red-600">{err}</p>}
+      {err && <p className="mt-1 text-xs text-down">{err}</p>}
     </div>
   );
 }
@@ -301,7 +301,7 @@ function RemoveBtn({ kind, id, onDone }: { kind: "post" | "comment"; id: string;
     <button
       onClick={() => start(async () => { const r = await removeOwn(kind, id); if (r.ok) onDone(); })}
       disabled={busy}
-      className="ml-2 text-xs text-muted hover:text-red-500"
+      className="ml-2 text-xs text-muted hover:text-down"
     >
       remove
     </button>

@@ -47,7 +47,7 @@ export default function CancelPage() {
           <p className="text-sm text-foreground">
             You&apos;re on Premium{sub.renewsOn ? `, renewing on ${sub.renewsOn}` : ""}.
           </p>
-          {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+          {error && <p className="mt-3 text-sm text-down">{error}</p>}
           <button
             type="button"
             disabled={busy}
@@ -118,7 +118,7 @@ export default function CancelPage() {
             onChange={(e) => setNote(e.target.value.slice(0, 500))}
             className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
           />
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-down">{error}</p>}
           <button type="submit" disabled={busy} className={primary}>
             {busy ? "Sending…" : "Cancel now"}
           </button>

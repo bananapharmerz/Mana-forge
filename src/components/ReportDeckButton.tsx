@@ -61,7 +61,7 @@ export default function ReportDeckButton({ deckId }: { deckId: string }) {
         rows={2}
         className="rounded border border-border bg-background px-2 py-1 text-foreground"
       />
-      {error && <p className="text-red-500">{error}</p>}
+      {error && <p className="text-down">{error}</p>}
       <div className="flex gap-2">
         <button type="submit" disabled={state === "sending"} className="rounded bg-gold px-3 py-1 font-semibold text-black disabled:opacity-50">
           {state === "sending" ? "Sending…" : "Send report"}

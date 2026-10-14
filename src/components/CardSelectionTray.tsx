@@ -107,7 +107,7 @@ export default function CardSelectionTray() {
                   </div>
                 </div>
 
-                {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
+                {error && <p className="mt-3 text-xs text-down">{error}</p>}
 
                 <div className="mt-4 flex gap-2">
                   <button

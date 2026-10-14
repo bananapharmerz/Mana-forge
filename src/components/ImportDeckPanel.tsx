@@ -111,7 +111,7 @@ export default function ImportDeckPanel({ signedIn }: { signedIn: boolean }) {
           </button>
         </div>
       )}
-      {error && !choices && <p className="text-sm text-red-600">{error}</p>}
+      {error && !choices && <p className="text-sm text-down">{error}</p>}
 
       {ready && (
         <div className="rounded-md border border-border p-3 text-sm">

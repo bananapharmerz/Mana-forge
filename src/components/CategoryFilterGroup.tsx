@@ -26,7 +26,7 @@ export default function CategoryFilterGroup({
     : items.slice(0, PREVIEW_COUNT);
   return (
     <div>
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{title}</h3>
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{title}</h2>
       <div className="flex flex-wrap items-center gap-1.5">
         {preview.map((c) => {
           const isActive = activeSlug === c.slug;

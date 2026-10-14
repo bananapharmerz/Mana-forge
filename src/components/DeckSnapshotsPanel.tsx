@@ -74,7 +74,7 @@ export default function DeckSnapshotsPanel({ deckId, premium, initial }: { deckI
         </button>
       </div>
       <p className="mt-1 text-[11px] text-muted">Saves the deck as last saved above. Keeps your latest 30 versions.</p>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-down">{error}</p>}
       {rows.length === 0 ? (
         <p className="mt-4 text-sm text-muted">No versions yet. Save one before your next big change.</p>
       ) : (
@@ -92,7 +92,7 @@ export default function DeckSnapshotsPanel({ deckId, premium, initial }: { deckI
                 <button onClick={() => restore(s.id)} disabled={!!busy} className="rounded border border-gold/60 px-2 py-1 text-xs text-gold-bright hover:bg-gold/10 disabled:opacity-50">
                   Restore
                 </button>
-                <button onClick={() => remove(s.id)} disabled={!!busy} aria-label="Delete version" className="rounded px-2 py-1 text-xs text-muted hover:text-red-600 disabled:opacity-50">
+                <button onClick={() => remove(s.id)} disabled={!!busy} aria-label="Delete version" className="rounded px-2 py-1 text-xs text-muted hover:text-down disabled:opacity-50">
                   ✕
                 </button>
               </div>
@@ -104,11 +104,11 @@ export default function DeckSnapshotsPanel({ deckId, premium, initial }: { deckI
                     </p>
                   )}
                   <div>
-                    <p className="mb-1 font-semibold text-emerald-600">Added since ({open.diff.added.reduce((n, c) => n + c.qty, 0)})</p>
+                    <p className="mb-1 font-semibold text-up">Added since ({open.diff.added.reduce((n, c) => n + c.qty, 0)})</p>
                     {open.diff.added.length ? open.diff.added.map((c) => <p key={c.name} className="text-foreground">+{c.qty} {c.name}</p>) : <p className="text-muted">Nothing</p>}
                   </div>
                   <div>
-                    <p className="mb-1 font-semibold text-red-600">Removed since ({open.diff.removed.reduce((n, c) => n + c.qty, 0)})</p>
+                    <p className="mb-1 font-semibold text-down">Removed since ({open.diff.removed.reduce((n, c) => n + c.qty, 0)})</p>
                     {open.diff.removed.length ? open.diff.removed.map((c) => <p key={c.name} className="text-foreground">−{c.qty} {c.name}</p>) : <p className="text-muted">Nothing</p>}
                   </div>
                 </div>
