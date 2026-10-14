@@ -389,3 +389,37 @@ body {
   .pack-wrap::after, .pack-glowing, .pack-foilring::before { animation: none; }
   .pack-card3d-inner { transition: none; }
 }
+
+/* Rarity light rays fanning out behind the revealed card (Arena-style). */
+@keyframes pack-ray-spin { to { transform: rotate(360deg); } }
+@keyframes pack-rays-in { from { opacity: 0; transform: scale(0.55); } to { opacity: 1; transform: scale(1); } }
+.pack-rays { position: absolute; inset: -45%; z-index: 0; pointer-events: none; opacity: 0; }
+.pack-rays.on { opacity: 1; animation: pack-rays-in 0.5s ease-out; }
+.pack-rays::before {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-conic-gradient(from 0deg, var(--ray, rgba(226,89,43,0.55)) 0deg 5deg, transparent 5deg 15deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 26%, #000 42%, transparent 78%);
+  mask: radial-gradient(closest-side, transparent 26%, #000 42%, transparent 78%);
+  animation: pack-ray-spin 9s linear infinite;
+}
+.pack-rays::after {
+  content: ""; position: absolute; inset: 12%; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--ray, rgba(226,89,43,0.5)), transparent 65%);
+  filter: blur(16px);
+}
+
+/* Mythic full-screen flash. */
+.pack-flash { position: fixed; inset: 0; z-index: 60; pointer-events: none; background: #fff; opacity: 0; }
+.pack-flash.go { animation: pack-flash 0.5s ease-out; }
+@keyframes pack-flash { 0% { opacity: 0; } 8% { opacity: 0.7; } 100% { opacity: 0; } }
+
+/* Punchy card entrance between flips. */
+@keyframes pack-slam { 0% { opacity: 0; transform: translateY(42px) scale(0.72); } 60% { opacity: 1; transform: translateY(0) scale(1.06); } 100% { transform: scale(1); } }
+.pack-slam { animation: pack-slam 0.5s cubic-bezier(0.2, 0.9, 0.25, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pack-rays::before { animation: none; }
+  .pack-rays.on { animation: none; }
+  .pack-flash.go { animation: none; }
+  .pack-slam { animation: none; }
+}

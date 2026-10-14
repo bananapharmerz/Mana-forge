@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import Ember from "./Ember";
 import FoilTilt from "./fx/FoilTilt";
 import { useLocalStorageState } from "@/lib/useLocalStorageState";
+import { playTear, playFlip, playReveal, isMuted, setMuted } from "@/lib/packSfx";
 
 type Rarity = "common" | "uncommon" | "rare" | "mythic";
 
@@ -81,6 +82,16 @@ export default function PackOpener() {
   const [flipped, setFlipped] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tearing, setTearing] = useState(false);
+  const [flashKey, setFlashKey] = useState(0);
+  const [muted, setMutedState] = useState<boolean>(() => isMuted());
+
+  // Sounds + big-reveal flourishes for the card at index i.
+  function fireReveal(c: PackCard | undefined) {
+    if (!c) return;
+    playFlip();
+    playReveal(c.rarity, c.foil);
+    if (c.rarity === "mythic") setFlashKey((k) => k + 1);
+  }
 
   const [stats, setStats] = useLocalStorageState<PackStats>("mf-pack-stats", DEFAULT_STATS);
   const recordedRef = useRef<string | null>(null);
@@ -109,6 +120,7 @@ export default function PackOpener() {
     setError(null);
     setPhase("opening");
     setTearing(true);
+    playTear();
     try {
       const [res] = await Promise.all([
         fetch("/api/packs/open", {
@@ -133,7 +145,7 @@ export default function PackOpener() {
       setPhase("reveal");
       setTearing(false);
       // flip the first card after it mounts
-      requestAnimationFrame(() => setTimeout(() => setFlipped(true), 180));
+      requestAnimationFrame(() => setTimeout(() => { setFlipped(true); fireReveal(opened.cards[0]); }, 180));
     } catch {
       setError("Network hiccup — try again.");
       setPhase("idle");
@@ -164,9 +176,10 @@ export default function PackOpener() {
       setPhase("done");
       return;
     }
+    const nextIdx = revealIdx + 1;
     setFlipped(false);
-    setRevealIdx((i) => i + 1);
-    requestAnimationFrame(() => setTimeout(() => setFlipped(true), 120));
+    setRevealIdx(nextIdx);
+    requestAnimationFrame(() => setTimeout(() => { setFlipped(true); fireReveal(pack.cards[nextIdx]); }, 120));
   }
 
   function revealAll() {
@@ -334,12 +347,14 @@ export default function PackOpener() {
     const big = card.rarity === "rare" || card.rarity === "mythic" || card.foil;
     return (
       <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-8 sm:px-6">
-        <div className="mb-4 flex items-center gap-3 text-sm text-muted">
-          <span className="font-semibold text-foreground">{pack.setName}</span>
-          <span>·</span>
-          <span>
-            {revealIdx + 1} / {pack.cards.length}
-          </span>
+        <div key={flashKey} className={flashKey > 0 ? "pack-flash go" : "pack-flash"} aria-hidden />
+        <div className="mb-4 flex w-full items-center justify-between gap-3 text-sm text-muted">
+          <div className="flex items-center gap-3">
+            <span className="font-semibold text-foreground">{pack.setName}</span>
+            <span>·</span>
+            <span>{revealIdx + 1} / {pack.cards.length}</span>
+          </div>
+          <MuteButton muted={muted} onToggle={() => { const m = !muted; setMuted(m); setMutedState(m); }} />
         </div>
 
         <div
@@ -348,8 +363,15 @@ export default function PackOpener() {
           role="button"
           aria-label="Reveal next card"
         >
-          <div className={`relative ${card.foil ? "pack-foilring" : ""}`}>
-            <div className={`pack-card3d ${flipped ? "flipped" : ""} aspect-[5/7] w-60 sm:w-72`}>
+          <div key={revealIdx} className={`relative pack-slam ${card.foil ? "pack-foilring" : ""}`}>
+            {flipped && big && (
+              <div
+                className="pack-rays on"
+                aria-hidden
+                style={{ "--ray": card.foil && card.rarity !== "rare" && card.rarity !== "mythic" ? "rgba(122,252,255,0.5)" : RARITY_GLOW[card.rarity] } as CSSProperties}
+              />
+            )}
+            <div className={`pack-card3d relative z-10 ${flipped ? "flipped" : ""} aspect-[5/7] w-60 sm:w-72`}>
               <div className="pack-card3d-inner">
                 {/* back */}
                 <div className="pack-face flex items-center justify-center" style={{ background: "linear-gradient(160deg,#241a0c,#3a2a12 40%,#120d06)" }}>
@@ -486,6 +508,28 @@ export default function PackOpener() {
   }
 
   return null;
+}
+
+function MuteButton({ muted, onToggle }: { muted: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={muted ? "Unmute pack sounds" : "Mute pack sounds"}
+      title={muted ? "Sound off" : "Sound on"}
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted hover:bg-surface-raised hover:text-gold-bright"
+    >
+      {muted ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M11 5 6 9H2v6h4l5 4V5z" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" />
+        </svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M18.5 5.5a9 9 0 0 1 0 13" />
+        </svg>
+      )}
+    </button>
+  );
 }
 
 function StatsStrip({ stats, onReset }: { stats: PackStats; onReset: () => void }) {
