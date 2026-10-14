@@ -1,6 +1,26 @@
 @import "tailwindcss";
 
 :root {
+  /* Dark is the default — the forge at night. Light theme overrides the first block below. */
+  color-scheme: dark;
+  --background: #0f0b07;
+  --surface: #19140d;
+  --surface-raised: #241d13;
+  --border: #3b3123;
+  --foreground: #f1e7d3;
+  --muted: #a1947a;
+  --gold: #d2a142;
+  --gold-bright: #f4ce71;
+
+  --mana-w: #f8f6d8;
+  --mana-u: #0e68ab;
+  --mana-b: #6b5b95;
+  --mana-b-fg: #2b2320;
+  --mana-r: #d3202a;
+  --mana-g: #00733e;
+  --mana-c: #b7b8ba;
+}
+:root[data-theme="light"] {
   color-scheme: light;
   --background: #f8f4e9;
   --surface: #fffdf8;
@@ -10,14 +30,6 @@
   --muted: #766c53;
   --gold: #b5872a;
   --gold-bright: #7c5814;
-
-  --mana-w: #f8f6d8;
-  --mana-u: #0e68ab;
-  --mana-b: #6b5b95;
-  --mana-b-fg: #2b2320;
-  --mana-r: #d3202a;
-  --mana-g: #00733e;
-  --mana-c: #b7b8ba;
 }
 
 @theme inline {

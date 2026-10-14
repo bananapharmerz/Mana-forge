@@ -63,6 +63,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
+        {/* Runs before first paint: applies the saved theme (dark is the default) so there's no flash. */}
+        <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('mf-theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');}}catch(e){}" }} />
         {/* Runs before first paint: marks JS as available and skips the intro after the first page of a visit. */}
         <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />

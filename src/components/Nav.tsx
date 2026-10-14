@@ -7,6 +7,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useCart } from "./CartProvider";
 import { useProxyProject } from "./ProxyProjectProvider";
 import Ember from "./Ember";
+import ThemeToggle from "./ThemeToggle";
 import { SITE } from "@/lib/site";
 import { isShopPath, SHOP_ENABLED } from "@/lib/features";
 
@@ -80,6 +81,8 @@ export default function Nav() {
 
           <span className="mx-1 h-5 w-px bg-border" />
 
+          <ThemeToggle />
+
           {status === "authenticated" ? (
             <div className="flex items-center gap-2">
               <Link href="/account" className="hidden text-xs text-muted hover:text-gold-bright sm:inline" title="Your account">
@@ -112,6 +115,7 @@ export default function Nav() {
 
         {/* Phones and tablets: a menu button instead of the full row of links. */}
         <div className="flex items-center gap-2 lg:hidden">
+          <ThemeToggle />
           {SHOP_ENABLED && count > 0 && (
             <Link href="/store/cart" className="rounded-md bg-surface-raised px-2.5 py-1.5 text-xs font-semibold text-foreground" onClick={close}>
               Cart <span className="text-gold-bright">{count}</span>
