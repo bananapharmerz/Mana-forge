@@ -51,7 +51,7 @@ export default function ForgeEmberScene({ className = "relative" }: { className?
 
       {/* The hammer Ember swings down onto the anvil face. Grip at the top (the pivot, see
           .forge-hammer transform-origin); the head at the bottom is what strikes. */}
-      <svg viewBox="0 0 100 150" className="forge-hammer absolute left-[44%] top-[30%] w-[26%]">
+      <svg viewBox="0 0 100 150" className="forge-hammer absolute left-[47%] top-[42%] w-[18%]">
         {/* handle */}
         <rect x="45" y="16" width="11" height="104" rx="5.5" fill="#7a4f27" />
         <rect x="47.5" y="18" width="3.5" height="100" rx="1.75" fill="#9c6c3a" />
