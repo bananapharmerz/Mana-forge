@@ -16,11 +16,13 @@ export interface BoosterSet {
 
 export interface PackCard {
   id: string;
+  scryfallId: string;
   name: string;
   image?: string;
   backImage?: string;
   rarity: PackRarity;
   foil: boolean;
+  setCode: string;
   setName: string;
   collectorNumber?: string;
   priceUsd: number | null;
@@ -123,11 +125,13 @@ function toPackCard(card: ScryfallCard, rarity: PackRarity, foil: boolean, setNa
   const back = card.image_uris ? undefined : card.card_faces?.[1]?.image_uris?.normal;
   return {
     id: `${card.id}${foil ? "-f" : ""}`,
+    scryfallId: card.id,
     name: card.name,
     image: front,
     backImage: back,
     rarity,
     foil,
+    setCode: card.set ?? "",
     setName,
     collectorNumber: card.collector_number,
     priceUsd: priceOf(card, foil),

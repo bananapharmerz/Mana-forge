@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import Link from "next/link";
 import Ember from "./Ember";
 import FoilTilt from "./fx/FoilTilt";
 import { useLocalStorageState } from "@/lib/useLocalStorageState";
@@ -43,6 +44,13 @@ interface PackStats {
 }
 const DEFAULT_STATS: PackStats = { packs: 0, value: 0, best: null };
 
+interface RipInfo {
+  signedIn: boolean;
+  ripsLeft: number;
+  limit: number;
+  tier: string;
+}
+
 const RARITY_GLOW: Record<Rarity, string> = {
   common: "rgba(150,156,162,0.55)",
   uncommon: "rgba(150,186,214,0.6)",
@@ -84,6 +92,7 @@ export default function PackOpener() {
   const [tearing, setTearing] = useState(false);
   const [flashKey, setFlashKey] = useState(0);
   const [muted, setMutedState] = useState<boolean>(() => isMuted());
+  const [rips, setRips] = useState<RipInfo | null>(null);
 
   // Sounds + big-reveal flourishes for the card at index i.
   function fireReveal(c: PackCard | undefined) {
@@ -106,6 +115,10 @@ export default function PackOpener() {
         if (!list.length) setSetsError(true);
       })
       .catch(() => setSetsError(true));
+    fetch("/api/packs/status")
+      .then((r) => r.json())
+      .then((d: RipInfo) => setRips(d))
+      .catch(() => setRips({ signedIn: false, ripsLeft: 0, limit: 3, tier: "free" }));
   }, []);
 
   const selectedSet = useMemo(() => sets.find((s) => s.code === selected), [sets, selected]);
@@ -132,12 +145,23 @@ export default function PackOpener() {
       ]);
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 401 && data?.needsAuth) {
+          setRips({ signedIn: false, ripsLeft: 0, limit: data?.limit ?? 3, tier: "free" });
+        } else if (data?.outOfRips) {
+          setRips((r) => (r ? { ...r, ripsLeft: 0, limit: data.limit ?? r.limit, tier: data.tier ?? r.tier } : r));
+        }
         setError(data?.error ?? "Couldn't open that pack — try again.");
         setPhase("idle");
         setTearing(false);
         return;
       }
-      const opened = data as OpenedPack;
+      const opened = data as OpenedPack & { ripsLeft?: number; limit?: number; tier?: string };
+      setRips((r) => ({
+        signedIn: true,
+        ripsLeft: opened.ripsLeft ?? r?.ripsLeft ?? 0,
+        limit: opened.limit ?? r?.limit ?? 3,
+        tier: opened.tier ?? r?.tier ?? "free",
+      }));
       recordedRef.current = null;
       setPack(opened);
       setRevealIdx(0);
@@ -292,7 +316,7 @@ export default function PackOpener() {
           <button
             type="button"
             onClick={rip}
-            disabled={!selected || phase === "opening"}
+            disabled={!selected || phase === "opening" || !rips?.signedIn || rips.ripsLeft <= 0}
             aria-label="Rip this pack open"
             className="group relative aspect-[5/7] w-56 cursor-pointer rounded-xl disabled:cursor-wait sm:w-64"
           >
@@ -324,17 +348,50 @@ export default function PackOpener() {
             </div>
           </button>
 
-          <button
-            type="button"
-            onClick={rip}
-            disabled={!selected || phase === "opening"}
-            className="mt-6 rounded-lg bg-gold px-8 py-3 text-base font-bold text-black shadow hover:bg-gold-bright disabled:opacity-50"
-          >
-            {phase === "opening" ? "Ripping…" : "Rip Pack"}
-          </button>
-          <p className="mt-3 text-center text-xs text-muted">
-            Free to rip, as many as you like. Pulls are virtual — no cards required.
-          </p>
+          {!rips ? (
+            <button disabled className="mt-6 rounded-lg bg-gold px-8 py-3 text-base font-bold text-black opacity-50">Loading…</button>
+          ) : !rips.signedIn ? (
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <div className="flex flex-wrap justify-center gap-2">
+                <Link href="/signup?next=/packs" className="rounded-lg bg-gold px-6 py-3 text-base font-bold text-black hover:bg-gold-bright">
+                  Create free account
+                </Link>
+                <Link href="/login?next=/packs" className="rounded-lg border border-border px-5 py-3 text-base font-medium text-foreground hover:border-gold">
+                  Sign in
+                </Link>
+              </div>
+              <p className="mt-1 max-w-xs text-center text-xs text-muted">
+                3 free packs a day with an account — your pulls save to your online collection.
+              </p>
+            </div>
+          ) : rips.ripsLeft > 0 ? (
+            <>
+              <button
+                type="button"
+                onClick={rip}
+                disabled={!selected || phase === "opening"}
+                className="mt-6 rounded-lg bg-gold px-8 py-3 text-base font-bold text-black shadow hover:bg-gold-bright disabled:opacity-50"
+              >
+                {phase === "opening" ? "Ripping…" : "Rip Pack"}
+              </button>
+              <p className="mt-3 text-center text-xs text-muted">
+                <span className="font-semibold text-gold-bright">{rips.ripsLeft}</span> of {rips.limit} rips left today ·{" "}
+                <Link href="/packs/collection" className="underline hover:text-gold-bright">your collection</Link>
+              </p>
+            </>
+          ) : (
+            <div className="mt-6 flex flex-col items-center gap-2 text-center">
+              <button disabled className="rounded-lg bg-gold px-8 py-3 text-base font-bold text-black opacity-50">No rips left today</button>
+              <p className="mt-1 max-w-xs text-xs text-muted">
+                {rips.tier === "premium" ? (
+                  "Your 10 daily packs reset tomorrow."
+                ) : (
+                  <>Resets tomorrow — or <Link href="/premium" className="text-gold-bright underline">go Premium</Link> for 10 a day.</>
+                )}{" "}
+                · <Link href="/packs/collection" className="underline hover:text-gold-bright">your collection</Link>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -487,8 +544,15 @@ export default function PackOpener() {
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <button onClick={rip} className="rounded-lg bg-gold px-8 py-3 text-base font-bold text-black hover:bg-gold-bright">
-            Rip another
+          <Link href="/packs/collection" className="rounded-lg bg-gold px-7 py-3 text-base font-bold text-black hover:bg-gold-bright">
+            View your collection →
+          </Link>
+          <button
+            onClick={rip}
+            disabled={(rips?.ripsLeft ?? 0) <= 0}
+            className="rounded-lg border border-border px-5 py-3 text-sm font-medium text-foreground hover:border-gold disabled:opacity-50"
+          >
+            {(rips?.ripsLeft ?? 0) > 0 ? `Rip another · ${rips?.ripsLeft} left` : "No rips left today"}
           </button>
           <button onClick={ripAgain} className="rounded-lg border border-border px-5 py-3 text-sm font-medium text-foreground hover:border-gold">
             Change set
@@ -500,8 +564,8 @@ export default function PackOpener() {
         </div>
 
         <p className="mx-auto mt-6 max-w-md text-center text-xs text-muted">
-          Coming soon: your pulls stack into a Mana Forge collection you can build decks from — and
-          Premium will rip whole boxes at once.
+          These cards are saved to your collection. Coming soon: build decks straight from what
+          you&apos;ve pulled — and Premium box-rips.
         </p>
       </div>
     );

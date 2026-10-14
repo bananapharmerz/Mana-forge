@@ -36,6 +36,9 @@ model User {
   referralRewards      Int      @default(0)
   // Community feed: set when the member accepts the 16+ community rules. Required to post.
   communityOptInAt     DateTime?
+  // Pack opening: daily rip allowance (3/day free, 10/day Premium), reset when the UTC day changes.
+  packRipsDate         String?  // YYYY-MM-DD (UTC) that packRipsToday counts for
+  packRipsToday        Int      @default(0)
   createdAt            DateTime @default(now())
   decks                Deck[]
   orders               Order[]
@@ -45,10 +48,35 @@ model User {
   posts                Post[]
   postComments         PostComment[]
   postVotes            PostVote[]
+  collection           CollectionCard[]
 
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
   @@index([referredById])
+}
+
+// A card a member owns from opening virtual packs. One row per (user, printing); quantities track
+// nonfoil and foil copies. Price is a snapshot taken when first pulled (refreshable later).
+model CollectionCard {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scryfallId      String // the Scryfall printing id
+  name            String
+  setCode         String
+  setName         String
+  rarity          String // common | uncommon | rare | mythic
+  imageUrl        String?
+  collectorNumber String?
+  scryfallUri     String?
+  priceUsd        Float? // snapshot at pull time (nonfoil market price)
+  quantity        Int      @default(0) // nonfoil copies owned
+  foilQuantity    Int      @default(0) // foil copies owned
+  firstPulledAt   DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, scryfallId])
+  @@index([userId])
 }
 
 model Deck {
