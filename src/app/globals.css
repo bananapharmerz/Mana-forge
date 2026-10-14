@@ -468,14 +468,24 @@ body {
 }
 .arena-cast { animation: arena-cast 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.1); }
 
-/* Hand cards brighten and glow on hover (no geometry change — the strip scrolls horizontally
-   and would clip a raised card). */
-.arena-hand-card { transition: box-shadow 0.18s ease, filter 0.18s ease; }
-.arena-hand-card:hover { filter: brightness(1.06); box-shadow: 0 0 16px rgba(224, 178, 82, 0.5); }
+/* Hand cards fan out (per-card rotation + arc via the --rot/--ty vars set inline), then
+   straighten, raise and enlarge on hover — Arena's signature hand feel. */
+.arena-hand-card {
+  transform: rotate(var(--rot, 0deg)) translateY(var(--ty, 0px));
+  transform-origin: bottom center;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1.2), box-shadow 0.18s ease, filter 0.18s ease;
+}
+.arena-hand-card:hover {
+  transform: translateY(-22px) scale(1.12) rotate(0deg);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.6), 0 0 18px rgba(224, 178, 82, 0.55);
+  filter: brightness(1.05);
+  z-index: 60;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .arena-card { transition: none; }
   .arena-card:hover { transform: none; }
   .arena-cast { animation: none; }
   .arena-hand-card { transition: none; }
+  .arena-hand-card:hover { transform: rotate(var(--rot, 0deg)) translateY(var(--ty, 0px)); box-shadow: 0 0 18px rgba(224, 178, 82, 0.55); }
 }

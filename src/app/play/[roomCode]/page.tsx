@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { use, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { listMyDecksForPlay, type DeckForPlay } from "@/app/actions/decks";
@@ -14,6 +14,7 @@ import type {
   AlertPing,
 } from "@/lib/gameRooms";
 import CardBack from "@/components/CardBack";
+import { playTap, playCast, playDraw, playShuffle, isMuted, setMuted } from "./playSfx";
 
 const noopSubscribe = () => () => {};
 
@@ -274,6 +275,7 @@ export default function PlayRoomPage({
   const [mulliganCount, setMulliganCount] = useState("");
   const [showTokens, setShowTokens] = useState(false);
   const tokensRef = useRef<HTMLDivElement>(null);
+  const [muted, setMutedState] = useState(() => isMuted());
 
   // Flashes a brief animation on a player's Deck tile right when their library gets shuffled —
   // driven off the log line shuffleLibrary() writes, so it fires for both the hotkey and the
@@ -394,9 +396,11 @@ export default function PlayRoomPage({
       if (!joined || !playerId) return;
       switch (e.key.toLowerCase()) {
         case "t":
+          playTap();
           sendAction("tapAllBattlefield", { tapped: true });
           break;
         case "u":
+          playTap();
           sendAction("tapAllBattlefield", { tapped: false });
           break;
         case "l":
@@ -406,9 +410,11 @@ export default function PlayRoomPage({
           sendAction("rollDice", { kind: "coin", count: 1 });
           break;
         case "s":
+          playShuffle();
           sendAction("shuffle");
           break;
         case "r":
+          playDraw();
           sendAction("pileDraw", { source: "library" });
           break;
         case "g": {
@@ -795,11 +801,13 @@ export default function PlayRoomPage({
           const rect = boardRef.current.getBoundingClientRect();
           const x = ((e.clientX - rect.left) / rect.width) * 100;
           const y = ((e.clientY - rect.top) / rect.height) * 100;
+          playCast();
           sendAction("dropCardOn", { instanceId: crossDrag.instanceId, dest: "battlefield", x, y });
         }
         // dropped somewhere invalid — card just stays where it was
       } else if (crossDrag.quickAction === "play") {
         // a plain click on a hand card (no real movement) — quick-play to a random spot
+        playCast();
         sendAction("play", { instanceId: crossDrag.instanceId });
       } else if (crossDrag.quickAction === "toHand" && crossDrag.searchSource) {
         // a plain click on a card in the search window — take it straight into hand
@@ -1022,6 +1030,19 @@ export default function PlayRoomPage({
             {Object.keys(room!.players).length}/{room!.maxPlayers} players ·{" "}
             {room!.isOpen ? "Open session" : "Closed — code only"}
           </p>
+          <button
+            onClick={() => {
+              const next = !muted;
+              setMuted(next);
+              setMutedState(next);
+              if (!next) playTap();
+            }}
+            title={muted ? "Sound off — click to unmute" : "Sound on — click to mute"}
+            aria-label={muted ? "Unmute game sounds" : "Mute game sounds"}
+            className="rounded-md border border-border px-2 py-1 text-sm leading-none text-muted hover:border-gold hover:text-foreground"
+          >
+            {muted ? "🔇" : "🔊"}
+          </button>
         </div>
       </div>
 
@@ -1039,9 +1060,15 @@ export default function PlayRoomPage({
             boardRef={player?.id === playerId ? boardRef : undefined}
             dragging={dragging}
             startDrag={startDrag}
-            onTap={(instanceId) => sendAction("tap", { instanceId })}
+            onTap={(instanceId) => {
+              playTap();
+              sendAction("tap", { instanceId });
+            }}
             onCounterDelta={(instanceId, delta) => sendAction("addCounters", { instanceId, delta })}
-            onDraw={() => sendAction("pileDraw", { source: "library" })}
+            onDraw={() => {
+              playDraw();
+              sendAction("pileDraw", { source: "library" });
+            }}
             onOpenPileMenu={openPileMenu}
             onOpenZoneViewer={(p, tab) => setZoneViewer({ playerId: p.id, tab })}
             onRevealedClick={(instanceId) => sendAction("revealedToHand", { instanceId })}
@@ -1391,14 +1418,20 @@ export default function PlayRoomPage({
               </div>
             </div>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1" data-pile="hand">
-            {me.hand.map((c) => (
+          <div className="relative flex items-end justify-center px-6 pt-8 pb-1" data-pile="hand">
+            {me.hand.map((c, i) => {
+              const n = me.hand.length;
+              const offset = i - (n - 1) / 2;
+              const rot = Math.max(-12, Math.min(12, offset * 2.2));
+              const ty = Math.abs(offset) * 2;
+              return (
               <div
                 key={c.instanceId}
                 onPointerDown={(e) => startCrossDrag(c.instanceId, "play", c, e)}
                 onContextMenu={(e) => openCardMenu(e, c)}
                 {...hoverProps(c)}
                 className="arena-hand-card w-28 shrink-0 cursor-grab touch-none select-none overflow-hidden rounded border border-border hover:border-gold"
+                style={{ "--rot": `${rot}deg`, "--ty": `${ty}px`, marginLeft: i === 0 ? 0 : "-1.25rem", zIndex: i } as CSSProperties}
                 title={`Drag ${c.name} to the field, deck, graveyard, or exile — or click to play`}
               >
                 {c.imageUrl ? (
@@ -1410,7 +1443,8 @@ export default function PlayRoomPage({
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
