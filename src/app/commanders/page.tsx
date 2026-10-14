@@ -174,6 +174,12 @@ export default async function CommandersPage({
         >
           Color identity
         </Link>
+        {/* A count tells people how big the list is and that their filter worked, before they scroll. */}
+        {firstPage.total ? (
+          <span className="ml-auto text-xs text-muted">
+            {firstPage.total.toLocaleString("en-US")} {firstPage.total === 1 ? "commander" : "commanders"}
+          </span>
+        ) : null}
       </div>
 
       <CommandersFeed
