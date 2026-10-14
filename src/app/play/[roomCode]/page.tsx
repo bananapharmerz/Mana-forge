@@ -286,6 +286,8 @@ export default function PlayRoomPage({
   const [showTokens, setShowTokens] = useState(false);
   const tokensRef = useRef<HTMLDivElement>(null);
   const [muted, setMutedState] = useState(() => isMuted());
+  // When set, one board fills the whole play area (zoom in); null is the normal table view.
+  const [focusSeat, setFocusSeat] = useState<string | null>(null);
 
   // Flashes a brief animation on a player's Deck tile right when their library gets shuffled —
   // driven off the log line shuffleLibrary() writes, so it fires for both the hotkey and the
@@ -1065,9 +1067,14 @@ export default function PlayRoomPage({
         onToggleSelect={toggleSelect}
         onStartMarquee={startMarquee}
         onGroupTap={groupTap}
+        onZoom={seatPlayer ? () => setFocusSeat(seatPlayer.id) : undefined}
       />
     );
   };
+
+  // The board currently zoomed in on, if any (clears itself if that player has left).
+  const focusPlayer =
+    focusSeat === null ? null : focusSeat === playerId ? me : others.find((o) => o.id === focusSeat) ?? null;
 
   return (
     <div
@@ -1099,15 +1106,29 @@ export default function PlayRoomPage({
       </div>
 
       <div className="relative flex min-h-0 flex-1 flex-col gap-3">
-        <div
-          className="grid min-h-0 shrink-0 gap-3"
-          style={{ height: "24%", gridTemplateColumns: `repeat(${opponentSlots.length}, minmax(0, 1fr))` }}
-        >
-          {opponentSlots.map((p, i) => renderSeat(p, "bl", p?.id ?? `opp-${i}`))}
-        </div>
-        <div className="flex min-h-0 flex-1 [&>*]:h-full [&>*]:w-full">
-          {renderSeat(me, "tl", "me")}
-        </div>
+        {focusPlayer ? (
+          <div className="relative flex min-h-0 flex-1 [&>*]:h-full [&>*]:w-full">
+            {renderSeat(focusPlayer, focusPlayer.id === playerId ? "tl" : "bl", "focus")}
+            <button
+              onClick={() => setFocusSeat(null)}
+              className="absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-md border border-gold bg-surface/85 px-3 py-1.5 text-xs font-semibold text-gold-bright backdrop-blur hover:bg-surface"
+            >
+              ⤢ Zoom out
+            </button>
+          </div>
+        ) : (
+          <>
+            <div
+              className="grid min-h-0 shrink-0 gap-3"
+              style={{ height: "24%", gridTemplateColumns: `repeat(${opponentSlots.length}, minmax(0, 1fr))` }}
+            >
+              {opponentSlots.map((p, i) => renderSeat(p, "bl", p?.id ?? `opp-${i}`))}
+            </div>
+            <div className="flex min-h-0 flex-1 [&>*]:h-full [&>*]:w-full">
+              {renderSeat(me, "tl", "me")}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Rubber-band selection rectangle — screen-fixed since the drag can range across the
@@ -2226,6 +2247,7 @@ function PlayerBox({
   onToggleSelect,
   onStartMarquee,
   onGroupTap,
+  onZoom,
 }: {
   player: PlayerState | null;
   isMe: boolean;
@@ -2259,6 +2281,7 @@ function PlayerBox({
   onToggleSelect: (instanceId: string) => void;
   onStartMarquee: (e: React.PointerEvent) => void;
   onGroupTap: (tapped: boolean) => void;
+  onZoom?: () => void;
 }) {
   if (!player) {
     return (
@@ -2315,6 +2338,16 @@ function PlayerBox({
         <span className="shrink-0 rounded border border-border px-1 text-[9px] text-muted" title="Wins-Losses">
           {player.wins}-{player.losses}
         </span>
+        {onZoom && (
+          <button
+            onClick={onZoom}
+            title="Zoom into this board"
+            aria-label="Zoom into this board"
+            className="shrink-0 rounded border border-border px-1.5 text-xs leading-none text-muted hover:border-gold hover:text-gold-bright"
+          >
+            ⤢
+          </button>
+        )}
       </div>
 
       <div
