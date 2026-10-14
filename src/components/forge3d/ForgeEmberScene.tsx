@@ -11,6 +11,22 @@ import Ember from "@/components/Ember";
 // flame grip sits on her hand (322,202) and the head reaches the anvil face. The forearm pivots at
 // her shoulder (286,252) so the whole arm pumps, and the hammer pivots at the hand for the wrist snap.
 
+// The on-impact star burst: a 4-point sparkle in each of the five mana colours (W, U, B, R, G),
+// flying out from the anvil face on the strike beat (see .forge-star in globals.css).
+const STAR_D = "M0 -7 C 1.2 -2, 2 -1.2, 7 0 C 2 1.2, 1.2 2, 0 7 C -1.2 2, -2 1.2, -7 0 C -2 -1.2, -1.2 -2, 0 -7 Z";
+const BURST = [
+  { dx: -38, dy: -34, c: "#f6efd0" }, // W
+  { dx: -22, dy: -48, c: "#49a3e0" }, // U
+  { dx: -6, dy: -52, c: "#9a73d6" }, // B
+  { dx: 14, dy: -50, c: "#ff5a3c" }, // R
+  { dx: 32, dy: -38, c: "#49b56a" }, // G
+  { dx: 46, dy: -22, c: "#f6efd0" },
+  { dx: -50, dy: -18, c: "#49a3e0" },
+  { dx: 26, dy: -54, c: "#ff5a3c" },
+  { dx: -30, dy: -44, c: "#49b56a" },
+  { dx: 10, dy: -58, c: "#9a73d6" },
+];
+
 // Pass a positioning class (absolute …); it defaults to relative.
 export default function ForgeEmberScene({ className = "relative" }: { className?: string }) {
   return (
@@ -24,8 +40,8 @@ export default function ForgeEmberScene({ className = "relative" }: { className?
         <Ember mood="happy" forging size={400} className="h-auto w-full drop-shadow-[0_20px_40px_rgba(255,120,40,0.35)]" title="Ember, the Mana Forge mascot, at the anvil" />
       </div>
 
-      {/* The anvil */}
-      <svg viewBox="0 0 400 170" className="absolute inset-x-0 bottom-0 h-auto w-full">
+      {/* The anvil (wobbles on each strike; overflow-visible so the sparks can fly up off it) */}
+      <svg viewBox="0 0 400 170" className="forge-anvil overflow-visible absolute inset-x-0 bottom-0 h-auto w-full">
         <defs>
           <linearGradient id="anvilTop" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#6b6f78" />
@@ -51,6 +67,16 @@ export default function ForgeEmberScene({ className = "relative" }: { className?
         <rect x="90" y="150" width="270" height="12" rx="4" fill="#0d0d10" />
         {/* the strike glow on the face */}
         <ellipse className="forge-strike" cx="230" cy="30" rx="46" ry="7" fill="#ffd27a" />
+        {/* puff of smoke on impact */}
+        <g transform="translate(230 24)">
+          <ellipse className="forge-smoke" cx="0" cy="0" rx="11" ry="7" fill="#cac7bd" />
+        </g>
+        {/* five-colour star sparks bursting off the strike */}
+        {BURST.map((s, i) => (
+          <g key={i} transform="translate(230 30)">
+            <path className="forge-star" d={STAR_D} fill={s.c} style={{ "--dx": `${s.dx}px`, "--dy": `${s.dy}px` } as React.CSSProperties} />
+          </g>
+        ))}
       </svg>
 
       {/* Marker at the strike point (57%, 72% of the scene box) — ForgeSparks reads this to know
@@ -71,10 +97,12 @@ export default function ForgeEmberScene({ className = "relative" }: { className?
                 {/* handle, running down from the hand */}
                 <rect x="314.5" y="200" width="15" height="152" rx="7" fill="#7a4f27" />
                 <rect x="319" y="202" width="4" height="146" rx="2" fill="#9c6c3a" />
-                {/* steel head at the striking end (centred ~322,386 locally) */}
-                <rect x="288" y="369" width="68" height="34" rx="7" fill="#565c67" />
-                <rect x="288" y="369" width="68" height="10" rx="4" fill="#79808d" />
-                <rect x="288" y="395" width="68" height="8" rx="3" fill="#383c44" />
+                {/* steel head at the striking end (centred ~322,386 locally); squashes on impact */}
+                <g className="forge-headhit">
+                  <rect x="288" y="369" width="68" height="34" rx="7" fill="#565c67" />
+                  <rect x="288" y="369" width="68" height="10" rx="4" fill="#79808d" />
+                  <rect x="288" y="395" width="68" height="8" rx="3" fill="#383c44" />
+                </g>
                 {/* flame fist gripping the handle, over the joint */}
                 <circle cx="320" cy="188" r="23" fill="#ff8a3d" />
                 <circle cx="322" cy="204" r="20" fill="#ff8a3d" />

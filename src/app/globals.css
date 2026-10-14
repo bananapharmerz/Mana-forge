@@ -335,22 +335,52 @@ body {
    head reaching down-left to the anvil face. The swing pivots at the hand (view-box origin). */
 .forge-hammer { transform-box: view-box; transform-origin: 322px 202px; animation: forge-hammer 1.3s cubic-bezier(0.35, 0, 0.3, 1) infinite; }
 @keyframes forge-hammer {
-  0%   { transform: rotate(38deg); } /* raised — head up by Ember's shoulder */
-  42%  { transform: rotate(42deg); } /* cock back a touch */
-  50%  { transform: rotate(2deg); }  /* STRIKE — head lands on the anvil face */
-  58%  { transform: rotate(12deg); } /* bounce off the steel */
-  74%  { transform: rotate(28deg); }
-  100% { transform: rotate(38deg); }
+  0%   { transform: rotate(115deg); } /* hammer raised high overhead */
+  34%  { transform: rotate(123deg); } /* wind up a touch higher */
+  50%  { transform: rotate(2deg); }   /* STRIKE straight down onto the anvil */
+  57%  { transform: rotate(20deg); }  /* bounce up off the steel */
+  74%  { transform: rotate(72deg); }  /* lift back up */
+  100% { transform: rotate(115deg); } /* overhead again */
 }
 /* Her forearm pumps about the shoulder (322,202 hand; 286,252 shoulder) in step with the strike. */
 .forge-arm { transform-box: view-box; transform-origin: 286px 252px; animation: forge-arm 1.3s cubic-bezier(0.35, 0, 0.3, 1) infinite; }
 @keyframes forge-arm {
-  0%   { transform: rotate(-7deg); } /* arm up with the wind-up */
-  42%  { transform: rotate(-9deg); }
-  50%  { transform: rotate(5deg); }  /* drives down on the strike */
-  58%  { transform: rotate(1deg); }
-  74%  { transform: rotate(-4deg); }
-  100% { transform: rotate(-7deg); }
+  0%   { transform: rotate(-18deg); } /* arm lifted for the overhead raise */
+  34%  { transform: rotate(-22deg); }
+  50%  { transform: rotate(7deg); }   /* drives down on the strike */
+  57%  { transform: rotate(1deg); }
+  74%  { transform: rotate(-10deg); }
+  100% { transform: rotate(-18deg); }
+}
+/* The steel head squashes on impact, then springs back — bouncy cartoon hit. */
+.forge-headhit { transform-box: fill-box; transform-origin: 50% 100%; animation: forge-headhit 1.3s ease-out infinite; }
+@keyframes forge-headhit {
+  0%, 46%, 100% { transform: scaleY(1); }
+  52% { transform: scaleY(0.72); }
+  60% { transform: scaleY(1.08); }
+  70% { transform: scaleY(1); }
+}
+/* The anvil takes the blow — a quick wobble on the strike. */
+.forge-anvil { transform-box: border-box; transform-origin: 50% 100%; animation: forge-anvil 1.3s ease-out infinite; }
+@keyframes forge-anvil {
+  0%, 48%, 100% { transform: rotate(0deg); }
+  53% { transform: rotate(1.3deg); }
+  60% { transform: rotate(-0.9deg); }
+  68% { transform: rotate(0.4deg); }
+}
+/* Star sparks in the five mana colours burst off the anvil face on impact and fly out. */
+.forge-star { opacity: 0; transform-box: fill-box; transform-origin: center; animation: forge-star 1.3s ease-out infinite; }
+@keyframes forge-star {
+  0%, 47% { opacity: 0; transform: translate(0, 0) scale(0.2) rotate(0deg); }
+  53% { opacity: 1; transform: translate(calc(var(--dx, 0px) * 0.45), calc(var(--dy, 0px) * 0.45)) scale(1) rotate(35deg); }
+  100% { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.5) rotate(70deg); }
+}
+/* A little puff of smoke pops up where the hammer lands. */
+.forge-smoke { opacity: 0; transform-box: fill-box; transform-origin: center bottom; animation: forge-smoke 1.3s ease-out infinite; }
+@keyframes forge-smoke {
+  0%, 49% { opacity: 0; transform: translateY(0) scale(0.4); }
+  56% { opacity: 0.45; transform: translateY(-6px) scale(0.85); }
+  100% { opacity: 0; transform: translateY(-20px) scale(1.4); }
 }
 .forge-bob { animation: forge-bob 1.3s ease-in-out infinite; }
 @keyframes forge-bob { 0%, 100% { transform: translateY(-3px); } 46% { transform: translateY(2px); } 62% { transform: translateY(-3px); } }
@@ -359,9 +389,11 @@ body {
 .forge-heat { animation: forge-heat 4s ease-in-out infinite; }
 @keyframes forge-heat { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .forge-arm, .forge-bob, .forge-strike, .forge-heat, .forge-hammer { animation: none; }
+  .forge-arm, .forge-bob, .forge-strike, .forge-heat, .forge-hammer,
+  .forge-headhit, .forge-anvil, .forge-star, .forge-smoke { animation: none; }
   .forge-hammer { transform: rotate(2deg); } /* resting on the anvil */
-  .forge-arm { transform: rotate(5deg); } /* arm down at the anvil */
+  .forge-arm { transform: rotate(7deg); } /* arm down at the anvil */
+  .forge-star, .forge-smoke { opacity: 0; } /* no burst when motion is off */
 }
 
 /* ---- Pack opening (components/PackOpener) ------------------------------------------------- */
