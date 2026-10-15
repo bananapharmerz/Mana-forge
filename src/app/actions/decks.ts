@@ -11,7 +11,10 @@ import type { Deck, DeckCard } from "@/lib/deckTypes";
 import { cleanCardBack, cleanDeckCard, cleanDeckCards, text } from "@/lib/validate";
 import { hit } from "@/lib/rateLimit";
 
-const CARD_BACK_PRESETS = ["classic", "crimson", "emerald", "amethyst", "obsidian", "sunburst"] as const;
+const CARD_BACK_PRESETS = [
+  "classic", "crimson", "emerald", "amethyst", "obsidian", "sunburst",
+  "mana-white", "mana-blue", "mana-black", "mana-red", "mana-green",
+] as const;
 const TOO_FAST = "You're doing that a lot. Please wait a minute and try again.";
 // Creating decks is capped per account so nobody can flood the database.
 const canCreate = (userId: string) => hit(`deck-create:${userId}`, 30, 60 * 60 * 1000);
