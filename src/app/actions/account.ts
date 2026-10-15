@@ -125,3 +125,26 @@ export async function setWeeklyEmail(on: unknown): Promise<{ ok: true; on: boole
   });
   return { ok: true, on: u.weeklyEmail };
 }
+
+/**
+ * The one-time "turn on the weekly roundup" nudge shown on My Decks once a member has a deck.
+ * Accepting switches the roundup on (confirmed addresses only — same consent rule as the account
+ * toggle); either answer records weeklyEmailPromptedAt so the nudge is never shown again.
+ */
+export async function respondWeeklyEmailNudge(optIn: unknown): Promise<{ ok: true; on: boolean } | { ok: false; error: string }> {
+  const user = await me();
+  if (!user) return { ok: false, error: "Sign in first." };
+  if (!hit(`weekly-nudge:${user.id}`, 20, 60 * 60 * 1000)) return { ok: false, error: TOO_MANY };
+  // The nudge is only shown to confirmed addresses, but guard here too: an unconfirmed address can
+  // never be switched on (consentAt must prove a real address). The prompt is recorded either way.
+  const turnOn = optIn === true && !!user.emailVerifiedAt;
+  const u = await db.user.update({
+    where: { id: user.id },
+    data: {
+      weeklyEmailPromptedAt: new Date(),
+      ...(turnOn ? { weeklyEmail: true, weeklyEmailConsentAt: new Date() } : {}),
+    },
+    select: { weeklyEmail: true },
+  });
+  return { ok: true, on: u.weeklyEmail };
+}

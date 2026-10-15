@@ -27,6 +27,9 @@ model User {
   weeklyEmail          Boolean  @default(false)
   weeklyEmailConsentAt DateTime?
   weeklyEmailSentAt    DateTime?
+  // The one-time "turn on the weekly roundup" nudge shown on My Decks once a member has a deck.
+  // Set when they accept or dismiss it, so the ask never shows twice.
+  weeklyEmailPromptedAt DateTime?
   // Refer a friend: everyone gets a code for their invite link (/r/<code>). A friend who signs up
   // through it gets 50% off their first months of Premium; when they first pay, the referrer gets
   // a month's credit on their Stripe balance (referralRewardedAt stops it happening twice).

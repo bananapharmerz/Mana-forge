@@ -5,6 +5,7 @@ import { rowToDeck } from "@/lib/deckSerialize";
 import DeckBuilderIndexClient from "./DeckBuilderIndexClient";
 import StarterDecks from "@/components/StarterDecks";
 import EmailConfirmNote from "@/components/EmailConfirmNote";
+import WeeklyEmailNudge from "@/components/WeeklyEmailNudge";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "My decks", robots: { index: false, follow: false } };
@@ -22,12 +23,21 @@ export default async function DeckBuilderIndexPage() {
 
   const decks = rows.map(rowToDeck);
   const limit = deckLimitFor(user?.tier ?? "free");
+  // Once a member has a deck and has confirmed their email, offer the weekly roundup — once.
+  // (Unconfirmed members see the "confirm your email" note instead; they can opt in afterwards.)
+  const showWeeklyNudge =
+    !!user && rows.length >= 1 && !!user.emailVerifiedAt && !user.weeklyEmail && !user.weeklyEmailPromptedAt;
 
   return (
     <>
     {!user?.emailVerifiedAt && user?.email && (
       <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-6">
         <EmailConfirmNote email={user.email} />
+      </div>
+    )}
+    {showWeeklyNudge && (
+      <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-6">
+        <WeeklyEmailNudge />
       </div>
     )}
     <DeckBuilderIndexClient
