@@ -13,6 +13,7 @@ import { isShopPath, SHOP_ENABLED } from "@/lib/features";
 
 const links = [
   { href: "/commanders", label: "Commanders" },
+  { href: "/spoilers", label: "Spoilers" },
   { href: "/decks", label: "Public Decks" },
   { href: "/deck-builder", label: "My Decks" },
   { href: "/prices", label: "Prices" },

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { SITE } from "@/lib/site";
 import { SHOP_ENABLED } from "@/lib/features";
 import { commanderNames } from "@/lib/commanderIndex";
+import { getSpoilerSets } from "@/lib/scryfall";
 import { colorIdentityCategories, typalCategories, themeCategories } from "@/lib/categories";
 import { addDays, lastWeekEnd } from "@/lib/prices";
 import { MIGRATION_SLUGS } from "@/lib/migrations";
@@ -19,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const main: MetadataRoute.Sitemap = [
     { url: u("/"), changeFrequency: "daily", priority: 1, lastModified: now },
     { url: u("/commanders"), changeFrequency: "daily", priority: 0.9 },
+    { url: u("/spoilers"), changeFrequency: "daily", priority: 0.8 },
     { url: u("/decks"), changeFrequency: "hourly", priority: 0.9 },
     { url: u("/import"), changeFrequency: "monthly", priority: 0.7 },
     ...MIGRATION_SLUGS.map((s) => ({ url: u(`/import/from/${s}`), changeFrequency: "monthly" as const, priority: 0.6 })),
@@ -47,6 +49,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((s): s is string => !!s)
     .map((slug) => ({ url: u(`/decks?category=${encodeURIComponent(slug)}`), changeFrequency: "daily" as const, priority: 0.5 }));
 
+  // Upcoming & recently-released sets each get a /spoilers/<code> gallery (from Scryfall; [] if busy).
+  const spoilerSets = await getSpoilerSets().catch(() => []);
   const [polls, challenges] = await Promise.all([
     db.poll.findMany({ where: { opensAt: { lte: now } }, select: { slug: true, closesAt: true } }).catch(() => []),
     db.challenge.findMany({ select: { slug: true, voteUntil: true } }).catch(() => []),
@@ -64,6 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...main,
     ...categories,
+    ...spoilerSets.map((s) => ({ url: u(`/spoilers/${s.code.toLowerCase()}`), changeFrequency: "daily" as const, priority: 0.7 })),
     ...polls.map((p) => ({ url: u(`/vote/${p.slug}`), changeFrequency: p.closesAt > now ? ("daily" as const) : ("yearly" as const), priority: 0.4 })),
     ...challenges.map((c) => ({ url: u(`/challenge/${c.slug}`), changeFrequency: c.voteUntil > now ? ("daily" as const) : ("yearly" as const), priority: 0.5 })),
     ...commanders

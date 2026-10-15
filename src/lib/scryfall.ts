@@ -321,6 +321,42 @@ export async function getCommanderSets(): Promise<ScryfallSet[]> {
     .sort((a, b) => (b.released_at ?? "").localeCompare(a.released_at ?? ""));
 }
 
+// Gameplay set types worth a spoilers page (skips promos, tokens, box sets, Funny, etc.).
+const SPOILER_SET_TYPES = new Set(["expansion", "core", "commander", "draft_innovation", "masters", "alchemy", "arsenal"]);
+
+// Sets for the /spoilers hub: everything upcoming (release date in the future, or not set yet —
+// i.e. mid-spoiler season with no date) plus everything released in the last ~5 months. No
+// card-count floor, so a set that's only just started previewing still shows up. Sorted so the
+// newest / not-yet-released sets come first.
+export async function getSpoilerSets(): Promise<ScryfallSet[]> {
+  const res = await sfetch(`${SCRYFALL_API}/sets`, {
+    headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" },
+    next: { revalidate: 21600 },
+  });
+  if (!res.ok) return [];
+  const json = await res.json();
+  const sets: ScryfallSet[] = json.data ?? [];
+  const now = Date.now();
+  const WINDOW_MS = 150 * 86400000;
+  return sets
+    .filter((s) => {
+      if (EXCLUDED_SET_TYPES.has(s.set_type) || !SPOILER_SET_TYPES.has(s.set_type)) return false;
+      if (!s.released_at) return true; // no date yet → upcoming
+      return new Date(s.released_at).getTime() > now - WINDOW_MS;
+    })
+    .sort((a, b) => (b.released_at ?? "9999-99-99").localeCompare(a.released_at ?? "9999-99-99"));
+}
+
+// A single set by its code (works even for a future set with no cards previewed yet).
+export async function getSet(code: string): Promise<ScryfallSet | null> {
+  const res = await sfetch(`${SCRYFALL_API}/sets/${encodeURIComponent(code.toLowerCase())}`, {
+    headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" },
+    next: { revalidate: 21600 },
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as ScryfallSet;
+}
+
 // Cards we've already fetched, so a busy Scryfall can still be answered (at most 3000 kept).
 const lastGood = ((globalThis as unknown as { __mfLastGood?: Map<string, ScryfallCard> }).__mfLastGood ??= new Map());
 
