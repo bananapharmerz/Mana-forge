@@ -19,7 +19,8 @@ if (!g.__mfRateSweep) {
   g.__mfRateSweep.unref?.();
 }
 
-const NO_STRIKE = new Set(["search", "stats", "rooms"]);
+// csp: browsers send policy reports on their own, so a busy page must never earn its visitor a ban.
+const NO_STRIKE = new Set(["search", "stats", "rooms", "csp"]);
 
 /** Records a hit; returns true if it's allowed, false if the limit is reached. */
 export function hit(key: string, max: number, windowMs: number): boolean {
