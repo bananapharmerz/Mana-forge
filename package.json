@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:local": "node scripts/migrate-local.cjs"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.9.1",
