@@ -19,6 +19,31 @@ const securityHeaders = [
       "frame-ancestors 'none'",
     ].join("; "),
   },
+  // A script policy in report-only mode: browsers block nothing, they only tell /api/csp-report
+  // when a script comes from somewhere not on this list (Nexus's Police Station counts them).
+  // Deliberately without nonces, so every page stays static; 'unsafe-inline' covers Next's own
+  // inline bootstrap and the theme script. Once the reports are quiet this can be enforced, and a
+  // nonce version (which makes pages dynamic) is a separate decision.
+  {
+    key: "Content-Security-Policy-Report-Only",
+    value: [
+      [
+        "script-src 'self' 'unsafe-inline'",
+        // Next's dev server uses eval for hot reload; production never does.
+        process.env.NODE_ENV === "development" ? "'unsafe-eval'" : "",
+        // Cloudflare Turnstile (src/components/Turnstile.tsx)
+        "https://challenges.cloudflare.com",
+        // Google AdSense (src/components/AdSlot.tsx) and the scripts it loads itself
+        "https://*.googlesyndication.com https://*.googletagservices.com https://*.googleadservices.com",
+        "https://*.doubleclick.net https://*.adtrafficquality.google https://fundingchoicesmessages.google.com https://www.google.com",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      "report-uri /api/csp-report",
+      "report-to csp",
+    ].join("; "),
+  },
+  { key: "Reporting-Endpoints", value: 'csp="/api/csp-report"' },
 ];
 
 const nextConfig: NextConfig = {
