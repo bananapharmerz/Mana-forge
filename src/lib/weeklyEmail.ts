@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { unsubscribeUrl } from "@/lib/unsubscribe";
 import { emailEnabled, emailHtml, esc, sendEmail } from "@/lib/email";
 import { lastWeekEnd, moversForWeek, type Mover } from "@/lib/prices";
+import { getSpoilerSets } from "@/lib/scryfall";
 import { commanderSpotlights } from "@/lib/spotlight";
 import { challengePhase, fmtDay } from "@/lib/community";
 import { SITE } from "@/lib/site";
@@ -33,7 +34,14 @@ export async function buildWeekly(): Promise<{ subject: string; html: (unsub: st
   const w = await moversForWeek(end, 5);
   const spot = commanderSpotlights()?.find((s) => s.period === "week") ?? null;
   const challenges = (await db.challenge.findMany({ orderBy: { submitUntil: "asc" }, take: 6 })).filter((c) => challengePhase(c) !== "done");
-  if (!w.up.length && !w.down.length && !spot && !challenges.length) return null;
+  // Sets that are upcoming, actively spoiling, or dropped in the last ~12 days — the freshest
+  // "come look" hook. getSpoilerSets() already sorts upcoming/undated first.
+  const nowMs = Date.now();
+  const setTime = (iso?: string) => (iso ? new Date(iso + "T00:00:00Z").getTime() : Infinity);
+  const freshSets = (await getSpoilerSets().catch(() => []))
+    .filter((s) => setTime(s.released_at) > nowMs || nowMs - setTime(s.released_at) < 12 * 86400000)
+    .slice(0, 4);
+  if (!w.up.length && !w.down.length && !spot && !challenges.length && !freshSets.length) return null;
   const L = legalInfo();
   const moversUrl = `${SITE.url}/prices/movers/${end}`;
 
@@ -43,6 +51,21 @@ export async function buildWeekly(): Promise<{ subject: string; html: (unsub: st
       .join("");
   const parts: string[] = [];
   const text: string[] = [];
+  if (freshSets.length) {
+    const fmtSetDate = (iso: string) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+    const when = (s: (typeof freshSets)[number]) =>
+      !s.released_at ? "Spoilers rolling out now" : setTime(s.released_at) > nowMs ? `Releases ${fmtSetDate(s.released_at)}` : "Just released";
+    parts.push(
+      `<h2 style="font-size:17px;margin:24px 0 8px">New sets &amp; spoilers</h2>` +
+        freshSets
+          .map(
+            (s) =>
+              `<p style="margin:0 0 10px"><b>${esc(s.name)}</b> <span style="color:#7a7488;font-size:13px">— ${esc(when(s))}</span><br><a href="${esc(`${SITE.url}/spoilers/${s.code.toLowerCase()}`)}" style="color:#b8892e;font-size:13px">See the ${esc(s.name)} spoilers →</a></p>`
+          )
+          .join("")
+    );
+    text.push("NEW SETS & SPOILERS", ...freshSets.map((s) => `${s.name} — ${when(s)}: ${SITE.url}/spoilers/${s.code.toLowerCase()}`), "");
+  }
   if (w.up.length || w.down.length) {
     parts.push(`<h2 style="font-size:17px;margin:24px 0 8px">Price movers this week</h2>`);
     if (w.up.length) parts.push(`<p style="margin:8px 0 2px;font-weight:700;color:#1f7a45">Going up</p><table width="100%" style="font-size:14px;border-collapse:collapse">${rows(w.up, "#1f7a45")}</table>`);
@@ -63,7 +86,13 @@ export async function buildWeekly(): Promise<{ subject: string; html: (unsub: st
     text.push(`FORGE CHALLENGE: ${c.title}`, c.theme, `${when} · Prize: ${c.prize}`, url, "");
   }
   const top = w.up[0];
-  const subject = top ? `This week in Commander: ${top.name} ${pct(top)}` : `This week on ${SITE.name}`;
+  // A set that's actively spoiling or about to drop makes the strongest re-engagement subject.
+  const leadSet = freshSets.find((s) => setTime(s.released_at) > nowMs);
+  const subject = leadSet
+    ? `New in Commander: ${leadSet.name} spoilers`
+    : top
+      ? `This week in Commander: ${top.name} ${pct(top)}`
+      : `This week on ${SITE.name}`;
   const footer = (unsub: string) =>
     `You're getting this because you switched on the weekly roundup on your account page. <a href="${esc(unsub)}" style="color:#7a7488">Unsubscribe in one click</a>, or turn it off on <a href="${esc(SITE.url)}/account" style="color:#7a7488">your account page</a>. Prices: TCGplayer market (USD) via Scryfall; not financial advice.<br>${esc(SITE.name)} · ${esc(L.owner)} · ${esc(L.address)}`;
   return {
