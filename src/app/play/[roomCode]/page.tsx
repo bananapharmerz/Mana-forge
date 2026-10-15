@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { use, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { animate, stagger } from "animejs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { listMyDecksForPlay, type DeckForPlay } from "@/app/actions/decks";
@@ -17,6 +18,22 @@ import CardBack from "@/components/CardBack";
 import { playTap, playCast, playDraw, playShuffle, isMuted, setMuted } from "./playSfx";
 
 const noopSubscribe = () => () => {};
+
+// Keep a pop-up menu fully on screen: given the click point, shift it left/up so the whole menu
+// fits inside the viewport (with an 8px margin) instead of running off the bottom or right edge.
+// Called from a layout effect so it clamps before paint — no flash at the raw click position.
+function clampMenuIntoView(el: HTMLElement | null, x: number, y: number) {
+  if (!el) return;
+  const m = 8;
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const left = Math.max(m, Math.min(x, vw - w - m));
+  const top = Math.max(m, Math.min(y, vh - h - m));
+  el.style.left = `${left}px`;
+  el.style.top = `${top}px`;
+}
 
 function postAction(roomCode: string, playerId: string | null, type: string, payload: Record<string, unknown> = {}) {
   if (!playerId) return Promise.resolve(null);
@@ -251,6 +268,25 @@ export default function PlayRoomPage({
   const [hoveredDropZone, setHoveredDropZone] = useState<string | null>(null);
 
   const boardRef = useRef<HTMLDivElement>(null);
+
+  // One-time anime.js entrance: when the in-game board first mounts, its top-level regions (the
+  // header, the seats area, the hand row and the log) rise and fade in a quick stagger so the room
+  // "assembles" instead of snapping in. Guarded so it never replays on later renders; skipped for
+  // reduced motion. Only the shell's own children move — nothing here touches card drag/tap state.
+  const boardShellRef = useRef<HTMLDivElement>(null);
+  const boardIntroDone = useRef(false);
+  const pileMenuRef = useRef<HTMLDivElement>(null);
+  const cardMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (boardIntroDone.current) return;
+    const shell = boardShellRef.current;
+    if (!shell) return;
+    boardIntroDone.current = true;
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const kids = Array.from(shell.children).filter((c): c is HTMLElement => c instanceof HTMLElement);
+    if (!kids.length) return;
+    animate(kids, { opacity: [0, 1], translateY: [18, 0], delay: stagger(70), duration: 520, ease: "out(2)" });
+  });
 
   const [hoverCard, setHoverCard] = useState<HoverCard | null>(null);
   const [pileMenu, setPileMenu] = useState<PileMenuState | null>(null);
@@ -926,6 +962,17 @@ export default function PlayRoomPage({
     setCounterPromptOpen(false);
   }
 
+  // Keep the pile / card context menus fully on screen — flip them up/left when a low or right-edge
+  // click would push them off-screen so every item stays reachable. Layout effects clamp before
+  // paint (no flash), and re-run when the menu opens/moves or its contents change height (a prompt
+  // view swaps in, which changes the menu's height).
+  useLayoutEffect(() => {
+    if (pileMenu) clampMenuIntoView(pileMenuRef.current, pileMenu.x, pileMenu.y);
+  }, [pileMenu, promptFor]);
+  useLayoutEffect(() => {
+    if (cardMenu) clampMenuIntoView(cardMenuRef.current, cardMenu.x, cardMenu.y);
+  }, [cardMenu, counterPromptOpen]);
+
   // Zone-leaving actions clear the selection afterward (the cards are gone from the battlefield,
   // same as Windows losing your selection once the selected files are moved/deleted). Tap,
   // counters, and flips leave cards in place, so the selection stays live for further actions.
@@ -1078,6 +1125,7 @@ export default function PlayRoomPage({
 
   return (
     <div
+      ref={boardShellRef}
       className="relative mx-auto flex h-[calc(100vh-57px)] max-w-[1600px] flex-col overflow-hidden bg-background px-3 py-3 sm:px-4"
     >
       <div className="mb-2 flex shrink-0 items-center justify-between">
@@ -1641,6 +1689,7 @@ export default function PlayRoomPage({
             }}
           />
           <div
+            ref={pileMenuRef}
             className="card-frame fixed z-50 w-52 p-1 text-sm shadow-2xl"
             style={{ left: pileMenu.x, top: pileMenu.y }}
           >
@@ -1725,6 +1774,7 @@ export default function PlayRoomPage({
         <>
           <div className="fixed inset-0 z-40" onClick={closeCardMenu} />
           <div
+            ref={cardMenuRef}
             className="card-frame fixed z-50 w-48 p-1 text-sm shadow-2xl"
             style={{ left: cardMenu.x, top: cardMenu.y }}
           >

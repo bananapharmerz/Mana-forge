@@ -460,18 +460,30 @@ body {
 }
 
 @keyframes arena-cast {
-  0% { opacity: 0; transform: scale(0.6); filter: brightness(2.2); }
-  55% { opacity: 1; transform: scale(1.08); }
-  100% { transform: scale(1); filter: brightness(1); }
+  0% { opacity: 0; transform: translateY(10px) scale(0.55); filter: brightness(2.4); }
+  55% { opacity: 1; transform: translateY(-3px) scale(1.1); filter: brightness(1.35); }
+  100% { transform: translateY(0) scale(1); filter: brightness(1); }
 }
-.arena-cast { animation: arena-cast 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.1); }
+.arena-cast { animation: arena-cast 0.46s cubic-bezier(0.2, 0.85, 0.3, 1.15); }
 
 /* Hand cards fan out (per-card rotation + arc via the --rot/--ty vars set inline), then
-   straighten, raise and enlarge on hover — Arena's signature hand feel. */
+   straighten, raise and enlarge on hover — Arena's signature hand feel. A freshly drawn card
+   rises into the fan via the animated --enter length (registered below), which is folded into the
+   SAME transform expression as the fan so the draw-in can never fight the resting fan transform. */
+@property --enter {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes arena-draw {
+  from { opacity: 0; --enter: 54px; }
+  to { opacity: 1; --enter: 0px; }
+}
 .arena-hand-card {
-  transform: rotate(var(--rot, 0deg)) translateY(var(--ty, 0px));
+  transform: rotate(var(--rot, 0deg)) translateY(calc(var(--ty, 0px) + var(--enter, 0px)));
   transform-origin: bottom center;
   transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1.2), box-shadow 0.18s ease, filter 0.18s ease;
+  animation: arena-draw 0.42s cubic-bezier(0.2, 0.85, 0.3, 1.1);
 }
 .arena-hand-card:hover {
   transform: translateY(-22px) scale(1.12) rotate(0deg);
@@ -484,6 +496,6 @@ body {
   .arena-card { transition: none; }
   .arena-card:hover { transform: none; }
   .arena-cast { animation: none; }
-  .arena-hand-card { transition: none; }
+  .arena-hand-card { transition: none; animation: none; }
   .arena-hand-card:hover { transform: rotate(var(--rot, 0deg)) translateY(var(--ty, 0px)); box-shadow: 0 0 18px rgba(224, 178, 82, 0.55); }
 }
