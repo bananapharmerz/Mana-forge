@@ -328,72 +328,22 @@ body {
   .ember-flame, .ember-core, .ember-glow, .ember-sparks circle { animation: none; }
 }
 
-/* Homepage hero: Ember hammering the anvil (src/components/forge3d/ForgeEmberScene.tsx).
-   One 1.3s strike cycle drives the hammer swing, the anvil flash, Ember's dip and the spark
-   burst, so the five-colour sparks fly off the moment the hammer lands. */
-/* The hammer is drawn in Ember's own 400x400 viewBox, grip glued to her hand (322,202),
-   head reaching down-left to the anvil face. The swing pivots at the hand (view-box origin). */
-.forge-hammer { transform-box: view-box; transform-origin: 316px 306px; animation: forge-hammer 1.3s cubic-bezier(0.35, 0, 0.3, 1) infinite; }
-@keyframes forge-hammer {
-  0%   { transform: rotate(106deg); } /* wrist at waist, head raised up top */
-  32%  { transform: rotate(114deg); } /* cock it a touch higher */
-  50%  { transform: rotate(2deg); }   /* STRIKE — flick down onto the anvil */
-  57%  { transform: rotate(14deg); }  /* bounce up off the steel */
-  74%  { transform: rotate(60deg); }  /* lift back up */
-  100% { transform: rotate(106deg); } /* up top again */
-}
-/* Her arm holds at waist (hand ~316,306; shoulder 286,252); the wrist does the flicking, so the
-   forearm only gives a small pump about the shoulder on the strike. */
-.forge-arm { transform-box: view-box; transform-origin: 286px 252px; animation: forge-arm 1.3s cubic-bezier(0.35, 0, 0.3, 1) infinite; }
-@keyframes forge-arm {
-  0%   { transform: rotate(-2deg); }
-  34%  { transform: rotate(-4deg); }
-  50%  { transform: rotate(4deg); }  /* small nudge down on the strike */
-  60%  { transform: rotate(0deg); }
-  100% { transform: rotate(-2deg); }
-}
-/* The steel head squashes on impact, then springs back — bouncy cartoon hit. */
-.forge-headhit { transform-box: fill-box; transform-origin: 50% 100%; animation: forge-headhit 1.3s ease-out infinite; }
-@keyframes forge-headhit {
-  0%, 46%, 100% { transform: scaleY(1); }
-  52% { transform: scaleY(0.72); }
-  60% { transform: scaleY(1.08); }
-  70% { transform: scaleY(1); }
-}
-/* The anvil takes the blow — a quick wobble on the strike. */
-.forge-anvil { transform-box: border-box; transform-origin: 50% 100%; animation: forge-anvil 1.3s ease-out infinite; }
-@keyframes forge-anvil {
-  0%, 48%, 100% { transform: rotate(0deg); }
-  53% { transform: rotate(1.3deg); }
-  60% { transform: rotate(-0.9deg); }
-  68% { transform: rotate(0.4deg); }
-}
-/* Star sparks in the five mana colours burst off the anvil face on impact and fly out. */
-.forge-star { opacity: 0; transform-box: fill-box; transform-origin: center; animation: forge-star 1.3s ease-out infinite; }
-@keyframes forge-star {
-  0%, 47% { opacity: 0; transform: translate(0, 0) scale(0.2) rotate(0deg); }
-  53% { opacity: 1; transform: translate(calc(var(--dx, 0px) * 0.45), calc(var(--dy, 0px) * 0.45)) scale(1) rotate(35deg); }
-  100% { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.5) rotate(70deg); }
-}
-/* A little puff of smoke pops up where the hammer lands. */
-.forge-smoke { opacity: 0; transform-box: fill-box; transform-origin: center bottom; animation: forge-smoke 1.3s ease-out infinite; }
-@keyframes forge-smoke {
-  0%, 49% { opacity: 0; transform: translateY(0) scale(0.4); }
-  56% { opacity: 0.45; transform: translateY(-6px) scale(0.85); }
-  100% { opacity: 0; transform: translateY(-20px) scale(1.4); }
-}
-.forge-bob { animation: forge-bob 1.3s ease-in-out infinite; }
-@keyframes forge-bob { 0%, 100% { transform: translateY(-3px); } 46% { transform: translateY(2px); } 62% { transform: translateY(-3px); } }
-.forge-strike { opacity: 0.12; animation: forge-strike 1.3s ease-out infinite; }
-@keyframes forge-strike { 0%, 42%, 100% { opacity: 0.12; } 48% { opacity: 0.95; } 62% { opacity: 0.3; } }
-.forge-heat { animation: forge-heat 4s ease-in-out infinite; }
-@keyframes forge-heat { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+/* Ember hammering the anvil. The whole strike cycle is driven by anime.js (one timeline in
+   src/components/forge3d/ForgeEmberScene.tsx) rather than CSS @keyframes, so every piece shares a
+   single impact beat and is easy to retune. CSS here keeps ONLY the transform pivots and a sensible
+   resting pose for before JS runs / when motion is reduced. */
+.forge-hammer { transform-box: view-box; transform-origin: 316px 306px; transform: rotate(106deg); }
+.forge-arm { transform-box: view-box; transform-origin: 286px 252px; transform: rotate(-2deg); }
+.forge-headhit { transform-box: fill-box; transform-origin: 50% 100%; }
+.forge-anvil { transform-box: border-box; transform-origin: 50% 100%; }
+.forge-star { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.forge-smoke { opacity: 0; transform-box: fill-box; transform-origin: center bottom; }
+.forge-strike { opacity: 0.12; }
 @media (prefers-reduced-motion: reduce) {
-  .forge-arm, .forge-bob, .forge-strike, .forge-heat, .forge-hammer,
-  .forge-headhit, .forge-anvil, .forge-star, .forge-smoke { animation: none; }
+  /* anime.js is skipped entirely; show Ember resting at the anvil, no burst. */
   .forge-hammer { transform: rotate(2deg); } /* resting on the anvil */
   .forge-arm { transform: rotate(4deg); } /* arm at the anvil */
-  .forge-star, .forge-smoke { opacity: 0; } /* no burst when motion is off */
+  .forge-star, .forge-smoke { opacity: 0; }
 }
 
 /* ---- Pack opening (components/PackOpener) ------------------------------------------------- */
