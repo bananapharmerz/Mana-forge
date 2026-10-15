@@ -65,6 +65,7 @@ export interface Deck {
   companion?: DeckCard;
   cards: DeckCard[];
   cardBackUrl?: string | null;
+  playmat?: string | null;
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;

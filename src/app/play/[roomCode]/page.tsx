@@ -15,6 +15,7 @@ import type {
   AlertPing,
 } from "@/lib/gameRooms";
 import CardBack from "@/components/CardBack";
+import { resolvePlaymat } from "@/lib/playmats";
 import { playTap, playCast, playDraw, playShuffle, isMuted, setMuted } from "./playSfx";
 
 const noopSubscribe = () => () => {};
@@ -597,6 +598,7 @@ export default function PlayRoomPage({
       name: name.trim() || randomName,
       deckCards: deck?.cards ?? [],
       cardBackUrl: deck?.cardBackUrl ?? undefined,
+      playmat: deck?.playmat ?? undefined,
       commanderName: deck?.commanderName,
       commanderCard: deck?.commanderCard,
       tokenCards: deck?.tokenCards ?? [],
@@ -1488,6 +1490,7 @@ export default function PlayRoomPage({
                             sendAction("selectNewDeck", {
                               deckCards: deck.cards,
                               cardBackUrl: deck.cardBackUrl ?? undefined,
+                              playmat: deck.playmat ?? undefined,
                               commanderName: deck.commanderName,
                               commanderCard: deck.commanderCard,
                               tokenCards: deck.tokenCards,
@@ -2447,6 +2450,7 @@ function PlayerBox({
         ref={boardRef}
         onPointerDown={isMe ? onStartMarquee : undefined}
         className="relative order-1 flex-1 overflow-hidden rounded border border-border arena-mat"
+        style={{ background: resolvePlaymat(player.playmat) || undefined }}
       >
         {player.battlefield.map((c) => (
           <BattlefieldCard

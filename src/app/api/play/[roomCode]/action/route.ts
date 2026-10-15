@@ -41,8 +41,12 @@ import {
 } from "@/lib/gameRooms";
 import { hit, ipFrom } from "@/lib/rateLimit";
 import { cleanCardBack, cleanPlayCard, cleanPlayCards, text } from "@/lib/validate";
+import { cleanPlaymat } from "@/lib/playmats";
 
-const CARD_BACK_PRESETS = ["classic", "crimson", "emerald", "amethyst", "obsidian", "sunburst"];
+const CARD_BACK_PRESETS = [
+  "classic", "crimson", "emerald", "amethyst", "obsidian", "sunburst",
+  "mana-white", "mana-blue", "mana-black", "mana-red", "mana-green",
+];
 
 export async function POST(
   req: Request,
@@ -81,7 +85,8 @@ export async function POST(
         cleanPlayCard(body.commanderCard) ?? undefined,
         body.tokenCards === undefined ? undefined : cleanPlayCards(body.tokenCards, 100),
         cleanPlayCard(body.extraCommandZoneCard) ?? undefined,
-        body.extraCommandZoneKind === "companion" ? "companion" : "partner"
+        body.extraCommandZoneKind === "companion" ? "companion" : "partner",
+        cleanPlaymat(body.playmat)
       );
       if (!result.ok) {
         return NextResponse.json({ error: result.error }, { status: 409 });
@@ -189,7 +194,8 @@ export async function POST(
         body.commanderCard,
         body.tokenCards,
         body.extraCommandZoneCard,
-        body.extraCommandZoneKind
+        body.extraCommandZoneKind,
+        cleanPlaymat(body.playmat)
       );
       break;
     case "recordGameResult":

@@ -9,6 +9,7 @@ import { extractPartnerWithName } from "@/lib/partnerMechanics";
 import { findCategory, commandersMatchingCategory } from "@/lib/categories";
 import type { Deck, DeckCard } from "@/lib/deckTypes";
 import { cleanCardBack, cleanDeckCard, cleanDeckCards, text } from "@/lib/validate";
+import { cleanPlaymat } from "@/lib/playmats";
 import { hit } from "@/lib/rateLimit";
 
 const CARD_BACK_PRESETS = [
@@ -153,6 +154,7 @@ export interface DeckForPlay {
   partnerCommanderCard?: PlayCardRef;
   companionCard?: PlayCardRef;
   cardBackUrl?: string | null;
+  playmat?: string | null;
   cards: PlayCardRef[];
   tokenCards: PlayCardRef[];
 }
@@ -221,6 +223,7 @@ export async function listMyDecksForPlay(): Promise<DeckForPlay[]> {
         : undefined,
       commanderName: row.commanderName,
       cardBackUrl: row.cardBackUrl,
+      playmat: row.playmat,
       cards: flat,
       tokenCards,
     };
@@ -329,6 +332,16 @@ export async function updateDeckCardBack(deckId: string, cardBackUrl: string) {
   if (!back) throw new Error("That card back image isn't supported. Use a PNG, JPEG or WebP under 2 MB.");
 
   await db.deck.update({ where: { id: deckId }, data: { cardBackUrl: back } });
+}
+
+export async function updateDeckPlaymat(deckId: string, playmat: string) {
+  const userId = await requireUserId();
+  const deck = await db.deck.findUnique({ where: { id: deckId } });
+  if (!deck || deck.ownerId !== userId) throw new Error("Deck not found.");
+  const mat = cleanPlaymat(playmat);
+  if (!mat) throw new Error("That playmat isn't available.");
+
+  await db.deck.update({ where: { id: deckId }, data: { playmat: mat } });
 }
 
 // A deck can have a partner (second commander) or a companion, never both — picking one clears

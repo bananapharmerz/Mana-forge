@@ -8,6 +8,7 @@ import DeckOptionsMenu from "@/components/DeckOptionsMenu";
 import CardNameZoom from "@/components/CardNameZoom";
 import PrintingPicker from "@/components/PrintingPicker";
 import CardBackPicker from "@/components/CardBackPicker";
+import PlaymatPicker from "@/components/PlaymatPicker";
 import BuyDeckPanel from "@/components/BuyDeckPanel";
 import PartnerCardStack from "@/components/PartnerCardStack";
 import DeckValuePanel from "@/components/DeckValuePanel";
@@ -28,6 +29,7 @@ import {
   updateDeckCards,
   updateDeckName,
   updateDeckCardBack,
+  updateDeckPlaymat,
   updateDeckPartner,
   updateDeckCompanion,
   setDeckPublic,
@@ -265,6 +267,11 @@ export default function DeckEditor({
     if (!guest) await updateDeckCardBack(deck.id, next);
   }
 
+  async function changePlaymat(next: string) {
+    setDeck((d) => ({ ...d, playmat: next }));
+    if (!guest) await updateDeckPlaymat(deck.id, next);
+  }
+
   async function togglePublic() {
     setPublicBusy(true);
     const next = !deck.isPublic;
@@ -474,6 +481,10 @@ export default function DeckEditor({
 
           <div className="mt-4">
             <CardBackPicker value={deck.cardBackUrl} onChange={changeCardBack} />
+          </div>
+
+          <div className="mt-4">
+            <PlaymatPicker value={deck.playmat} onChange={changePlaymat} />
           </div>
 
           <BuyDeckPanel deck={deck} />

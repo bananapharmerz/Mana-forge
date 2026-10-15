@@ -95,6 +95,7 @@ model Deck {
   companionData        String? // JSON-encoded DeckCard for the companion
   cards                String // JSON-encoded DeckCard[]
   cardBackUrl          String? // built-in card-back id, or a data:/http(s) URL for custom art
+  playmat              String? // built-in playmat id (src/lib/playmats.ts); null = default Forge mat
   isPublic             Boolean  @default(false)
   ownerId              String
   owner                User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)

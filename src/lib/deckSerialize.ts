@@ -11,6 +11,7 @@ export function rowToDeck(row: DeckRow): Deck {
     companion: row.companionData ? JSON.parse(row.companionData) : undefined,
     cards: JSON.parse(row.cards),
     cardBackUrl: row.cardBackUrl,
+    playmat: row.playmat,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

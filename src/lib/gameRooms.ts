@@ -24,6 +24,7 @@ export interface PlayerState {
   name: string;
   commanderName?: string;
   cardBackUrl?: string | null;
+  playmat?: string | null;
   life: number;
   poison: number;
   infect: number;
@@ -175,7 +176,8 @@ function newPlayer(
   commanderName: string | undefined,
   library: CardInstance[],
   commandZone: CardInstance[],
-  tokenCards: PlayCardRef[] = []
+  tokenCards: PlayCardRef[] = [],
+  playmat?: string
 ): PlayerState {
   // Players start with an opening hand dealt automatically, like a real game.
   const hand = library.splice(0, Math.min(7, library.length));
@@ -184,6 +186,7 @@ function newPlayer(
     name,
     commanderName,
     cardBackUrl,
+    playmat,
     life: 40,
     poison: 0,
     infect: 0,
@@ -270,7 +273,8 @@ export function joinRoom(
   // A partner commander or a companion — either way, a second card that joins the commander in
   // the command zone. Decks only ever have one or the other, never both.
   extraCommandZoneCard?: PlayCardRef,
-  extraKind: "partner" | "companion" = "partner"
+  extraKind: "partner" | "companion" = "partner",
+  playmat?: string
 ): { ok: true; room: RoomState } | { ok: false; error: string } {
   name = String(name ?? "").replace(/\s+/g, " ").trim().slice(0, 30) || "Player";
   let room = store.rooms.get(code);
@@ -324,7 +328,8 @@ export function joinRoom(
       commanderName,
       library,
       commandZone,
-      tokenCards ?? []
+      tokenCards ?? [],
+      playmat
     );
     room.players[playerId].commanderSlots = commandZone.length;
     room.players[playerId].slotKinds = commandZone.map((_, i) =>
@@ -339,6 +344,7 @@ export function joinRoom(
     // e.g. adding a token to the deck after joining is picked up without restarting the game.
     room.players[playerId].name = name;
     if (tokenCards) room.players[playerId].tokenCards = tokenCards;
+    if (playmat !== undefined) room.players[playerId].playmat = playmat;
   }
 
   emitUpdate(code);
@@ -981,7 +987,8 @@ export function selectNewDeck(
   commanderCard: PlayCardRef | undefined,
   tokenCards: PlayCardRef[] = [],
   extraCommandZoneCard?: PlayCardRef,
-  extraKind: "partner" | "companion" = "partner"
+  extraKind: "partner" | "companion" = "partner",
+  playmat?: string
 ) {
   const room = store.rooms.get(code);
   const player = room?.players[playerId];
@@ -1005,6 +1012,7 @@ export function selectNewDeck(
   commandZone.forEach((c, i) => (c.commandSlot = i));
 
   player.cardBackUrl = cardBackUrl;
+  player.playmat = playmat;
   player.commanderName = commanderName;
   player.library = library;
   player.hand = library.splice(0, 7);
