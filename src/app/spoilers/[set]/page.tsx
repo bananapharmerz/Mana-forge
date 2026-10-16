@@ -95,18 +95,21 @@ export default async function SetSpoilerPage({ params }: { params: Promise<{ set
   const cards = await getSetCards(set.code);
   const setParam = encodeURIComponent(set.code.toUpperCase());
   const nameParam = encodeURIComponent(set.name);
+  // Precon/Commander sets are literally named "… Commander", so appending "Commander deck" would
+  // read "Star Trek Commander Commander deck". Drop a trailing "Commander" for the deck CTAs.
+  const shortName = set.name.replace(/\s+Commander$/i, "");
 
   return (
     <>
       <PageHeader
         title={`${set.name} Spoilers`}
-        description={`${statusLine(set)} · ${set.code.toUpperCase()}${cards.length > 0 ? ` · ${cards.length} cards revealed` : ""}`}
+        description={`Every ${shortName} card revealed so far. ${statusLine(set)} · ${set.code.toUpperCase()}${cards.length > 0 ? ` · ${cards.length} revealed` : ""}`}
       >
         <Link
           href={`/commanders?set=${setParam}&setName=${nameParam}`}
           className="inline-flex items-center gap-2 rounded-lg bg-gold px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-gold-bright"
         >
-          Build a {set.name} Commander deck →
+          Build a {shortName} Commander deck →
         </Link>
       </PageHeader>
 
@@ -143,13 +146,13 @@ export default async function SetSpoilerPage({ params }: { params: Promise<{ set
                 Found your next commander in {set.name}?
               </h2>
               <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-muted">
-                Jump straight into the brew — browse every {set.name} commander, filter by color and theme, and build a full deck on Mana Forge.
+                Jump straight into the brew — browse every {shortName} commander, filter by color and theme, and build a full deck on Mana Forge, free.
               </p>
               <Link
                 href={`/commanders?set=${setParam}&setName=${nameParam}`}
                 className="mt-5 inline-flex items-center gap-2 rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-gold-bright"
               >
-                Browse {set.name} commanders →
+                Browse {shortName} commanders →
               </Link>
             </div>
           </>
