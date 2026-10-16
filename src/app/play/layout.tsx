@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Play Commander online with friends",
-  description: "Open a table and play Magic: The Gathering Commander online with friends: shared battlefield, hands and life totals, synced in real time.",
+  title: "Play Commander online free — virtual tabletop",
+  description: "Play Magic: The Gathering Commander online with friends, free — a shared virtual tabletop with the battlefield, hands and life totals synced in real time. No download.",
   alternates: { canonical: "/play" },
 };
 

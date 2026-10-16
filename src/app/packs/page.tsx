@@ -3,9 +3,9 @@ import PageHeader from "@/components/PageHeader";
 import PackOpener from "@/components/PackOpener";
 
 export const metadata: Metadata = {
-  title: "Open Packs — free MTG booster simulator",
+  title: "MTG Pack Opening Simulator — rip free booster packs",
   description:
-    "Rip virtual Magic: The Gathering booster packs from any set. Animated pulls, real card prices, and your best hits — free, no cards required.",
+    "A free MTG pack opening simulator — rip virtual booster packs from any set, with animated pulls, real card prices and your best hits. No cards or account required.",
   alternates: { canonical: "/packs" },
 };
 
@@ -14,7 +14,7 @@ export default function PacksPage() {
     <>
       <PageHeader
         title="Open Packs"
-        description="Rip virtual boosters from any set — animated pulls, real card prices, your best hits. Free, and no cards required."
+        description="A free pack opening simulator — rip virtual boosters from any set, with animated pulls, real card prices and your best hits. No cards required."
         width="max-w-4xl"
       />
       <PackOpener />

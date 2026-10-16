@@ -36,6 +36,12 @@ const features = [
     status: "live",
   },
   {
+    href: "/commander-deck-building-guide",
+    title: "Deck Building Guide",
+    desc: "New to Commander? Build your first deck in six steps, with a proven template.",
+    status: "live",
+  },
+  {
     href: "/prices",
     title: "Card Prices",
     desc: "Daily prices with week, month and year graphs, and a watchlist for the cards you want.",

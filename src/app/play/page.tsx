@@ -178,7 +178,7 @@ export default function PlayLandingPage() {
     <>
     <PageHeader
       title="Play with friends"
-      description="A shared tabletop for Commander games in your browser: life totals, hands and the battlefield stay in sync for everyone at the table."
+      description="A free, shared virtual tabletop for Commander games in your browser: life totals, hands and the battlefield stay in sync for everyone at the table."
       width="max-w-5xl"
     />
     <div className="mx-auto grid max-w-5xl gap-10 px-4 py-10 sm:px-6 md:grid-cols-[minmax(0,420px)_1fr]">
