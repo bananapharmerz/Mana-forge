@@ -54,29 +54,21 @@ export default async function BrowseDimensionPage({
   const base = rawBase === "/decks" ? "/decks" : "/commanders";
   const backLabel = base === "/decks" ? "Decks" : "Commanders";
 
+  // On the Commanders hub, colour / tribe / theme chips lead to their "best <X> commanders"
+  // landing page — a real, indexable URL. On the Decks hub they stay filter links as before.
+  const bestLink = (slug: string) =>
+    base === "/commanders"
+      ? { href: `/commanders/best/${slug}`, active: false }
+      : { href: slug === active ? base : `${base}?category=${slug}`, active: slug === active };
+
   let items: BrowseItem[] = [];
 
   if (dimension === "colors") {
-    items = colorIdentityCategories.map((c) => ({
-      key: c.slug,
-      label: c.label,
-      href: c.slug === active ? base : `${base}?category=${c.slug}`,
-      active: c.slug === active,
-    }));
+    items = colorIdentityCategories.map((c) => ({ key: c.slug, label: c.label, ...bestLink(c.slug) }));
   } else if (dimension === "typal") {
-    items = typalCategories.map((c) => ({
-      key: c.slug,
-      label: c.label,
-      href: c.slug === active ? base : `${base}?category=${c.slug}`,
-      active: c.slug === active,
-    }));
+    items = typalCategories.map((c) => ({ key: c.slug, label: c.label, ...bestLink(c.slug) }));
   } else if (dimension === "themes") {
-    items = themeCategories.map((c) => ({
-      key: c.slug,
-      label: c.label,
-      href: c.slug === active ? base : `${base}?category=${c.slug}`,
-      active: c.slug === active,
-    }));
+    items = themeCategories.map((c) => ({ key: c.slug, label: c.label, ...bestLink(c.slug) }));
   } else if (dimension === "multi-commander") {
     // Companions only make sense when browsing commanders — no deck's commander is a companion.
     const list = base === "/decks" ? multiCommanderCategories : [...multiCommanderCategories, ...companionCategories];

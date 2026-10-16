@@ -43,6 +43,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/contact"), changeFrequency: "yearly", priority: 0.3 },
     ...["terms", "privacy", "copyright", "impressum"].map((p) => ({ url: u(`/legal/${p}`), changeFrequency: "yearly" as const, priority: 0.2 })),
     ...["colors", "typal", "themes", "multi-commander", "sets"].map((d) => ({ url: u(`/commanders/browse/${d}`), changeFrequency: "weekly" as const, priority: 0.6 })),
+    // "Best <X> commanders" landing pages, one per colour / tribe / theme.
+    ...[...colorIdentityCategories, ...typalCategories, ...themeCategories].map((c) => ({ url: u(`/commanders/best/${c.slug}`), changeFrequency: "weekly" as const, priority: 0.6 })),
   ];
   const categories = [...colorIdentityCategories, ...typalCategories, ...themeCategories]
     .map((c) => (c as { slug?: string }).slug)
