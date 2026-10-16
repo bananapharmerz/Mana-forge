@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useLocalStorageState } from "@/lib/useLocalStorageState";
 
@@ -13,11 +14,23 @@ export interface LiveChallenge {
 
 // A slim notification bar for live Forge Challenges, shown on the home page in place of a top-nav
 // tab. Dismissible, but keyed to the current set of challenges so a new one re-shows the bar.
-export default function ChallengeBanner({ challenges }: { challenges: LiveChallenge[] }) {
-  const key = "mf-chal-dismissed";
-  const [dismissed, setDismissed] = useLocalStorageState<string>(key, "");
+//
+// First-time anonymous visitors don't see it: a stranger's first few seconds should sell the
+// product, not a contest for a feature they don't understand yet. Signed-in players always see it,
+// and anonymous visitors see it from their second visit on (we mark them visited on the first).
+// On the server and first paint we don't know the visitor, so for anonymous visitors the bar
+// renders nothing until the client confirms a return visit — it never flashes in front of a
+// first-timer, at the cost of a small pop-in for returning ones.
+export default function ChallengeBanner({ challenges, signedIn }: { challenges: LiveChallenge[]; signedIn: boolean }) {
+  const [dismissed, setDismissed] = useLocalStorageState<string>("mf-chal-dismissed", "");
+  const [visited, setVisited] = useLocalStorageState<boolean>("mf-visited", false);
+
+  useEffect(() => {
+    if (!signedIn && !visited) setVisited(true);
+  }, [signedIn, visited, setVisited]);
 
   if (challenges.length === 0) return null;
+  if (!signedIn && !visited) return null; // first-time anonymous visitor: keep the first impression on the product
   const sig = challenges.map((c) => c.slug).join(",");
   if (dismissed === sig) return null;
 

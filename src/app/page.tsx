@@ -99,7 +99,7 @@ export default async function Home() {
 
   return (
     <>
-      <ChallengeBanner challenges={liveChallenges} />
+      <ChallengeBanner challenges={liveChallenges} signedIn={!!userId} />
       {userId && mine > 0 && <WelcomeBack userId={userId} name={session?.user?.name} />}
       <ForgeHero stats={stats} />
       <MobileStartBar />
