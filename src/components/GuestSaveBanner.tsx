@@ -46,14 +46,13 @@ export default function GuestSaveBanner({ compact = false }: { compact?: boolean
   return (
     <div className={`card-frame ${compact ? "" : "mt-3"} flex flex-col gap-2 p-3 text-xs text-muted`}>
       <p>
-        You&apos;re building as a guest. The deck is kept in this browser only. Create a free account to save it,
-        share it and play with it.
+        Building as a guest — this deck is kept in this browser only. Save it to an account whenever you want to keep it.
       </p>
       <Link
         href="/signup?callbackUrl=/deck-builder"
         className="rounded-md bg-gold px-3 py-2 text-center font-semibold text-black hover:bg-gold-bright"
       >
-        Sign up free to save
+        Save to account
       </Link>
       <Link href="/login?callbackUrl=/deck-builder" className="text-center underline hover:text-gold-bright">
         I already have an account
