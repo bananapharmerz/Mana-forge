@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { unsubscribeUrl } from "@/lib/unsubscribe";
 import { emailEnabled, emailHtml, esc, sendEmail } from "@/lib/email";
-import { inChunks, today } from "@/lib/prices";
+import { inChunks, deckPriceMovers, type DeckMove } from "@/lib/prices";
 import { SITE } from "@/lib/site";
 import { legalInfo } from "@/lib/legal";
 import { FREE_PRICE_ALERTS } from "@/lib/tier";
@@ -9,25 +9,10 @@ import { FREE_PRICE_ALERTS } from "@/lib/tier";
 // After each price refresh, email members (who haven't turned it off, with a confirmed address)
 //  - when a card on their watchlist drops to the target price they set (once, until it climbs back):
 //    every target for Premium, the first FREE_PRICE_ALERTS targets they set for free members, and
-//  - Premium only: at most once a week, the cards in their decks whose price moved a lot in 7 days.
-const MOVE_MIN_USD = 2;
-const MOVE_MIN_PCT = 0.2;
+//  - Premium only: at most once a week, the cards in their decks whose price moved a lot in 7 days
+//    — but only for members who haven't turned on the Monday roundup, which already carries this.
 const DIGEST_EVERY_MS = 7 * 86400000;
-
-type Move = { name: string; from: number; to: number };
 const money = (n: number) => `$${n.toFixed(2)}`;
-
-function deckIds(raws: (string | null)[]): Set<string> {
-  const ids = new Set<string>();
-  for (const raw of raws) {
-    if (!raw) continue;
-    try {
-      const v = JSON.parse(raw) as { scryfallId?: string } | { scryfallId?: string }[];
-      for (const c of Array.isArray(v) ? v : [v]) if (c?.scryfallId) ids.add(c.scryfallId);
-    } catch {}
-  }
-  return ids;
-}
 
 export async function runPriceAlerts(): Promise<{ emailed: number }> {
   // A watched card that climbed back above its target can alert again next time it drops.
@@ -44,10 +29,9 @@ export async function runPriceAlerts(): Promise<{ emailed: number }> {
   if (!emailEnabled()) return { emailed: 0 };
   const users = await db.user.findMany({
     where: { priceAlerts: true, emailVerifiedAt: { not: null } }, // only confirmed addresses get mail
-    select: { id: true, email: true, priceDigestAt: true, tier: true },
+    select: { id: true, email: true, priceDigestAt: true, tier: true, weeklyEmail: true },
   });
   let emailed = 0;
-  const weekAgo = today(Date.now() - DIGEST_EVERY_MS);
 
   for (const u of users) {
     // 1. Watchlist targets reached.
@@ -66,29 +50,11 @@ export async function runPriceAlerts(): Promise<{ emailed: number }> {
       return usd != null && w.targetUsd != null && usd <= w.targetUsd ? [{ id: w.id, name: w.name, usd, target: w.targetUsd }] : [];
     });
 
-    // 2. Big weekly moves in their decks.
-    let moves: { up: Move[]; down: Move[] } = { up: [], down: [] };
-    const digestDue = premium && (!u.priceDigestAt || Date.now() - u.priceDigestAt.getTime() >= DIGEST_EVERY_MS);
-    if (digestDue) {
-      const decks = await db.deck.findMany({ where: { ownerId: u.id }, select: { commanderData: true, partnerCommanderData: true, companionData: true, cards: true } });
-      const ids = [...deckIds(decks.flatMap((d) => [d.commanderData, d.partnerCommanderData, d.companionData, d.cards]))];
-      if (ids.length) {
-        const [cur, old] = await Promise.all([
-          inChunks(ids, (part) => db.cardPrice.findMany({ where: { scryfallId: { in: part } }, select: { scryfallId: true, name: true, usd: true } })),
-          inChunks(ids, (part) => db.cardPriceHistory.findMany({ where: { scryfallId: { in: part }, day: weekAgo }, select: { scryfallId: true, usd: true } })),
-        ]);
-        const before = new Map(old.map((o) => [o.scryfallId, o.usd]));
-        const all: Move[] = [];
-        for (const c of cur) {
-          const from = before.get(c.scryfallId);
-          if (from == null || c.usd == null || from <= 0) continue;
-          const diff = c.usd - from;
-          if (Math.abs(diff) >= MOVE_MIN_USD && Math.abs(diff) / from >= MOVE_MIN_PCT) all.push({ name: c.name, from, to: c.usd });
-        }
-        const byDiff = (a: Move, b: Move) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from);
-        moves = { up: all.filter((m) => m.to > m.from).sort(byDiff).slice(0, 8), down: all.filter((m) => m.to < m.from).sort(byDiff).slice(0, 8) };
-      }
-    }
+    // 2. Big weekly moves in their decks. Members who get the Monday roundup see these there, so
+    // the digest here is only for Premium members who haven't turned the roundup on.
+    let moves: { up: DeckMove[]; down: DeckMove[] } = { up: [], down: [] };
+    const digestDue = premium && !u.weeklyEmail && (!u.priceDigestAt || Date.now() - u.priceDigestAt.getTime() >= DIGEST_EVERY_MS);
+    if (digestDue) moves = await deckPriceMovers(u.id);
 
     if (!hits.length && !moves.up.length && !moves.down.length) continue;
 
@@ -98,7 +64,7 @@ export async function runPriceAlerts(): Promise<{ emailed: number }> {
       sections.push(`<p><b>Hit your target price</b></p><ul>${hits.map((h) => `<li>${esc(h.name)}: now ${money(h.usd)} (your target ${money(h.target)})</li>`).join("")}</ul>`);
       lines.push("Hit your target price:", ...hits.map((h) => `- ${h.name}: now ${money(h.usd)} (target ${money(h.target)})`), "");
     }
-    const moveList = (title: string, list: Move[]) => {
+    const moveList = (title: string, list: DeckMove[]) => {
       if (!list.length) return;
       sections.push(`<p><b>${title}</b></p><ul>${list.map((m) => `<li>${esc(m.name)}: ${money(m.from)} → ${money(m.to)}</li>`).join("")}</ul>`);
       lines.push(`${title}:`, ...list.map((m) => `- ${m.name}: ${money(m.from)} -> ${money(m.to)}`), "");

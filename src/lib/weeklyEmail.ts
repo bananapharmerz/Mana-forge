@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { unsubscribeUrl } from "@/lib/unsubscribe";
 import { emailEnabled, emailHtml, esc, sendEmail } from "@/lib/email";
-import { lastWeekEnd, moversForWeek, type Mover } from "@/lib/prices";
+import { lastWeekEnd, moversForWeek, deckPriceMovers, type Mover, type DeckMove } from "@/lib/prices";
 import { getSpoilerSets } from "@/lib/scryfall";
 import { commanderSpotlights } from "@/lib/spotlight";
 import { challengePhase, fmtDay } from "@/lib/community";
@@ -20,6 +20,30 @@ const money = (n: number) => `$${n.toFixed(2)}`;
 const pct = (m: Mover) => `${m.pct > 0 ? "+" : "−"}${Math.abs(Math.round(m.pct * 100))}%`;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// The member's own decks: cards whose price moved a lot this week. Built per member and placed at
+// the top of the roundup — the most personal, "this is about your decks" reason to come back.
+// Returns null when nothing moved, so the section is simply left out.
+function deckMoversSection(moves: { up: DeckMove[]; down: DeckMove[] }): { html: string; text: string } | null {
+  if (!moves.up.length && !moves.down.length) return null;
+  const rows = (list: DeckMove[], colour: string) =>
+    list
+      .map((m) => `<tr><td style="padding:4px 0">${esc(m.name)}</td><td style="padding:4px 0;text-align:right;white-space:nowrap">${money(m.from)} → <b style="color:${colour}">${money(m.to)}</b></td></tr>`)
+      .join("");
+  const html =
+    `<h2 style="font-size:17px;margin:0 0 8px">Your decks this week</h2>` +
+    (moves.up.length ? `<p style="margin:8px 0 2px;font-weight:700;color:#1f7a45">Going up</p><table width="100%" style="font-size:14px;border-collapse:collapse">${rows(moves.up, "#1f7a45")}</table>` : "") +
+    (moves.down.length ? `<p style="margin:12px 0 2px;font-weight:700;color:#b3361f">Going down</p><table width="100%" style="font-size:14px;border-collapse:collapse">${rows(moves.down, "#b3361f")}</table>` : "") +
+    `<p style="margin:8px 0 0;font-size:13px"><a href="${esc(`${SITE.url}/deck-builder`)}" style="color:#b8892e">Open your decks</a></p>`;
+  const text = [
+    "YOUR DECKS THIS WEEK",
+    ...moves.up.map((m) => `▲ ${m.name}: ${money(m.from)} → ${money(m.to)}`),
+    ...moves.down.map((m) => `▼ ${m.name}: ${money(m.from)} → ${money(m.to)}`),
+    `${SITE.url}/deck-builder`,
+    "",
+  ].join("\n");
+  return { html, text };
+}
+
 /** This week's Monday at the send hour (UTC), or null if it's not Monday after the send hour yet. */
 function thisMondaySlot(now = new Date()): Date | null {
   const slot = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), SEND_FROM_UTC_HOUR));
@@ -29,7 +53,11 @@ function thisMondaySlot(now = new Date()): Date | null {
   return now.getTime() - slot.getTime() < 24 * 3600000 ? slot : null;
 }
 
-export async function buildWeekly(): Promise<{ subject: string; html: (unsub: string) => string; text: (unsub: string) => string } | null> {
+export async function buildWeekly(): Promise<{
+  subject: string;
+  html: (unsub: string, personal?: string) => string;
+  text: (unsub: string, personal?: string) => string;
+} | null> {
   const end = lastWeekEnd();
   const w = await moversForWeek(end, 5);
   const spot = commanderSpotlights()?.find((s) => s.period === "week") ?? null;
@@ -97,8 +125,9 @@ export async function buildWeekly(): Promise<{ subject: string; html: (unsub: st
     `You're getting this because you switched on the weekly roundup on your account page. <a href="${esc(unsub)}" style="color:#7a7488">Unsubscribe in one click</a>, or turn it off on <a href="${esc(SITE.url)}/account" style="color:#7a7488">your account page</a>. Prices: TCGplayer market (USD) via Scryfall; not financial advice.<br>${esc(SITE.name)} · ${esc(L.owner)} · ${esc(L.address)}`;
   return {
     subject,
-    html: (unsub) => emailHtml({ heading: "Your weekly Commander roundup", body: parts.join(""), button: { label: "Open Mana Forge", url: SITE.url }, footer: footer(unsub) }),
-    text: (unsub) => `Your weekly Commander roundup\n\n${text.join("\n")}\nUnsubscribe: ${unsub}\n\n${SITE.name} · ${L.owner} · ${L.address}`,
+    // `personal` is the per-member "Your decks this week" block; it leads the body when present.
+    html: (unsub, personal = "") => emailHtml({ heading: "Your weekly Commander roundup", body: personal + parts.join(""), button: { label: "Open Mana Forge", url: SITE.url }, footer: footer(unsub) }),
+    text: (unsub, personal = "") => `Your weekly Commander roundup\n\n${personal ? personal + "\n" : ""}${text.join("\n")}\nUnsubscribe: ${unsub}\n\n${SITE.name} · ${L.owner} · ${L.address}`,
   };
 }
 
@@ -116,11 +145,13 @@ export async function runWeeklyEmail(now = new Date()): Promise<{ emailed: numbe
   let emailed = 0;
   for (const u of users) {
     const unsub = unsubscribeUrl(u.id, "weekly");
+    // Their own decks lead the email; left out for members whose cards didn't move this week.
+    const personal = deckMoversSection(await deckPriceMovers(u.id));
     const ok = await sendEmail({
       to: u.email,
       subject: mail.subject,
-      html: mail.html(unsub),
-      text: mail.text(unsub),
+      html: mail.html(unsub, personal?.html ?? ""),
+      text: mail.text(unsub, personal?.text ?? ""),
       headers: { "List-Unsubscribe": `<${unsub.replace("/unsubscribe?", "/api/unsubscribe?")}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
     });
     // Marked either way, so one bad address can't be retried every hour all Monday.

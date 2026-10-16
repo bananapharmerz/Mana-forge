@@ -477,3 +477,53 @@ export async function moversForWeek(endDay: string, limit = 10): Promise<WeekMov
   const spark = Object.fromEntries(ids.map((id) => [id, days.map((d) => byId.get(id)?.get(d) ?? null)]));
   return { startDay, endDay, up: upRaw.map(toMover), down: downRaw.map(toMover), spark, tracked: both.length };
 }
+
+// ---- Per-member deck price movers ------------------------------------------------------------
+// The cards in one member's own decks whose price moved a lot over the last 7 days. One
+// implementation, read by both the weekly roundup (everyone) and the Premium price-alert digest.
+export interface DeckMove {
+  name: string;
+  from: number;
+  to: number;
+}
+const DECK_MOVE_MIN_USD = 2;
+const DECK_MOVE_MIN_PCT = 0.2;
+
+function deckScryfallIds(raws: (string | null)[]): Set<string> {
+  const ids = new Set<string>();
+  for (const raw of raws) {
+    if (!raw) continue;
+    try {
+      const v = JSON.parse(raw) as { scryfallId?: string } | { scryfallId?: string }[];
+      for (const c of Array.isArray(v) ? v : [v]) if (c?.scryfallId) ids.add(c.scryfallId);
+    } catch {}
+  }
+  return ids;
+}
+
+export async function deckPriceMovers(userId: string, max = 8): Promise<{ up: DeckMove[]; down: DeckMove[] }> {
+  const decks = await db.deck.findMany({
+    where: { ownerId: userId },
+    select: { commanderData: true, partnerCommanderData: true, companionData: true, cards: true },
+  });
+  const ids = [...deckScryfallIds(decks.flatMap((d) => [d.commanderData, d.partnerCommanderData, d.companionData, d.cards]))];
+  if (!ids.length) return { up: [], down: [] };
+  const weekAgo = today(Date.now() - 7 * DAY_MS);
+  const [cur, old] = await Promise.all([
+    inChunks(ids, (part) => db.cardPrice.findMany({ where: { scryfallId: { in: part } }, select: { scryfallId: true, name: true, usd: true } })),
+    inChunks(ids, (part) => db.cardPriceHistory.findMany({ where: { scryfallId: { in: part }, day: weekAgo }, select: { scryfallId: true, usd: true } })),
+  ]);
+  const before = new Map(old.map((o) => [o.scryfallId, o.usd]));
+  const all: DeckMove[] = [];
+  for (const c of cur) {
+    const from = before.get(c.scryfallId);
+    if (from == null || c.usd == null || from <= 0) continue;
+    const diff = c.usd - from;
+    if (Math.abs(diff) >= DECK_MOVE_MIN_USD && Math.abs(diff) / from >= DECK_MOVE_MIN_PCT) all.push({ name: c.name, from, to: c.usd });
+  }
+  const byDiff = (a: DeckMove, b: DeckMove) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from);
+  return {
+    up: all.filter((m) => m.to > m.from).sort(byDiff).slice(0, max),
+    down: all.filter((m) => m.to < m.from).sort(byDiff).slice(0, max),
+  };
+}
