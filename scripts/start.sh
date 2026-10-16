@@ -22,5 +22,28 @@ if [ -f "$DATABASE_PATH" ]; then
   echo "[start] DB snapshot saved to $BACKUP_DIR/manaforge-$STAMP.db"
 fi
 
-npx prisma migrate deploy
+# --- Migrations ---
+# SQLite allows only one writer. During a zero-downtime (rolling) deploy the new container shares
+# the DB file with the still-running old one, and `prisma migrate deploy` takes a write lock even
+# when there is nothing to apply — so it blocks on the old container and the deploy fails
+# ("database is locked" / "New container is unhealthy"). When there are no pending migrations (the
+# common case) we skip it entirely: no write lock, so a rolling deploy just works. Only a real
+# schema change needs the exclusive lock, and for that we retry a few times to ride out a brief
+# lock (e.g. the nightly backup) before giving up.
+if npx prisma migrate status >/dev/null 2>&1; then
+  echo "[start] schema up to date — skipping migrate deploy"
+else
+  echo "[start] pending migrations — applying (needs an exclusive DB lock)"
+  n=0
+  until npx prisma migrate deploy; do
+    n=$((n + 1))
+    if [ "$n" -ge 5 ]; then
+      echo "[start] migrate deploy failed after $n attempts — aborting" >&2
+      exit 1
+    fi
+    echo "[start] migrate deploy failed (attempt $n/5), likely a DB lock — retrying in 5s" >&2
+    sleep 5
+  done
+fi
+
 exec npx next start -p "${PORT:-3000}" -H 0.0.0.0
