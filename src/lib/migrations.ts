@@ -30,7 +30,7 @@ export const MIGRATIONS: Record<string, Migration> = {
     slug: "moxfield",
     name: "Moxfield",
     intro:
-      "Moxfield is a great deck builder. If you want your Commander decks somewhere that also tracks what they're worth and shows what other players run, moving over takes about thirty seconds.",
+      "Moxfield is a great deck builder. If you want a free, commander-first alternative that also tracks what your decks are worth and shows what other players run, moving over takes about thirty seconds.",
     steps: [
       "Open your deck on Moxfield.",
       "Click More (top-right) → Export.",
@@ -38,15 +38,15 @@ export const MIGRATIONS: Record<string, Migration> = {
       "Paste it in the box below — your commander comes across automatically.",
     ],
     note: "You don't have to leave Moxfield behind. Import a deck here, keep the original there, and see which you reach for.",
-    title: "Switching from Moxfield? Import your Commander decks free",
+    title: "Free Moxfield alternative — import your Commander decks",
     description:
-      "Moving from Moxfield? Bring your Commander decks to Mana Forge in seconds — paste your Moxfield export and keep building, with live card prices and deck-value tracking. Free, no account needed to try.",
+      "Looking for a free Moxfield alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Moxfield decks over in seconds — paste your export, no account needed to try.",
   },
   archidekt: {
     slug: "archidekt",
     name: "Archidekt",
     intro:
-      "Archidekt is a solid, flexible deck builder. If you'd like your Commander decks somewhere that tracks their value over time and is built commander-first, bringing them over is quick.",
+      "Archidekt is a solid, flexible deck builder. If you'd like a free, commander-first alternative that also tracks deck value over time, bringing your decks over is quick.",
     steps: [
       "Open your deck on Archidekt.",
       "Copy the deck's public link, or click Export and copy the text.",
@@ -54,9 +54,9 @@ export const MIGRATIONS: Record<string, Migration> = {
       "Pick your commander if we ask — then you're building.",
     ],
     note: "No need to delete anything on Archidekt. Pull a deck in here, keep the original, and compare for yourself.",
-    title: "Switching from Archidekt? Import your Commander decks free",
+    title: "Free Archidekt alternative — import your Commander decks",
     description:
-      "Moving from Archidekt? Bring your Commander decks to Mana Forge in seconds — paste your list or a public Archidekt link and keep building, with live card prices and deck-value tracking. Free, no account needed to try.",
+      "Looking for a free Archidekt alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Archidekt decks over in seconds — paste a list or public link, no account needed to try.",
   },
   arena: {
     slug: "arena",
@@ -104,9 +104,9 @@ export const MIGRATIONS: Record<string, Migration> = {
       "Paste it in the box below — pick your commander if we ask.",
     ],
     note: "No need to take anything down on TappedOut. Pull a deck in here and keep the original.",
-    title: "Switching from TappedOut? Import your Commander decks free",
+    title: "Free TappedOut alternative — import your Commander decks",
     description:
-      "Moving from TappedOut? Bring your Commander decks to Mana Forge in seconds — paste a text or MTGO export and keep building, with live card prices and deck-value tracking. Free, no account needed to try.",
+      "Looking for a free TappedOut alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your TappedOut decks over in seconds — paste a text or MTGO export, no account needed to try.",
   },
   deckstats: {
     slug: "deckstats",
@@ -120,9 +120,9 @@ export const MIGRATIONS: Record<string, Migration> = {
       "Paste it in the box below.",
     ],
     note: "Keep your Deckstats copy — just pull a deck in here and compare.",
-    title: "Switching from Deckstats? Import your Commander decks free",
+    title: "Free Deckstats alternative — import your Commander decks",
     description:
-      "Moving from Deckstats? Bring your Commander decks to Mana Forge in seconds — paste your export and keep building, with live card prices and deck-value tracking. Free, no account needed to try.",
+      "Looking for a free Deckstats alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Deckstats decks over in seconds — paste your export, no account needed to try.",
   },
   mtggoldfish: {
     slug: "mtggoldfish",
@@ -153,9 +153,9 @@ export const MIGRATIONS: Record<string, Migration> = {
       "Paste it in the box below — pick your commander if we ask.",
     ],
     note: "No need to change anything on Deckbox — pull a deck in and keep the original.",
-    title: "Switching from Deckbox? Import your Commander decks free",
+    title: "Free Deckbox alternative — import your Commander decks",
     description:
-      "Moving from Deckbox? Bring your Commander decks to Mana Forge in seconds — paste your export and keep building, with live card prices and deck-value tracking. Free, no account needed to try.",
+      "Looking for a free Deckbox alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Deckbox decks over in seconds — paste your export, no account needed to try.",
   },
 };
 

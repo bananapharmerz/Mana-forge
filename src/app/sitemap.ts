@@ -24,6 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/decks"), changeFrequency: "hourly", priority: 0.9 },
     { url: u("/import"), changeFrequency: "monthly", priority: 0.7 },
     ...MIGRATION_SLUGS.map((s) => ({ url: u(`/import/from/${s}`), changeFrequency: "monthly" as const, priority: 0.6 })),
+    { url: u("/edhrec-alternative"), changeFrequency: "monthly", priority: 0.7 },
     ...(SHOP_ENABLED ? [{ url: u("/store"), changeFrequency: "weekly" as const, priority: 0.8 }] : []),
     { url: u("/prices"), changeFrequency: "daily", priority: 0.7 },
     { url: u("/prices/movers"), changeFrequency: "daily", priority: 0.7 },

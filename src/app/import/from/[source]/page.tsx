@@ -113,6 +113,13 @@ export default async function MigrationPage({ params }: { params: Promise<{ sour
                 </Link>{" "}
                 takes lists from Arena, MTGO and more.
               </p>
+              <p className="mt-3">
+                Just want commander recommendations? See our{" "}
+                <Link href="/edhrec-alternative" className="underline hover:text-gold-bright">
+                  free EDHREC alternative
+                </Link>
+                .
+              </p>
             </div>
           </aside>
         </div>
