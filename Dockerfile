@@ -41,4 +41,11 @@ ENV NODE_ENV=production \
 # The live database lives on a persistent volume mounted at /data.
 VOLUME ["/data"]
 EXPOSE 3000
+
+# Coolify waits for this before sending traffic to a new container, so a broken deploy keeps the
+# old one running. Uses node's own fetch because the slim image has no wget or curl. The long
+# start period covers the DB snapshot and migrations in start.sh.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3000/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+
 CMD ["sh", "./scripts/start.sh"]
