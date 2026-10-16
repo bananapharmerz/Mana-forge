@@ -43,7 +43,13 @@ export async function generateMetadata({ params }: { params: Promise<{ commander
   const asked = decodeURIComponent(commander);
   // Same cached requests the page itself makes, so this adds no extra fetches.
   const card = await getCardByName(asked, { commanderOnly: true }).catch(() => null);
-  const name = card?.name ?? asked;
+  // Not a real commander: the page below 404s, but metadata still runs — so keep these out of the
+  // index rather than emit a keyword-rich, indexable title for a page whose body says the card
+  // doesn't exist. Without this, a crawled /decks/<anything> is a soft 404 Google will index.
+  if (!card) {
+    return { title: `Commander not found · ${SITE.name}`, robots: { index: false, follow: false } };
+  }
+  const name = card.name;
   const [count, edhrec] = await Promise.all([
     db.deck.count({ where: { commanderName: name, isPublic: true } }).catch(() => 0),
     card ? getEdhrecCommanderData(name).catch(() => null) : Promise.resolve(null),
