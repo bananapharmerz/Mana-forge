@@ -15,6 +15,17 @@ const SPARKS: { dx: string; dy: string }[] = [
 export default function ForgeEmberScene({ className = "relative" }: { className?: string }) {
   return (
     <div className={className} aria-hidden>
+      {/* Anvil Ember is working at — stays put while Ember bobs above it. */}
+      <svg className="mf-anvil" viewBox="0 0 240 140">
+        <ellipse cx="120" cy="133" rx="96" ry="9" fill="#000" opacity="0.45" />
+        <rect x="44" y="112" width="152" height="22" rx="6" fill="#1b1524" />
+        <path d="M98 72 L142 72 L150 112 L90 112 Z" fill="#241c30" />
+        <path d="M46 46 L194 46 L194 60 L150 72 L90 72 L46 60 Z" fill="#2c2338" />
+        <path d="M46 50 Q16 52 8 45 Q30 40 46 45 Z" fill="#2c2338" />
+        <path d="M46 60 L194 60 L150 72 L90 72 Z" fill="#17121f" />
+        <rect x="50" y="45" width="146" height="4" rx="2" fill="#e0b252" opacity="0.55" />
+        <ellipse cx="120" cy="47" rx="30" ry="6" fill="#ffd27a" opacity="0.4" />
+      </svg>
       <div className="mf-forge">
         <div className="mf-forge-heat" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -27,7 +38,9 @@ export default function ForgeEmberScene({ className = "relative" }: { className?
         ))}
       </div>
       <style>{`
-        .mf-forge{position:absolute;inset:0;overflow:visible;transform-origin:50% 90%;animation:mfBob 1.3s ease-in-out infinite}
+        .mf-anvil{position:absolute;left:50%;bottom:3%;width:58%;transform:translateX(-50%);z-index:0;
+          filter:drop-shadow(0 10px 18px rgba(0,0,0,.55))}
+        .mf-forge{position:absolute;inset:0;overflow:visible;transform-origin:50% 90%;z-index:1;animation:mfBob 1.3s ease-in-out infinite}
         .mf-forge-heat{position:absolute;left:8%;right:8%;top:14%;bottom:6%;border-radius:999px;
           background:radial-gradient(closest-side,rgba(255,138,61,.45),rgba(193,65,12,.18) 55%,transparent 75%);
           filter:blur(28px);animation:mfHeat 4s ease-in-out infinite}

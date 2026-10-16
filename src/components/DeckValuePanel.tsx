@@ -17,9 +17,14 @@ export default function DeckValuePanel({ value }: { value: DeckValue }) {
           {value.missingPriceCount > 0 && ` · ${value.missingPriceCount} unpriced`}
         </p>
         {moved && (
-          <p className={`mt-1 text-xs font-semibold ${change > 0 ? "text-up" : "text-down"}`}>
-            {change > 0 ? "▲" : "▼"} {signedUsd(change)} ({signedPct(pct)}) this week
-          </p>
+          <>
+            <p className={`mt-1 text-xs font-semibold ${change > 0 ? "text-up" : "text-down"}`}>
+              {change > 0 ? "▲" : "▼"} {signedUsd(change)} ({signedPct(pct)}) this week
+            </p>
+            <p className="mt-0.5 text-[10px] text-muted">
+              Price move on your current cards — editing the deck changes the total, not past days.
+            </p>
+          </>
         )}
       </div>
       {value.movers.length > 0 && (
