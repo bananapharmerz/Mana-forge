@@ -1,4 +1,5 @@
-import { edhrecDeckUrl, type EdhrecDeckSource, type EdhrecPublicDeck } from "@/lib/edhrec";
+import Link from "next/link";
+import { type EdhrecDeckSource, type EdhrecPublicDeck } from "@/lib/edhrec";
 import { formatCents } from "@/lib/money";
 import TypeBreakdownBar from "./TypeBreakdownBar";
 import CardZoomThumbnail from "./CardZoomThumbnail";
@@ -20,14 +21,10 @@ export default function PublicDeckCard({
   isFavorited?: boolean;
   signedIn?: boolean;
 }) {
-  const href = source?.url ?? edhrecDeckUrl(deck.urlhash);
-
   return (
     <div className="card-frame flex flex-col gap-2 p-3">
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        href={`/decks/edhrec/${deck.urlhash}`}
         className="flex gap-3 rounded-md transition-colors hover:bg-surface-raised"
       >
         {commanderImageUrl && (
@@ -53,14 +50,14 @@ export default function PublicDeckCard({
           <span className="text-xs text-muted">{deck.savedate}</span>
           <div className="mt-auto flex items-end justify-between gap-2">
             <span className="text-xs text-gold-bright">
-              {source ? `By a builder on ${source.siteName} ↗` : "View decklist ↗"}
+              {source ? `View list · from ${source.siteName}` : "View decklist →"}
             </span>
             <span className="shrink-0 text-sm font-semibold text-foreground">
               {formatCents(deck.priceUsd * 100)}
             </span>
           </div>
         </div>
-      </a>
+      </Link>
       <div className="flex items-center gap-2">
         {commanderName ? (
           <SaveEdhrecDeckButton deck={deck} commanderName={commanderName} />

@@ -268,6 +268,93 @@ async function fetchDeckSource(urlhash: string): Promise<EdhrecDeckSource | null
   }
 }
 
+// ---- the full decklist for one public deck ------------------------------------------------------
+// EDHREC's deck-preview page embeds the real card list (grouped by type, with quantities) and the
+// original source link in its __NEXT_DATA__. We parse it so a player can read the actual deck on
+// Mana Forge, with credit to the builder and their site, instead of being sent off-site.
+
+export interface EdhrecDeckList {
+  urlhash: string;
+  commanders: string[];
+  groups: { category: string; cards: { name: string; qty: number }[] }[];
+  source: EdhrecDeckSource | null;
+  savedate: string | null;
+  priceUsd: number | null;
+}
+
+const deckListCache = new Map<string, { at: number; list: EdhrecDeckList | null }>();
+const deckListInflight = new Map<string, Promise<EdhrecDeckList | null>>();
+
+export async function getEdhrecDeckList(urlhash: string, waitMs?: number): Promise<EdhrecDeckList | null> {
+  if (!/^[\w-]{6,64}$/.test(urlhash)) return null;
+  const cached = deckListCache.get(urlhash);
+  if (cached && Date.now() - cached.at < DECK_SOURCE_TTL_MS) return cached.list;
+  let p = deckListInflight.get(urlhash);
+  if (!p) {
+    p = fetchDeckList(urlhash).finally(() => deckListInflight.delete(urlhash));
+    deckListInflight.set(urlhash, p);
+  }
+  return within(p, waitMs, cached?.list ?? null);
+}
+
+async function fetchDeckList(urlhash: string): Promise<EdhrecDeckList | null> {
+  const miss = (): null => {
+    deckListCache.set(urlhash, { at: Date.now(), list: null });
+    return null;
+  };
+  try {
+    const res = await fetch(edhrecDeckUrl(urlhash), {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; mtg-hub/1.0)" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return miss();
+    const html = await res.text();
+    const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (!m) return miss();
+    const data = (JSON.parse(m[1]) as { props?: { pageProps?: { data?: Record<string, unknown> } } }).props?.pageProps?.data;
+    const deck = data?.deck as { commander?: unknown; cards?: Record<string, unknown> } | undefined;
+    const rawCards = deck?.cards;
+    if (!rawCards || typeof rawCards !== "object") return miss();
+    const groups = Object.entries(rawCards)
+      .map(([category, list]) => ({
+        category,
+        cards: (Array.isArray(list) ? list : [])
+          .filter((c): c is [string, number] => Array.isArray(c) && typeof c[0] === "string")
+          .map((c) => ({ name: String(c[0]), qty: Math.max(1, Math.min(99, Number(c[1]) || 1)) })),
+      }))
+      .filter((g) => g.cards.length > 0);
+    if (!groups.length) return miss();
+    const commanders = Array.isArray(deck?.commander)
+      ? (deck!.commander as unknown[]).map(String)
+      : Array.isArray(data?.commanders)
+        ? (data!.commanders as unknown[]).map(String)
+        : [];
+    const srcUrl = typeof data?.url === "string" ? (data!.url as string) : null;
+    let source: EdhrecDeckSource | null = null;
+    if (srcUrl) {
+      try {
+        const host = new URL(srcUrl).hostname.replace(/^www\./, "");
+        source = { siteName: SITE_LABELS[host] ?? host, url: srcUrl };
+      } catch {
+        /* ignore bad url */
+      }
+    }
+    const list: EdhrecDeckList = {
+      urlhash,
+      commanders,
+      groups,
+      source,
+      savedate: typeof data?.savedate === "string" ? (data!.savedate as string) : null,
+      priceUsd: Number(data?.price) || null,
+    };
+    deckListCache.set(urlhash, { at: Date.now(), list });
+    return list;
+  } catch {
+    return null;
+  }
+}
+
 // A spread of well-known, popular commanders across colors and archetypes, used to seed a
 // random assortment of public decks on the general Decks page (EDHREC has no "random deck
 // across all commanders" endpoint, so we sample from a curated pool of commanders instead).
