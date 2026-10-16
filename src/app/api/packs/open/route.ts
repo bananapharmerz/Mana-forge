@@ -1,32 +1,97 @@
 import { NextResponse } from "next/server";
+import { cookies, headers } from "next/headers";
 import { openPack, type PackCard } from "@/lib/packs";
 import { ScryfallBusyError } from "@/lib/scryfall";
 import { hit } from "@/lib/rateLimit";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { todayUtc, ripStatus } from "@/lib/packRips";
+import {
+  todayUtc,
+  ripStatus,
+  guestRipStatus,
+  parseGuestRips,
+  serializeGuestRips,
+  GUEST_RIP_COOKIE,
+} from "@/lib/packRips";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) {
-    return NextResponse.json({ error: "Create a free account to rip packs.", needsAuth: true }, { status: 401 });
-  }
-  if (!hit(`packopen:${userId}`, 30, 60 * 1000)) {
-    return NextResponse.json({ error: "Ripping a little fast — give it a second." }, { status: 429 });
-  }
+function parseSet(raw: unknown): string {
+  return String(raw ?? "").toLowerCase().trim();
+}
 
-  let set = "";
+async function readSet(req: Request): Promise<string> {
   try {
     const body = await req.json();
-    set = String(body?.set ?? "").toLowerCase().trim();
+    return parseSet(body?.set);
   } catch {
-    // handled by validation below
+    return "";
   }
+}
+
+export async function POST(req: Request) {
+  const set = await readSet(req);
   if (!/^[a-z0-9]{2,6}$/.test(set)) {
     return NextResponse.json({ error: "Pick a set first." }, { status: 400 });
+  }
+
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  // ---- Guest path: rip without an account. Nothing is saved to a collection; a small daily
+  // allowance is tracked in a cookie, with an IP rate-limit as a backstop against cookie wipes.
+  if (!userId) {
+    const jar = await cookies();
+    const current = jar.get(GUEST_RIP_COOKIE)?.value;
+    const g = guestRipStatus(current);
+    if (g.left <= 0) {
+      return NextResponse.json(
+        {
+          error: `You've opened today's free pack. Create a free account for ${3} a day, or come back tomorrow.`,
+          outOfRips: true,
+          ripsLeft: 0,
+          limit: g.limit,
+          tier: "guest",
+        },
+        { status: 429 }
+      );
+    }
+
+    const hdrs = await headers();
+    const ip =
+      hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() || hdrs.get("x-real-ip") || "unknown";
+    if (!hit(`guestopen:${ip}`, 12, 60 * 1000)) {
+      return NextResponse.json({ error: "Ripping a little fast — give it a second." }, { status: 429 });
+    }
+
+    let pack;
+    try {
+      pack = await openPack(set);
+    } catch (e) {
+      const msg = e instanceof ScryfallBusyError ? e.message : "Couldn't open that pack — try again.";
+      return NextResponse.json({ error: msg }, { status: 503 });
+    }
+    if (!pack) return NextResponse.json({ error: "Couldn't open that pack — try another set." }, { status: 404 });
+
+    const nextCount = parseGuestRips(current).count + 1;
+    jar.set(GUEST_RIP_COOKIE, serializeGuestRips(nextCount), {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+
+    return NextResponse.json({
+      ...pack,
+      ripsLeft: Math.max(0, g.limit - nextCount),
+      limit: g.limit,
+      tier: "guest",
+    });
+  }
+
+  // ---- Member path: counts against the daily allowance and saves pulls to the collection.
+  if (!hit(`packopen:${userId}`, 30, 60 * 1000)) {
+    return NextResponse.json({ error: "Ripping a little fast — give it a second." }, { status: 429 });
   }
 
   const user = await db.user.findUnique({
@@ -41,8 +106,8 @@ export async function POST(req: Request) {
       {
         error:
           user.tier === "premium"
-            ? "You've opened all 10 of today's packs — more tomorrow."
-            : "You've opened all 3 of today's free packs. Go Premium for 10 a day, or come back tomorrow.",
+            ? `You've opened all ${status.limit} of today's packs — more tomorrow.`
+            : `You've opened all ${status.limit} of today's free packs. Go Premium for more a day, or come back tomorrow.`,
         outOfRips: true,
         ripsLeft: 0,
         limit: status.limit,

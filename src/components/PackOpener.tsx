@@ -156,12 +156,15 @@ export default function PackOpener() {
         return;
       }
       const opened = data as OpenedPack & { ripsLeft?: number; limit?: number; tier?: string };
-      setRips((r) => ({
-        signedIn: true,
-        ripsLeft: opened.ripsLeft ?? r?.ripsLeft ?? 0,
-        limit: opened.limit ?? r?.limit ?? 3,
-        tier: opened.tier ?? r?.tier ?? "free",
-      }));
+      setRips((r) => {
+        const tier = opened.tier ?? r?.tier ?? "guest";
+        return {
+          signedIn: tier !== "guest",
+          ripsLeft: opened.ripsLeft ?? r?.ripsLeft ?? 0,
+          limit: opened.limit ?? r?.limit ?? 1,
+          tier,
+        };
+      });
       recordedRef.current = null;
       setPack(opened);
       setRevealIdx(0);
@@ -316,7 +319,7 @@ export default function PackOpener() {
           <button
             type="button"
             onClick={rip}
-            disabled={!selected || phase === "opening" || !rips?.signedIn || rips.ripsLeft <= 0}
+            disabled={!selected || phase === "opening" || !rips || rips.ripsLeft <= 0}
             aria-label="Rip this pack open"
             className="group relative aspect-[5/7] w-56 cursor-pointer rounded-xl disabled:cursor-wait sm:w-64"
           >
@@ -350,20 +353,6 @@ export default function PackOpener() {
 
           {!rips ? (
             <button disabled className="mt-6 rounded-lg bg-gold px-8 py-3 text-base font-bold text-black opacity-50">Loading…</button>
-          ) : !rips.signedIn ? (
-            <div className="mt-6 flex flex-col items-center gap-2">
-              <div className="flex flex-wrap justify-center gap-2">
-                <Link href="/signup?next=/packs" className="rounded-lg bg-gold px-6 py-3 text-base font-bold text-black hover:bg-gold-bright">
-                  Create free account
-                </Link>
-                <Link href="/login?next=/packs" className="rounded-lg border border-border px-5 py-3 text-base font-medium text-foreground hover:border-gold">
-                  Sign in
-                </Link>
-              </div>
-              <p className="mt-1 max-w-xs text-center text-xs text-muted">
-                3 free packs a day with an account — your pulls save to your online collection.
-              </p>
-            </div>
           ) : rips.ripsLeft > 0 ? (
             <>
               <button
@@ -374,19 +363,41 @@ export default function PackOpener() {
               >
                 {phase === "opening" ? "Ripping…" : "Rip Pack"}
               </button>
-              <p className="mt-3 text-center text-xs text-muted">
-                <span className="font-semibold text-gold-bright">{rips.ripsLeft}</span> of {rips.limit} rips left today ·{" "}
-                <Link href="/packs/collection" className="underline hover:text-gold-bright">your collection</Link>
-              </p>
+              {rips.signedIn ? (
+                <p className="mt-3 text-center text-xs text-muted">
+                  <span className="font-semibold text-gold-bright">{rips.ripsLeft}</span> of {rips.limit} rips left today ·{" "}
+                  <Link href="/packs/collection" className="underline hover:text-gold-bright">your collection</Link>
+                </p>
+              ) : (
+                <p className="mt-3 max-w-xs text-center text-xs text-muted">
+                  <span className="font-semibold text-gold-bright">{rips.ripsLeft}</span> free {rips.ripsLeft === 1 ? "rip" : "rips"} today — no account needed. Want more?{" "}
+                  <Link href="/signup?next=/packs" className="underline hover:text-gold-bright">Create a free account</Link> for 3 a day and to save your pulls.
+                </p>
+              )}
             </>
+          ) : !rips.signedIn ? (
+            <div className="mt-6 flex flex-col items-center gap-2 text-center">
+              <button disabled className="rounded-lg bg-gold px-8 py-3 text-base font-bold text-black opacity-50">That&apos;s today&apos;s free pack</button>
+              <div className="mt-1 flex flex-wrap justify-center gap-2">
+                <Link href="/signup?next=/packs" className="rounded-lg bg-gold px-6 py-3 text-base font-bold text-black hover:bg-gold-bright">
+                  Create free account
+                </Link>
+                <Link href="/login?next=/packs" className="rounded-lg border border-border px-5 py-3 text-base font-medium text-foreground hover:border-gold">
+                  Sign in
+                </Link>
+              </div>
+              <p className="mt-1 max-w-xs text-center text-xs text-muted">
+                3 packs a day with a free account — and your pulls save to your online collection.
+              </p>
+            </div>
           ) : (
             <div className="mt-6 flex flex-col items-center gap-2 text-center">
               <button disabled className="rounded-lg bg-gold px-8 py-3 text-base font-bold text-black opacity-50">No rips left today</button>
               <p className="mt-1 max-w-xs text-xs text-muted">
                 {rips.tier === "premium" ? (
-                  "Your 10 daily packs reset tomorrow."
+                  `Your ${rips.limit} daily packs reset tomorrow.`
                 ) : (
-                  <>Resets tomorrow — or <Link href="/premium" className="text-gold-bright underline">go Premium</Link> for 10 a day.</>
+                  <>Resets tomorrow — or <Link href="/premium" className="text-gold-bright underline">go Premium</Link> for more a day.</>
                 )}{" "}
                 · <Link href="/packs/collection" className="underline hover:text-gold-bright">your collection</Link>
               </p>
@@ -544,9 +555,15 @@ export default function PackOpener() {
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link href="/packs/collection" className="rounded-lg bg-gold px-7 py-3 text-base font-bold text-black hover:bg-gold-bright">
-            View your collection →
-          </Link>
+          {rips?.signedIn ? (
+            <Link href="/packs/collection" className="rounded-lg bg-gold px-7 py-3 text-base font-bold text-black hover:bg-gold-bright">
+              View your collection →
+            </Link>
+          ) : (
+            <Link href="/signup?next=/packs" className="rounded-lg bg-gold px-7 py-3 text-base font-bold text-black hover:bg-gold-bright">
+              Create a free account to save pulls →
+            </Link>
+          )}
           <button
             onClick={rip}
             disabled={(rips?.ripsLeft ?? 0) <= 0}
@@ -564,8 +581,9 @@ export default function PackOpener() {
         </div>
 
         <p className="mx-auto mt-6 max-w-md text-center text-xs text-muted">
-          These cards are saved to your collection. Coming soon: build decks straight from what
-          you&apos;ve pulled — and Premium box-rips.
+          {rips?.signedIn
+            ? "These cards are saved to your collection. Coming soon: build decks straight from what you've pulled — and Premium box-rips."
+            : "Ripping as a guest — these pulls aren't saved. Create a free account to keep your collection and get 3 packs a day."}
         </p>
       </div>
     );

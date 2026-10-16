@@ -25,10 +25,13 @@ export function deckLimitFor(tier: string): number {
   return tier === "premium" ? Infinity : FREE_TIER_DECK_LIMIT;
 }
 
-// Open Packs: how many virtual booster packs a member can rip per day, by tier. Pulls are saved
-// to their online collection, so ripping needs an account; this is the daily allowance.
+// Open Packs: how many virtual booster packs you can rip per day, by tier. Guests can rip without
+// an account (nothing saved); an account saves pulls to your collection and raises the daily limit.
+export const GUEST_PACK_RIPS = 1;
 export const FREE_PACK_RIPS = 3;
-export const PREMIUM_PACK_RIPS = 10;
+export const PREMIUM_PACK_RIPS = 5;
 export function packRipLimitFor(tier: string): number {
-  return tier === "premium" ? PREMIUM_PACK_RIPS : FREE_PACK_RIPS;
+  if (tier === "premium") return PREMIUM_PACK_RIPS;
+  if (tier === "guest") return GUEST_PACK_RIPS;
+  return FREE_PACK_RIPS;
 }
