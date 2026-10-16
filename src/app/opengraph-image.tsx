@@ -1,15 +1,28 @@
 import { ImageResponse } from "next/og";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { SITE } from "@/lib/site";
 
 // The picture shown when the site is shared (Discord, X, iMessage, Facebook…). Drawn from the
-// site name and tagline, so it follows a rename.
+// site name and tagline, with Ember (the mascot) on the right.
+export const runtime = "nodejs";
 export const alt = `${SITE.name} — ${SITE.tagline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 const MANA = ["#f7efc4", "#3d8fe0", "#9a6ad8", "#ff5130", "#2fd27a"];
 
+function emberSrc(): string | null {
+  try {
+    const buf = readFileSync(join(process.cwd(), "public/ember/ember_hero.png"));
+    return `data:image/png;base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function OpenGraphImage() {
+  const ember = emberSrc();
   return new ImageResponse(
     (
       <div
@@ -20,7 +33,8 @@ export default function OpenGraphImage() {
           flexDirection: "column",
           justifyContent: "center",
           padding: "70px 90px",
-          background: "radial-gradient(ellipse at 75% 40%, rgba(91,42,134,0.55) 0%, rgba(7,5,12,0) 60%), linear-gradient(135deg, #0d0914 0%, #07050c 100%)",
+          background:
+            "radial-gradient(ellipse at 78% 45%, rgba(255,120,40,0.28) 0%, rgba(7,5,12,0) 55%), radial-gradient(ellipse at 75% 40%, rgba(91,42,134,0.45) 0%, rgba(7,5,12,0) 60%), linear-gradient(135deg, #0d0914 0%, #07050c 100%)",
           color: "#f3e9cf",
           fontFamily: "Georgia, serif",
         }}
@@ -32,9 +46,13 @@ export default function OpenGraphImage() {
         </div>
         <div style={{ fontSize: SITE.name.length > 14 ? 96 : 120, fontWeight: 700, color: "#ffe2a8", lineHeight: 1 }}>{SITE.name}</div>
         <div style={{ fontSize: 44, marginTop: 24, color: "#e0b252" }}>{SITE.tagline}</div>
-        <div style={{ fontSize: 28, marginTop: 30, color: "#cbbf9f", maxWidth: 900, lineHeight: 1.35, fontFamily: "sans-serif" }}>
+        <div style={{ fontSize: 28, marginTop: 30, color: "#cbbf9f", maxWidth: 760, lineHeight: 1.35, fontFamily: "sans-serif" }}>
           Deck builder · Commanders · Play online · Card prices · Proxies · Store
         </div>
+        {ember ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={ember} width={360} height={521} alt="" style={{ position: "absolute", right: 70, bottom: 20 }} />
+        ) : null}
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 10, background: "linear-gradient(90deg, #e0b252, #ff7a2e, #9a6ad8, #3d8fe0)" }} />
       </div>
     ),
