@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ commander
   // index rather than emit a keyword-rich, indexable title for a page whose body says the card
   // doesn't exist. Without this, a crawled /decks/<anything> is a soft 404 Google will index.
   if (!card) {
-    return { title: `Commander not found · ${SITE.name}`, robots: { index: false, follow: false } };
+    return { title: "Commander not found", robots: { index: false, follow: false } };
   }
   const name = card.name;
   const [count, edhrec] = await Promise.all([

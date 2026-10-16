@@ -5,7 +5,6 @@ import PageHeader from "@/components/PageHeader";
 import BreadcrumbLd from "@/components/BreadcrumbLd";
 import { searchCards, cardImage } from "@/lib/scryfall";
 import { findCategory, colorIdentityCategories, typalCategories, themeCategories } from "@/lib/categories";
-import { SITE } from "@/lib/site";
 
 // EDHREC-ranked lists come from Scryfall at request time (cached a day); the build has no network.
 export const revalidate = 86400;
@@ -26,7 +25,7 @@ function headline(slug: string, label: string): string {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const cat = findCategory(slug);
-  if (!cat || !BEST_SLUGS.has(slug)) return { title: `Not found · ${SITE.name}`, robots: { index: false, follow: false } };
+  if (!cat || !BEST_SLUGS.has(slug)) return { title: "Commander not found", robots: { index: false, follow: false } };
   const h = headline(slug, cat.label);
   const path = `/commanders/best/${slug}`;
   const description = `The most-played ${cat.label} commanders in Magic: The Gathering Commander (EDH), ranked by deck count. See each one's top cards, a sample decklist and live prices, then build it free.`;
