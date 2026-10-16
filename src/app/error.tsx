@@ -1,10 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
 import Ember from "@/components/Ember";
+import { reportClientError } from "@/lib/reportClientError";
 
 // Shown when a page hits an unexpected error. Visitors get a friendly message and a short
 // reference code; the technical details only ever go to the server log.
 export default function Error({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
+  // Crashes that happen only in the browser never reach the server log on their own.
+  useEffect(() => reportClientError(error), [error]);
+
   return (
     <div className="mx-auto max-w-md px-4 py-16 text-center">
       <Ember mood="oops" size={150} className="mx-auto" title="Ember, the Mana Forge mascot, looking worried" />
@@ -23,6 +28,8 @@ export default function Error({ error, retry }: { error: Error & { digest?: stri
         <button onClick={() => retry()} className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright">
           Try again
         </button>
+        {/* A plain link on purpose: a full page load gets the visitor out of whatever state crashed. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a href="/" className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:border-gold">
           Go home
         </a>

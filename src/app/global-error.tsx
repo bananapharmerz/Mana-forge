@@ -1,7 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
+import { reportClientError } from "@/lib/reportClientError";
+
 // Last-resort error page (when even the main layout fails). It has to bring its own <html>.
 export default function GlobalError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
+  // Crashes that happen only in the browser never reach the server log on their own.
+  useEffect(() => reportClientError(error), [error]);
+
   return (
     <html lang="en">
       <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", background: "#f7f1e3", color: "#1d1a14" }}>
