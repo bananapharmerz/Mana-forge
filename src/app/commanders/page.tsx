@@ -192,6 +192,52 @@ export default async function CommandersPage({
         initialPartnerCards={firstPage.partnerCards}
         tier={user?.tier}
       />
+
+      {/* Internal links into the "best of" landing pages: crawlable entry points for search and
+          quick jump-offs for players. These rank for "best <X> commanders" and otherwise only
+          live in the sitemap. */}
+      <nav aria-label="Popular commander lists" className="mt-12 border-t border-border/60 pt-8">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Best commanders by color</h2>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+              {colorIdentityCategories.map((c) => (
+                <li key={c.slug}>
+                  <Link href={`/commanders/best/${c.slug}`} className="text-foreground hover:text-gold-bright">
+                    {c.label.split(" (")[0]}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Best commanders by tribe</h2>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+              {typalCategories.slice(0, 14).map((c) => (
+                <li key={c.slug}>
+                  <Link href={`/commanders/best/${c.slug}`} className="text-foreground hover:text-gold-bright">{c.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">By theme</h2>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+              {themeCategories.slice(0, 12).map((c) => (
+                <li key={c.slug}>
+                  <Link href={`/commanders/best/${c.slug}`} className="text-foreground hover:text-gold-bright">{c.label}</Link>
+                </li>
+              ))}
+            </ul>
+            <ul className="mt-5 flex flex-col gap-1.5 text-sm">
+              <li><Link href="/commanders/popular" className="font-medium text-gold-bright hover:text-gold">Most popular commanders →</Link></li>
+              <li><Link href="/commanders/budget" className="font-medium text-gold-bright hover:text-gold">Best budget commanders →</Link></li>
+              <li><Link href="/commander-deck-building-guide" className="font-medium text-gold-bright hover:text-gold">Commander deck-building guide →</Link></li>
+              <li><Link href="/edhrec-alternative" className="font-medium text-gold-bright hover:text-gold">A free EDHREC alternative →</Link></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
     </div>
     </>
   );
