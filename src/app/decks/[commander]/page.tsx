@@ -142,13 +142,27 @@ export default async function CommanderDecksPage({
   // What's gaining or losing ground in this commander's decks on this site (needs a few decks).
   const trends = cardTrends(siteDecks);
 
-  const typeSections = edhrec ? getTypeSections(edhrec) : [];
-  const newCards = edhrec ? getNewCards(edhrec) : [];
+  // Full most-played list, kept for the mana curve and the commander guide (needs the whole spread).
+  const typeSectionsAll = edhrec ? getTypeSections(edhrec) : [];
   const mostPlayed = edhrec ? getMostPlayed(edhrec, 250) : [];
+
+  // What we actually show is kept short and useful, EDHREC-style: a top-cards highlight and five
+  // cards per type — with mana rocks and lands left out, since nearly every deck runs those and a
+  // 190-card wall just buries the rest of the page.
+  const EXCLUDE_SECTION_TAGS = new Set(["manaartifacts", "utilitylands", "lands"]);
+  const typeSections = typeSectionsAll
+    .filter((s) => !EXCLUDE_SECTION_TAGS.has(s.tag))
+    .map((s) => ({ ...s, cardviews: s.cardviews.slice(0, 5) }));
+  const rockNames = new Set(
+    (typeSectionsAll.find((s) => s.tag === "manaartifacts")?.cardviews ?? []).map((c) => c.name)
+  );
+  const topCards = mostPlayed.filter((c) => !rockNames.has(c.name)).slice(0, 10);
+  const newCards = edhrec ? getNewCards(edhrec).slice(0, 10) : [];
 
   const allNames = Array.from(
     new Set([
       ...mostPlayed.map((c) => c.name),
+      ...topCards.map((c) => c.name),
       ...newCards.map((c) => c.name),
       ...typeSections.flatMap((s) => s.cardviews.map((c) => c.name)),
     ])
@@ -185,7 +199,7 @@ export default async function CommanderDecksPage({
   }));
 
   const jumpTabs = [
-    { id: "most-played", label: "Most Played", show: mostPlayed.length > 0 },
+    { id: "most-played", label: "Top Cards", show: topCards.length > 0 },
     { id: "new-cards", label: "New Cards", show: newCards.length > 0 },
     ...typeSections.map((s) => ({ id: s.tag, label: s.label, show: true })),
     { id: "public-decks", label: "Public Decks", show: !!edhrecDecks && edhrecDecks.length > 0 },
@@ -326,12 +340,16 @@ export default async function CommanderDecksPage({
 
           <SectionJumpDrawer tabs={jumpTabs} />
 
-          {mostPlayed.length > 0 && (
+          {topCards.length > 0 && (
             <div id="most-played" className="mt-8 scroll-mt-28">
               <h2 className="mb-4 text-xl font-bold text-foreground">
-                Most Played With {card.name} ({mostPlayed.length})
+                Top Cards With {card.name}
               </h2>
-              <CardGrid cards={mostPlayed} byName={byName} />
+              <p className="mb-4 -mt-2 text-xs text-muted">
+                The cards played most with {card.name.split(",")[0]}, mana rocks and lands aside. Browse
+                by type below.
+              </p>
+              <CardGrid cards={topCards} byName={byName} />
             </div>
           )}
 
