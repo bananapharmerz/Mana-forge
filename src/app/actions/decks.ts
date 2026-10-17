@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { deckLimitFor } from "@/lib/tier";
-import { cardImage, getCardByName, getCardsByNames } from "@/lib/scryfall";
+import { cardImage, getCardByName, getCardsByNames, getCardsByIds } from "@/lib/scryfall";
 import { extractPartnerWithName } from "@/lib/partnerMechanics";
 import { findCategory, commandersMatchingCategory } from "@/lib/categories";
 import type { Deck, DeckCard } from "@/lib/deckTypes";
+import { scryfallCardToDeckCard } from "@/lib/deckTypes";
 import { cleanCardBack, cleanDeckCard, cleanDeckCards, text } from "@/lib/validate";
 import { cleanPlaymat } from "@/lib/playmats";
 import { hit } from "@/lib/rateLimit";
@@ -735,4 +736,65 @@ export async function duplicateDeck(
 
   revalidatePath("/deck-builder");
   return { ok: true, id: copy.id };
+}
+
+
+// Builds a new Commander deck seeded with the cards the user already owns (from Open Packs) that
+// fit the chosen commander's colour identity. Full card data is fetched by printing id so the deck
+// cards have real types/curve; basics stack up to what's owned. The user refines it in the builder.
+export async function buildDeckFromCollection(
+  commanderNameRaw: unknown
+): Promise<{ ok: true; id: string; added: number } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+  if (!canCreate(userId)) return { ok: false, error: TOO_FAST };
+
+  const user = await db.user.findUnique({ where: { id: userId } });
+  if (!user) return { ok: false, error: "Account not found." };
+  const count = await db.deck.count({ where: { ownerId: userId } });
+  const limit = deckLimitFor(user.tier);
+  if (count >= limit) {
+    return { ok: false, error: `Free accounts are limited to ${limit} decks. Delete one or upgrade to Premium for unlimited decks.` };
+  }
+
+  const commanderName = typeof commanderNameRaw === "string" ? commanderNameRaw.trim() : "";
+  if (commanderName.length < 2 || commanderName.length > 80) return { ok: false, error: "Pick a commander first." };
+  const commander = await getCardByName(commanderName, { commanderOnly: true });
+  if (!commander) return { ok: false, error: "Couldn't find that commander." };
+  const commanderCard = scryfallCardToDeckCard(commander, 1);
+  const identity = new Set<string>(commander.color_identity ?? []);
+
+  const owned = await db.collectionCard.findMany({ where: { userId }, orderBy: { priceUsd: "desc" } });
+  // A card fits the deck if every letter of its colour identity is within the commander's.
+  const fits = owned.filter(
+    (c) => c.scryfallId !== commander.id && (c.colors ?? "").split("").every((l) => identity.has(l))
+  );
+
+  const full = fits.length ? await getCardsByIds(fits.slice(0, 250).map((c) => c.scryfallId)) : [];
+  const byId = new Map(full.map((c) => [c.id, c]));
+  const BASIC = /^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/;
+  const cards: DeckCard[] = [];
+  let n = 0;
+  for (const c of fits) {
+    if (n >= 99) break;
+    const sc = byId.get(c.scryfallId);
+    if (!sc) continue;
+    const owns = c.quantity + c.foilQuantity;
+    const qty = BASIC.test(sc.name) ? Math.min(owns, 99 - n) : 1;
+    if (qty <= 0) continue;
+    cards.push(scryfallCardToDeckCard(sc, qty));
+    n += qty;
+  }
+
+  const deck = await db.deck.create({
+    data: {
+      name: `${commander.name} — from your collection`,
+      commanderName: commander.name,
+      commanderData: JSON.stringify(commanderCard),
+      cards: JSON.stringify(cards),
+      ownerId: userId,
+      isPublic: false,
+    },
+  });
+  revalidatePath("/deck-builder");
+  return { ok: true, id: deck.id, added: n };
 }

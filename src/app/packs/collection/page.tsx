@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getCardsByIds } from "@/lib/scryfall";
 import PageHeader from "@/components/PageHeader";
+import BuildFromCollection from "./BuildFromCollection";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Your collection", robots: { index: false, follow: false } };
@@ -217,8 +218,10 @@ export default async function CollectionPage({ searchParams }: { searchParams: P
               })}
             </div>
 
+            <BuildFromCollection />
+
             <p className="mx-auto mt-8 max-w-md text-center text-xs text-muted">
-              Coming soon: build a deck straight from your collection, and track set completion.
+              Coming soon: track set completion.
             </p>
           </>
         )}
