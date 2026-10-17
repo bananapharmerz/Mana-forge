@@ -21,6 +21,7 @@ import PartnerCardStack from "@/components/PartnerCardStack";
 import type { Metadata } from "next";
 import { SITE } from "@/lib/site";
 import { authorName, HOUSE_EMAIL } from "@/lib/author";
+import Avatar from "@/components/Avatar";
 
 export async function generateMetadata({ params }: { params: Promise<{ deckId: string }> }): Promise<Metadata> {
   const { deckId } = await params;
@@ -52,7 +53,7 @@ export default async function ViewDeckPage({
   const [row, session] = await Promise.all([
     db.deck.findUnique({
       where: { id: deckId },
-      include: { owner: { select: { name: true, email: true, tier: true } } },
+      include: { owner: { select: { name: true, email: true, tier: true, avatar: true } } },
     }),
     auth(),
   ]);
@@ -97,6 +98,7 @@ export default async function ViewDeckPage({
         </Link>
         <h1 className="mt-3 max-w-3xl font-display text-4xl font-semibold leading-tight text-[#f5ecd6] sm:text-5xl">{deck.name}</h1>
         <p className="mt-2 text-sm text-[#cdbf9e]">
+          <Avatar avatar={row.owner.avatar} seed={row.owner.name} size={18} className="mr-1.5 align-middle" />
           by {author}
           <SupporterBadge tier={row.owner.tier} /> · {size} cards
         </p>

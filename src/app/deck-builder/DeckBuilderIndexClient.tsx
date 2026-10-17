@@ -10,7 +10,9 @@ import CardSearchBox from "@/components/CardSearchBox";
 import AdSlot from "@/components/AdSlot";
 import PageHeader from "@/components/PageHeader";
 import { autocompleteCommanderNames, getCardByName, cardImage, cardPriceUsd } from "@/lib/scryfall";
-import { createDeck, deleteDeckAction, duplicateDeck } from "@/app/actions/decks";
+import { createDeck, deleteDeckAction, duplicateDeck, updateDeckName } from "@/app/actions/decks";
+import Avatar from "@/components/Avatar";
+import ProfileEditor from "@/app/account/ProfileEditor";
 import { trackGoal } from "@/components/SiteTracker";
 import { defaultCategory, deckSize, type Deck, type DeckCard } from "@/lib/deckTypes";
 import { GUEST_DECK_ID, loadGuestDeck, saveGuestDeck } from "@/lib/guestDeck";
@@ -60,12 +62,16 @@ export default function DeckBuilderIndexClient({
   tier,
   guest = false,
   starter,
+  profileName = null,
+  profileAvatar = null,
 }: {
   initialDecks: Deck[];
   deckLimit: number | null;
   tier: string;
   guest?: boolean;
   starter?: React.ReactNode; // "copy a ready-made deck", rendered on the server (new members only)
+  profileName?: string | null; // the member's display name, for the profile header
+  profileAvatar?: string | null; // their chosen avatar preset key
 }) {
   const router = useRouter();
   const [decks, setDecks] = useState(initialDecks);
@@ -146,6 +152,23 @@ export default function DeckBuilderIndexClient({
   // comes back with a message if the server says no.
   const [armed, setArmed] = useState<string | null>(null);
   const [copying, setCopying] = useState<string | null>(null);
+  // Renaming a deck in place, and the collapsible profile editor at the top of the page.
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [editingProfile, setEditingProfile] = useState(false);
+
+  async function handleRename(id: string) {
+    const name = renameValue.trim();
+    setRenaming(null);
+    if (!name) return;
+    setDecks((prev) => prev.map((d) => (d.id === id ? { ...d, name } : d)));
+    try {
+      await updateDeckName(id, name);
+      router.refresh();
+    } catch {
+      setError("Couldn't rename that deck. Check your connection and try again.");
+    }
+  }
   async function handleDelete(id: string) {
     if (armed !== id) {
       setArmed(id);
@@ -186,7 +209,7 @@ export default function DeckBuilderIndexClient({
   return (
     <>
       <PageHeader
-        title="Deck builder"
+        title={guest ? "Deck builder" : profileName || "Your profile"}
         description={
           guest
             ? "Pick a commander and start adding cards. No account needed; sign up any time to keep the deck."
@@ -221,6 +244,25 @@ export default function DeckBuilderIndexClient({
         </div>
       </PageHeader>
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      {!guest && (
+        <section className="mb-8">
+          <div className="flex items-center gap-4">
+            <Avatar avatar={profileAvatar} seed={profileName} size={64} />
+            <div className="min-w-0">
+              <h2 className="truncate font-display text-xl font-semibold text-foreground">{profileName || "Anonymous player"}</h2>
+              <p className="text-xs text-muted">How you appear on the decks you make public.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditingProfile((v) => !v)}
+              className="ml-auto shrink-0 rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-gold"
+            >
+              {editingProfile ? "Close" : "Edit profile"}
+            </button>
+          </div>
+          {editingProfile && <ProfileEditor initialName={profileName} initialAvatar={profileAvatar} />}
+        </section>
+      )}
       <div className="empty:hidden mb-8">
         <AdSlot tier={tier} />
       </div>
@@ -331,23 +373,73 @@ export default function DeckBuilderIndexClient({
       ) : (
         <>
           {error && !showNew && <p className="mb-4 text-sm text-down">{error}</p>}
+          <h2 className="mb-4 font-display text-lg font-semibold text-foreground">Your decks</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             {decks.map((deck) => (
-              <div key={deck.id} className="card-frame flex flex-col gap-2 p-4">
-                <Link href={`/deck-builder/${deck.id}`} className="hover:text-gold-bright">
-                  <h2 className="font-semibold text-foreground">{deck.name}</h2>
-                </Link>
-                <p className="text-xs text-muted">{deck.commander?.name ?? "No commander"}</p>
-                <p className="text-xs text-muted">
-                  {deckSize(deck)} / 100 cards {deck.isPublic && "· Public"}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+              <div key={deck.id} className="card-frame flex flex-col gap-3 p-4">
+                <div className="flex gap-3">
+                  <Link href={`/deck-builder/${deck.id}`} className="shrink-0" aria-label={`Edit ${deck.name}`}>
+                    {deck.commander?.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={deck.commander.imageUrl}
+                        alt={deck.commander.name}
+                        loading="lazy"
+                        className="h-20 w-14 rounded-[6%] object-cover object-top shadow-sm"
+                      />
+                    ) : (
+                      <div className="flex h-20 w-14 items-center justify-center rounded-[6%] bg-surface-raised text-[10px] text-muted">
+                        No art
+                      </div>
+                    )}
+                  </Link>
+                  <div className="min-w-0 flex-1">
+                    {renaming === deck.id ? (
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          handleRename(deck.id);
+                        }}
+                        className="flex gap-1"
+                      >
+                        <input
+                          autoFocus
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          maxLength={80}
+                          className="w-full rounded border border-border bg-surface px-2 py-1 text-sm text-foreground focus:border-gold focus:outline-none"
+                        />
+                        <button type="submit" className="shrink-0 rounded border border-border px-2 text-xs text-foreground hover:border-gold">
+                          Save
+                        </button>
+                      </form>
+                    ) : (
+                      <Link href={`/deck-builder/${deck.id}`} className="hover:text-gold-bright">
+                        <h3 className="line-clamp-2 font-semibold text-foreground">{deck.name}</h3>
+                      </Link>
+                    )}
+                    <p className="mt-1 text-xs text-muted">{deck.commander?.name ?? "No commander"}</p>
+                    <p className="text-xs text-muted">
+                      {deckSize(deck)} / 100 cards {deck.isPublic && "· Public"}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-auto flex flex-wrap gap-2">
                   <Link
                     href={`/deck-builder/${deck.id}`}
                     className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-gold"
                   >
                     Edit
                   </Link>
+                  <button
+                    onClick={() => {
+                      setRenaming(deck.id);
+                      setRenameValue(deck.name);
+                    }}
+                    className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-gold"
+                  >
+                    Rename
+                  </button>
                   <button
                     onClick={() => handleCopy(deck.id)}
                     disabled={copying !== null}

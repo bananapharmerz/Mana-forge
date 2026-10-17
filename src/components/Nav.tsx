@@ -15,7 +15,7 @@ const links = [
   { href: "/commanders", label: "Commanders" },
   { href: "/spoilers", label: "Spoilers" },
   { href: "/decks", label: "Public Decks" },
-  { href: "/deck-builder", label: "My Decks" },
+  { href: "/deck-builder", label: "Profile" },
   { href: "/prices", label: "Prices" },
   { href: "/packs", label: "Open Packs" },
   { href: "/play", label: "Play" },

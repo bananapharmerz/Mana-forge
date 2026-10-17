@@ -10,6 +10,7 @@ import { formatCents } from "@/lib/money";
 import type { SiteDeckRow } from "@/app/actions/decks";
 import { SITE } from "@/lib/site";
 import { authorName } from "@/lib/author";
+import Avatar from "@/components/Avatar";
 
 export default function SiteDeckCard({
   deck,
@@ -45,7 +46,8 @@ export default function SiteDeckCard({
       >
         {commanderImageUrl && <CardFan commander={commanderImageUrl} cards={showcase} alt={deck.commanderName} />}
         <div className="flex flex-1 flex-col gap-1.5 overflow-hidden">
-          <span className="line-clamp-1 text-xs font-semibold uppercase tracking-wide text-gold-bright">
+          <span className="line-clamp-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gold-bright">
+            <Avatar avatar={deck.owner.avatar} seed={deck.owner.name} size={16} />
             {SITE.name} — by {author}
           </span>
           <h3 className="line-clamp-1 font-semibold text-foreground">{deck.name}</h3>

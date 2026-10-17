@@ -8,7 +8,7 @@ import EmailConfirmNote from "@/components/EmailConfirmNote";
 import WeeklyEmailNudge from "@/components/WeeklyEmailNudge";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "My decks", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Your profile", robots: { index: false, follow: false } };
 
 export default async function DeckBuilderIndexPage() {
   const session = await auth();
@@ -44,6 +44,8 @@ export default async function DeckBuilderIndexPage() {
       initialDecks={decks}
       deckLimit={Number.isFinite(limit) ? limit : null}
       tier={user?.tier ?? "free"}
+      profileName={user?.name ?? null}
+      profileAvatar={user?.avatar ?? null}
       starter={decks.length === 0 ? <StarterDecks signedIn title="Or copy a ready-made deck" /> : undefined}
     />
     </>

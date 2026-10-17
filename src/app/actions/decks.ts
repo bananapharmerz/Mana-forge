@@ -411,7 +411,7 @@ export interface SiteDeckRow {
   commanderData: string;
   cards: string;
   ownerId: string;
-  owner: { name: string | null };
+  owner: { name: string | null; avatar?: string | null };
   updatedAt: string;
 }
 
@@ -451,7 +451,7 @@ export async function getPublicDecksPage(
       isPublic: true,
       ...(Object.keys(commanderNameFilter).length > 0 ? { commanderName: commanderNameFilter } : {}),
     },
-    include: { owner: { select: { name: true } } },
+    include: { owner: { select: { name: true, avatar: true } } },
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     take: limit + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),

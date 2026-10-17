@@ -6,11 +6,48 @@ import { db } from "@/lib/db";
 import { hit, TOO_MANY } from "@/lib/rateLimit";
 import { emailHtml, sendEmail } from "@/lib/email";
 import { SITE } from "@/lib/site";
+import { revalidatePath } from "next/cache";
+import { isAvatarKey } from "@/lib/avatars";
+import { HOUSE_NAME } from "@/lib/author";
 
 async function me() {
   const session = await auth();
   if (!session?.user?.id) return null;
   return db.user.findUnique({ where: { id: session.user.id } });
+}
+
+/**
+ * The player's public profile: the display name shown on their decks ("by <name>") and their
+ * profile picture (a preset avatar key — see src/lib/avatars.ts). The name is optional; blank
+ * clears it and the deck falls back to "Anonymous player". We reject names that impersonate the
+ * site's own starter-deck author.
+ */
+export async function updateProfile(
+  nameRaw: unknown,
+  avatarRaw: unknown
+): Promise<{ ok: true; name: string | null; avatar: string | null } | { ok: false; error: string }> {
+  const user = await me();
+  if (!user) return { ok: false, error: "Sign in first." };
+  if (!hit(`profile:${user.id}`, 30, 60 * 60 * 1000)) return { ok: false, error: TOO_MANY };
+
+  // Clean the name: strip control characters, collapse inner whitespace, trim. Blank clears it.
+  let name: string | null = String(nameRaw ?? "")
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (name.length > 30) return { ok: false, error: "Keep your name to 30 characters or fewer." };
+  const folded = name.toLowerCase();
+  if (name && (folded === SITE.name.toLowerCase() || folded === HOUSE_NAME.toLowerCase())) {
+    return { ok: false, error: `"${name}" is reserved — please pick another name.` };
+  }
+  if (!name) name = null;
+
+  const avatar = isAvatarKey(avatarRaw) ? avatarRaw : null;
+
+  await db.user.update({ where: { id: user.id }, data: { name, avatar } });
+  // Public deck pages credit the author by name and picture; refresh so the change shows.
+  revalidatePath("/account");
+  return { ok: true, name, avatar };
 }
 
 /** Signs this account out on every device (all sessions carry the old session version). */
