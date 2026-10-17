@@ -1,5 +1,5 @@
 # Mana Forge — production image (built by Coolify from GitHub).
-FROM node:22-bookworm-slim
+FROM node:25-bookworm-slim
 
 # Build tools for better-sqlite3 if no prebuilt binary matches, and OpenSSL for Prisma.
 RUN apt-get update \
