@@ -37,6 +37,7 @@ export interface ScryfallCard {
   collector_number?: string;
   finishes?: string[];
   booster?: boolean;
+  reprint?: boolean; // false on a card's first printing; the 'New' badge only marks first printings
   artist?: string;
   prices?: {
     usd?: string | null;
@@ -56,7 +57,7 @@ type CardPrices = NonNullable<ScryfallCard["prices"]>;
 const CARD_KEYS: (keyof ScryfallCard)[] = [
   "id", "oracle_id", "name", "mana_cost", "cmc", "type_line", "oracle_text", "power", "toughness", "keywords",
   "color_identity", "legalities", "edhrec_rank", "scryfall_uri", "set_name", "artist",
-  "set", "rarity", "collector_number", "finishes", "booster",
+  "set", "rarity", "collector_number", "finishes", "booster", "reprint",
 ];
 const FACE_KEYS: (keyof CardFace)[] = ["name", "type_line", "oracle_text", "power", "toughness", "artist"];
 const IMAGE_KEYS: (keyof CardImages)[] = ["small", "normal", "large", "art_crop", "border_crop"];
@@ -319,6 +320,26 @@ export async function getCommanderSets(): Promise<ScryfallSet[]> {
   return sets
     .filter((s) => s.card_count > 20 && !EXCLUDED_SET_TYPES.has(s.set_type) && s.released_at)
     .sort((a, b) => (b.released_at ?? "").localeCompare(a.released_at ?? ""));
+}
+
+// Set types where new commanders actually debut (a main set and its Commander decks). Promos,
+// masters reprints and box sets would only badge old cards.
+const NEW_BADGE_SET_TYPES = new Set(["expansion", "core", "draft_innovation", "commander"]);
+
+// The codes of the newest sets that are already out, newest first, for the 'New' badge on the
+// commanders grid. Comes from Scryfall's set list (cached a day), so it moves on by itself when the
+// next set releases; unreleased sets never count. Any error just means no badges.
+export async function getNewestReleasedSetCodes(count = 2): Promise<string[]> {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const sets = await getCommanderSets();
+    return sets
+      .filter((s) => NEW_BADGE_SET_TYPES.has(s.set_type) && (s.released_at ?? "9999") <= today)
+      .slice(0, count)
+      .map((s) => s.code);
+  } catch {
+    return [];
+  }
 }
 
 // Gameplay set types worth a spoilers page (skips promos, tokens, box sets, Funny, etc.).

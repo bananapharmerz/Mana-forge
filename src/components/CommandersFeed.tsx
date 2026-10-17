@@ -6,6 +6,7 @@ import type { ScryfallCard } from "@/lib/scryfall";
 import type { DeckCard } from "@/lib/deckTypes";
 import { searchCommandersPage } from "@/app/actions/commanders";
 import { AD_EVERY_N } from "@/lib/commandersFeedConfig";
+import { badgeSetCodes, isNewCommander } from "@/lib/newBadge";
 import CommanderCard from "./CommanderCard";
 import AdSlot from "./AdSlot";
 
@@ -17,6 +18,7 @@ export default function CommandersFeed({
   initialPartnerCards,
   tier,
   order,
+  newestSetCodes,
 }: {
   query: string;
   initialCards: ScryfallCard[];
@@ -25,6 +27,7 @@ export default function CommandersFeed({
   initialPartnerCards?: Record<string, DeckCard>;
   tier?: string | null;
   order?: string;
+  newestSetCodes?: string[]; // newest released sets, newest first, for the 'New' badge
 }) {
   const [cards, setCards] = useState(initialCards);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -55,6 +58,9 @@ export default function CommandersFeed({
     );
   }
 
+  // Re-checked as more cards load, so the badge stays rare across the whole list on screen.
+  const badgeCodes = badgeSetCodes(cards, newestSetCodes ?? []);
+
   return (
     <>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
@@ -69,6 +75,7 @@ export default function CommandersFeed({
               card={card}
               partnerCards={partnerCards}
               asCompanion={query.startsWith("is:companion")}
+              isNew={isNewCommander(card, badgeCodes)}
             />
           </Fragment>
         ))}

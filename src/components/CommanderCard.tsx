@@ -12,10 +12,12 @@ export default function CommanderCard({
   card,
   partnerCards,
   asCompanion,
+  isNew,
 }: {
   card: ScryfallCard;
   partnerCards?: Record<string, DeckCard>;
   asCompanion?: boolean;
+  isNew?: boolean; // first printed in one of the newest sets (see lib/newBadge.ts)
 }) {
   const img = cardImage(card);
   const partnerName = extractPartnerWithName(card);
@@ -34,6 +36,12 @@ export default function CommanderCard({
           pickKind={partner || asCompanion ? null : partnerKindOf(card)}
           companion={asCompanion}
         />
+        {/* Top-left, opposite the select button. One plain word, so it reads at a glance. */}
+        {isNew && (
+          <span className="absolute left-1.5 top-1.5 z-10 rounded-full bg-up px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-black shadow-sm">
+            New<span className="sr-only"> commander from the latest set</span>
+          </span>
+        )}
         {partnerName && partnerImg ? (
           <PartnerCardStack
             cardName={card.name}
