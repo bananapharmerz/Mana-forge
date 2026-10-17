@@ -34,16 +34,26 @@ if npx prisma migrate status >/dev/null 2>&1; then
   echo "[start] schema up to date — skipping migrate deploy"
 else
   echo "[start] pending migrations — applying (needs an exclusive DB lock)"
+  # During a rolling (zero-downtime) deploy the old container keeps serving traffic and holds the
+  # SQLite file, so the exclusive lock an ALTER needs is only free in the gaps between the old
+  # container's writes. Retry patiently over a wide window — sized to fit inside the Docker
+  # HEALTHCHECK start-period alongside the snapshot above and `next start` below — so a migration
+  # can slip into one of those gaps instead of needing a manual redeploy. If it still can't (steady
+  # write traffic the whole time), a non-rolling deploy (stop the old container first) always works.
   n=0
+  max=15
   until npx prisma migrate deploy; do
     n=$((n + 1))
-    if [ "$n" -ge 5 ]; then
-      echo "[start] migrate deploy failed after $n attempts — aborting" >&2
+    if [ "$n" -ge "$max" ]; then
+      echo "[start] migrate deploy still failing after $n attempts — aborting." >&2
+      echo "[start] The old container is probably still holding the DB; redeploy without" >&2
+      echo "[start] zero-downtime (stop the old container first) to apply this migration." >&2
       exit 1
     fi
-    echo "[start] migrate deploy failed (attempt $n/5), likely a DB lock — retrying in 5s" >&2
-    sleep 5
+    echo "[start] migrate deploy failed (attempt $n/$max), likely a DB lock — retrying in 6s" >&2
+    sleep 6
   done
+  echo "[start] migrations applied"
 fi
 
 exec npx next start -p "${PORT:-3000}" -H 0.0.0.0
