@@ -145,11 +145,24 @@ export default async function CommanderDecksPage({
   const mostPlayed = edhrec ? getMostPlayed(edhrec, 250) : [];
 
   const allNames = Array.from(
-    new Set([...mostPlayed.map((c) => c.name), ...newCards.map((c) => c.name)])
+    new Set([
+      ...mostPlayed.map((c) => c.name),
+      ...newCards.map((c) => c.name),
+      ...typeSections.flatMap((s) => s.cardviews.map((c) => c.name)),
+    ])
   );
   const [scryfallCards, deckSourceEntries] = await Promise.all([allNames.length > 0 ? getCardsByNames(allNames) : Promise.resolve([]), deckSourcesP]);
   const deckSources = new Map(deckSourceEntries);
-  const byName = new Map(scryfallCards.map((c) => [c.name, c]));
+  // Key by the full Scryfall name AND the front face, so EDHREC's front-face-only names for
+  // double-faced cards (MDFCs, transform, adventures, split, battles — "Malakir Rebirth" for
+  // "Malakir Rebirth // Malakir Mire") still resolve to their card. Without the front-face key
+  // those cards found no Scryfall data, so they showed no art and no add button.
+  const byName = new Map<string, ScryfallCard>();
+  for (const c of scryfallCards) {
+    byName.set(c.name, c);
+    const front = c.name.split(" // ")[0];
+    if (front !== c.name && !byName.has(front)) byName.set(front, c);
+  }
 
   // Play-rate-weighted mana curve: each card contributes its real play rate (num_decks /
   // potential_decks) to its CMC bucket — roughly "expected copies of a CMC-N card per deck" —
