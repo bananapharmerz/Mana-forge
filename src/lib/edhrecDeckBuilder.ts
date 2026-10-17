@@ -145,3 +145,39 @@ export async function buildDeckFromEdhrec(
 
   return { commander: toDeckCard(commanderCard, 1), cards: chosen };
 }
+
+
+// Builds the EXACT decklist for an EDHREC public deck from its deck-preview page (the real card
+// names + quantities, read via getEdhrecDeckList), resolved to real Scryfall cards. Returns null
+// when the exact list can't be read or too few cards resolve, so the caller falls back to the
+// plausible synthesized build above.
+export async function buildExactDeckFromEdhrec(urlhash: string, commanderName: string): Promise<BuiltDeck | null> {
+  const { getEdhrecDeckList } = await import("./edhrec");
+  const list = await getEdhrecDeckList(urlhash, 9000);
+  if (!list || !list.groups.length) return null;
+
+  const commanderSet = new Set<string>([commanderName.toLowerCase(), ...list.commanders.map((c) => c.toLowerCase())]);
+  const entries: { name: string; qty: number }[] = [];
+  for (const g of list.groups) {
+    if (g.category.toLowerCase() === "commander") continue;
+    for (const c of g.cards) if (!commanderSet.has(c.name.toLowerCase())) entries.push({ name: c.name, qty: Math.max(1, c.qty) });
+  }
+  if (entries.length < 60) return null; // not a full list — fall back rather than save a stub
+
+  const names = Array.from(new Set<string>([commanderName, ...list.commanders, ...entries.map((e) => e.name)]));
+  const cardMap = new Map<string, ScryfallCard>();
+  for (const c of await getCardsByNames(names)) cardMap.set(c.name.toLowerCase(), c);
+
+  const commanderCard = cardMap.get(commanderName.toLowerCase()) ?? list.commanders.map((c) => cardMap.get(c.toLowerCase())).find(Boolean);
+  if (!commanderCard) return null;
+
+  const cards: DeckCard[] = [];
+  for (const e of entries) {
+    const card = cardMap.get(e.name.toLowerCase());
+    if (card) cards.push(toDeckCard(card, e.qty));
+  }
+  // If most of the list didn't resolve, the exact copy would be misleadingly short — fall back.
+  if (cards.reduce((s, c) => s + c.quantity, 0) < 80) return null;
+
+  return { commander: toDeckCard(commanderCard, 1), cards };
+}

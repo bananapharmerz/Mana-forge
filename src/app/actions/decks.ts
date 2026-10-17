@@ -643,10 +643,9 @@ export async function saveDeckCopy(
   return { ok: true, id: copy.id };
 }
 
-// EDHREC only exposes aggregate type counts for its public decks (never real card names), so
-// there's no actual decklist to copy. Instead we synthesize one real, plausible 100-card deck
-// matching those counts from the commander's real EDHREC card pool — the same technique the
-// seed script uses — and save that as a genuine, editable deck.
+// Saves an EDHREC public deck to the user's account as the EXACT decklist read from its
+// deck-preview page (real card names + quantities). If that page can't be read, it falls back to a
+// plausible 100-card deck matching the aggregate type counts. Either way it's a genuine, editable deck.
 export async function saveEdhrecDeckCopy(
   deck: import("@/lib/edhrec").EdhrecPublicDeck,
   commanderName: string
@@ -668,8 +667,12 @@ export async function saveEdhrecDeckCopy(
     };
   }
 
-  const { buildDeckFromEdhrec } = await import("@/lib/edhrecDeckBuilder");
-  const built = await buildDeckFromEdhrec(commanderName, deck);
+  // Prefer the EXACT EDHREC decklist (read from the deck-preview page); fall back to a plausible
+  // build matching the aggregate type counts only if the exact list can't be read.
+  const { buildExactDeckFromEdhrec, buildDeckFromEdhrec } = await import("@/lib/edhrecDeckBuilder");
+  let built: import("@/lib/edhrecDeckBuilder").BuiltDeck | null = null;
+  if (deck.urlhash) { try { built = await buildExactDeckFromEdhrec(deck.urlhash, commanderName); } catch { built = null; } }
+  if (!built) built = await buildDeckFromEdhrec(commanderName, deck);
   if (!built) {
     return { ok: false, error: "Couldn't build a full decklist for this commander right now." };
   }
