@@ -93,6 +93,8 @@ function CardGrid({
           key={c.name}
           name={c.name}
           pctDecks={c.potential_decks > 0 ? (c.num_decks / c.potential_decks) * 100 : 0}
+          synergy={c.synergy}
+          numDecks={c.num_decks}
           scryfall={byName.get(c.name)}
         />
       ))}
