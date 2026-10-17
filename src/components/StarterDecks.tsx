@@ -62,7 +62,8 @@ export default async function StarterDecks({ signedIn, title }: { signedIn: bool
                 </p>
               </div>
               <div className="relative z-10 border-t border-border bg-surface/60 p-3">
-                <MakeItMineButton deckId={d.id} signedIn={signedIn} />
+                {/* Four gold buttons in a row would outshout "Start building" above, so these are links. */}
+                <MakeItMineButton deckId={d.id} signedIn={signedIn} quiet />
               </div>
             </div>
           );

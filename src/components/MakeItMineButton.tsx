@@ -6,12 +6,28 @@ import Link from "next/link";
 import { saveDeckCopy } from "@/app/actions/decks";
 import { trackGoal } from "@/components/SiteTracker";
 
-/** One click: copy a public deck into your account and open it in the builder. */
-export default function MakeItMineButton({ deckId, signedIn, large = false }: { deckId: string; signedIn: boolean; large?: boolean }) {
+/**
+ * One click: copy a public deck into your account and open it in the builder.
+ * `quiet` renders it as a text link, for places like the home page where several copies sit
+ * side by side and the gold button belongs to the one main call to action.
+ */
+export default function MakeItMineButton({
+  deckId,
+  signedIn,
+  large = false,
+  quiet = false,
+}: {
+  deckId: string;
+  signedIn: boolean;
+  large?: boolean;
+  quiet?: boolean;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const cls = `block w-full rounded-md bg-gold text-center font-semibold text-black hover:bg-gold-bright disabled:opacity-60 ${large ? "px-5 py-2.5 text-sm" : "px-3 py-2 text-xs"}`;
+  const cls = quiet
+    ? "block w-full py-1 text-center text-xs font-semibold text-gold-bright underline-offset-2 hover:underline disabled:opacity-60"
+    : `block w-full rounded-md bg-gold text-center font-semibold text-black hover:bg-gold-bright disabled:opacity-60 ${large ? "px-5 py-2.5 text-sm" : "px-3 py-2 text-xs"}`;
   const started = useRef(false);
 
   async function copy() {
@@ -39,10 +55,12 @@ export default function MakeItMineButton({ deckId, signedIn, large = false }: { 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signedIn]);
 
+  // Copying saves the deck to an account, so say so up front: the home page promises
+  // "No sign-up to start" (true for building), and this button shouldn't quietly break that.
   if (!signedIn) {
     return (
       <Link href={`/signup?callbackUrl=${encodeURIComponent(`/decks/view/${deckId}?mine=1`)}`} className={cls}>
-        Copy this deck, free
+        Copy with free account
       </Link>
     );
   }
