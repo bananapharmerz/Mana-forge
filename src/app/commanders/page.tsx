@@ -12,6 +12,7 @@ import {
   findCategory,
 } from "@/lib/categories";
 import { searchCommandersPage } from "@/app/actions/commanders";
+import { getNewestReleasedSetCodes } from "@/lib/scryfall";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import type { Metadata } from "next";
@@ -55,7 +56,12 @@ export default async function CommandersPage({
   const moreOpen = Boolean(setCode) || [...typalCategories, ...themeCategories, ...multiCommanderCategories, ...companionCategories, ...productCategories].some((c) => c.slug === categorySlug);
   const activeLabel = category?.label ?? (setCode ? setName ?? setCode.toUpperCase() : undefined);
 
-  const [firstPage, session] = await Promise.all([searchCommandersPage(query, 1, sort), auth()]);
+  // A page filtered to one set gets no 'New' badges: they'd be on every card and mean nothing.
+  const [firstPage, session, newestSetCodes] = await Promise.all([
+    searchCommandersPage(query, 1, sort),
+    auth(),
+    setCode ? Promise.resolve<string[]>([]) : getNewestReleasedSetCodes(2),
+  ]);
 
   const user = session?.user?.id
     ? await db.user.findUnique({ where: { id: session.user.id } })
@@ -191,6 +197,7 @@ export default async function CommandersPage({
         initialNextPage={firstPage.nextPage}
         initialPartnerCards={firstPage.partnerCards}
         tier={user?.tier}
+        newestSetCodes={newestSetCodes}
       />
 
       {/* Internal links into the "best of" landing pages: crawlable entry points for search and
