@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { livePrices, mostValuable, priceHistory, searchCardPrices, trackerStats, weeklyMovers, type Mover, type PriceHit } from "@/lib/prices";
+import { livePrices, mostPlayedWith, mostValuable, priceHistory, searchCardPrices, trackerStats, weeklyMovers, type Mover, type PlayedWith, type PriceHit } from "@/lib/prices";
 import { signedPct, usd } from "@/lib/livePrice";
 import Watchlist, { type WatchRow } from "./Watchlist";
 import { SITE } from "@/lib/site";
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: { images: ["/opengraph-image"], title: "Card price tracker · Mana Forge", description: "Follow Magic: The Gathering card prices: your watchlist with target prices, and the week's biggest movers in Commander decks." },
 };
 
-function MoverList({ title, rows, up }: { title: string; rows: Mover[]; up: boolean }) {
+function MoverList({ title, rows, up, played }: { title: string; rows: Mover[]; up: boolean; played: Record<string, PlayedWith> }) {
   return (
     <div className="card-frame p-4">
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">{title}</h2>
@@ -33,6 +33,16 @@ function MoverList({ title, rows, up }: { title: string; rows: Mover[]; up: bool
               <span className="min-w-0 flex-1">
                 <Link href={`/prices/card/${m.scryfallId}`} className="block truncate text-foreground hover:text-gold-bright hover:underline">{m.name}</Link>
                 <span className="block truncate text-[11px] text-muted">{m.setName}</span>
+                {/* Where the card is played, from our own public decks: a fact, not a reason for the move. */}
+                {played[m.name] && (
+                  <Link
+                    href={`/decks/${encodeURIComponent(played[m.name].commander)}`}
+                    className="block truncate text-[11px] text-gold-bright hover:underline"
+                    title={`In ${played[m.name].decks} public Mana Forge decks with this commander`}
+                  >
+                    Most played with {played[m.name].commander}
+                  </Link>
+                )}
               </span>
               <span className="shrink-0 text-right">
                 <span className="block font-mono text-foreground">{usd(m.usd)}</span>
@@ -108,10 +118,11 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
   ]);
   const me = uid ? await db.user.findUnique({ where: { id: uid }, select: { tier: true } }) : null;
   const ids = watches.map((w) => w.scryfallId);
-  const [prices, history, cards] = await Promise.all([
+  const [prices, history, cards, played] = await Promise.all([
     livePrices(ids),
     priceHistory(ids, 30),
     ids.length ? db.cardPrice.findMany({ where: { scryfallId: { in: ids } }, select: { scryfallId: true, setName: true, imageUrl: true } }) : Promise.resolve([]),
+    mostPlayedWith([...movers.up, ...movers.down].map((m) => m.name)),
   ]);
   const meta = new Map(cards.map((c) => [c.scryfallId, c]));
   const rows: WatchRow[] = watches.map((w) => ({
@@ -178,8 +189,8 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
         <Link href="/prices/movers" className="text-sm text-gold-bright underline hover:text-foreground">All price movers, week by week →</Link>
       </div>
       <section className="grid gap-4 md:grid-cols-3">
-        <MoverList title="Up this week" rows={movers.up} up />
-        <MoverList title="Down this week" rows={movers.down} up={false} />
+        <MoverList title="Up this week" rows={movers.up} up played={played} />
+        <MoverList title="Down this week" rows={movers.down} up={false} played={played} />
         <div className="card-frame p-4">
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Most valuable in {SITE.name} decks</h2>
           {valuable.length ? (

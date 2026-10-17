@@ -242,6 +242,75 @@ export async function weeklyMovers(limit = 8): Promise<{ up: Mover[]; down: Move
   };
 }
 
+// ---- "Most played with" for price movers ---------------------------------------------------------
+// A price list says what moved; this adds where the card gets played, as a path into a commander
+// page. It states usage from our own public decks, never a cause or a prediction. The index is
+// rebuilt at most every 6 hours, so /prices doesn't scan decks on every visit.
+
+export interface PlayedWith {
+  commander: string;
+  decks: number; // public decks with that commander that run the card
+}
+
+const PLAYED_TTL_MS = 6 * 3600_000;
+const MIN_DECKS = 2; // one deck isn't "most played"
+const gp = globalThis as unknown as { __playedWith?: { at: number; byName: Map<string, PlayedWith>; building?: Promise<Map<string, PlayedWith>> } };
+
+async function buildPlayedWith(): Promise<Map<string, PlayedWith>> {
+  const decks = await db.deck.findMany({ where: { isPublic: true }, select: { commanderName: true, cards: true } });
+  const counts = new Map<string, Map<string, number>>(); // card name -> commander -> decks
+  for (const d of decks) {
+    let cards: { name?: string }[];
+    try {
+      cards = JSON.parse(d.cards) as { name?: string }[];
+    } catch {
+      continue;
+    }
+    if (!Array.isArray(cards)) continue;
+    const seen = new Set<string>();
+    for (const c of cards) {
+      const name = c?.name;
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      let byCommander = counts.get(name);
+      if (!byCommander) counts.set(name, (byCommander = new Map()));
+      byCommander.set(d.commanderName, (byCommander.get(d.commanderName) ?? 0) + 1);
+    }
+  }
+  const byName = new Map<string, PlayedWith>();
+  for (const [name, byCommander] of counts) {
+    let best: PlayedWith | null = null;
+    for (const [commander, n] of byCommander) if (commander !== name && (!best || n > best.decks)) best = { commander, decks: n };
+    if (best && best.decks >= MIN_DECKS) byName.set(name, best);
+  }
+  return byName;
+}
+
+/** For each card name, the commander whose public decks run it most (only names with a clear answer). */
+export async function mostPlayedWith(names: string[]): Promise<Record<string, PlayedWith>> {
+  const cache = gp.__playedWith;
+  let index = cache && Date.now() - cache.at < PLAYED_TTL_MS ? cache.byName : null;
+  if (!index) {
+    // One rebuild at a time, even if several visitors arrive together.
+    const building = cache?.building ?? buildPlayedWith();
+    gp.__playedWith = { at: cache?.at ?? 0, byName: cache?.byName ?? new Map(), building };
+    try {
+      index = await building;
+      gp.__playedWith = { at: Date.now(), byName: index };
+    } catch {
+      // Keep whatever we had and try again in 10 minutes rather than on every visit.
+      gp.__playedWith = { at: Date.now() - PLAYED_TTL_MS + 600_000, byName: cache?.byName ?? new Map() };
+      index = cache?.byName ?? new Map();
+    }
+  }
+  const out: Record<string, PlayedWith> = {};
+  for (const n of names) {
+    const hit = index.get(n);
+    if (hit) out[n] = hit;
+  }
+  return out;
+}
+
 export async function priceHistory(ids: string[], days = 30): Promise<Record<string, { day: string; usd: number | null }[]>> {
   if (!ids.length) return {};
   const rows = await inChunks(ids, (part) =>
