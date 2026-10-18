@@ -31,6 +31,9 @@ export default function Nav() {
   const { totalCount: proxyCount } = useProxyProject();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  // The search field opens in its own row under the header instead of sitting inside the link
+  // row: the desktop row is nearly full at 1280px, and a field there would push it onto two lines.
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
@@ -41,7 +44,9 @@ export default function Nav() {
             {SITE.name}
           </span>
         </Link>
-        <nav aria-label="Primary" className="hidden flex-wrap items-center gap-1 sm:gap-2 lg:flex">
+        {/* The full row only fits on one line from 1280px; below that it used to wrap onto a
+            second line, so narrower screens get the menu button instead. */}
+        <nav aria-label="Primary" className="hidden flex-wrap items-center gap-1.5 xl:flex">
           {links.map((link) => {
             const active = pathname === link.href || pathname.startsWith(link.href + "/");
             return (
@@ -80,14 +85,15 @@ export default function Nav() {
             Premium
           </Link>
 
-          <span className="mx-1 h-5 w-px bg-border" />
-
+          <SearchToggle open={searchOpen} onToggle={() => setSearchOpen((s) => !s)} />
           <ThemeToggle />
 
           {status === "authenticated" ? (
             <div className="flex items-center gap-2">
-              <Link href="/account" className="hidden text-xs text-muted hover:text-gold-bright sm:inline" title="Your account">
-                {session.user?.email}
+              {/* A long email would push the row onto two lines, so it only shows on wide screens. */}
+              <Link href="/account" className="text-xs text-muted hover:text-gold-bright" title="Your account">
+                <span className="2xl:hidden">Account</span>
+                <span className="hidden 2xl:inline">{session.user?.email}</span>
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
@@ -115,7 +121,14 @@ export default function Nav() {
         </nav>
 
         {/* Phones and tablets: a menu button instead of the full row of links. */}
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-2 xl:hidden">
+          <SearchToggle
+            open={searchOpen}
+            onToggle={() => {
+              setSearchOpen((s) => !s);
+              close();
+            }}
+          />
           <ThemeToggle />
           {SHOP_ENABLED && count > 0 && (
             <Link href="/store/cart" className="rounded-md bg-surface-raised px-2.5 py-1.5 text-xs font-semibold text-foreground" onClick={close}>
@@ -139,8 +152,34 @@ export default function Nav() {
         </div>
       </div>
 
+      {searchOpen && (
+        // A plain GET form to the commander browser (the same target as the site's SearchAction
+        // JSON-LD), so it works without JavaScript and adds no new API calls.
+        <div id="nav-search" className="border-t border-border bg-background px-4 py-3 sm:px-6">
+          <form action="/commanders" method="GET" role="search" className="mx-auto flex max-w-7xl gap-2">
+            <label htmlFor="nav-search-q" className="sr-only">
+              Search commanders
+            </label>
+            <input
+              id="nav-search-q"
+              type="search"
+              name="q"
+              placeholder="Find a commander, e.g. Yuriko"
+              autoComplete="off"
+              enterKeyHint="search"
+              autoFocus
+              maxLength={80}
+              className="w-full max-w-md rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground placeholder:text-muted focus:border-gold focus:outline-none sm:text-sm"
+            />
+            <button type="submit" className="shrink-0 rounded-md bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright">
+              Search
+            </button>
+          </form>
+        </div>
+      )}
+
       {open && (
-        <nav id="mobile-menu" aria-label="Mobile" className="border-t border-border bg-background px-4 pb-4 pt-2 lg:hidden">
+        <nav id="mobile-menu" aria-label="Mobile" className="border-t border-border bg-background px-4 pb-4 pt-2 xl:hidden">
           <ul className="flex flex-col">
             {[...links, { href: "/premium", label: "Premium" }].map((link) => {
               const active = pathname === link.href || pathname.startsWith(link.href + "/");
@@ -188,5 +227,26 @@ export default function Nav() {
         </nav>
       )}
     </header>
+  );
+}
+
+// A small magnifier button; it only shows or hides the search row, so it costs the crowded nav
+// row one icon's width rather than a whole text field.
+function SearchToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-controls="nav-search"
+      aria-label={open ? "Close commander search" : "Search commanders"}
+      title="Search commanders"
+      className={`flex h-9 w-9 items-center justify-center rounded-md border text-foreground hover:border-gold ${open ? "border-gold" : "border-border"}`}
+    >
+      <svg aria-hidden viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+        <circle cx="8.5" cy="8.5" r="5.5" />
+        <path d="m13 13 4.5 4.5" />
+      </svg>
+    </button>
   );
 }
