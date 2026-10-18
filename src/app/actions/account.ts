@@ -42,7 +42,19 @@ export async function updateProfile(
   }
   if (!name) name = null;
 
-  const avatar = isAvatarKey(avatarRaw) ? avatarRaw : null;
+  // Avatar is one of: a preset key, an uploaded photo (a small data URL, resized on the client),
+  // or null (fall back to a picture derived from the name).
+  let avatar: string | null;
+  if (isAvatarKey(avatarRaw)) {
+    avatar = avatarRaw;
+  } else if (typeof avatarRaw === "string" && /^data:image\/(png|jpe?g|webp);base64,/.test(avatarRaw)) {
+    // Cap the size so a photo can't bloat the row or the deck feeds that read it. The client
+    // resizes to a 128px square (~5–15KB); 40000 chars (~30KB) leaves generous headroom.
+    if (avatarRaw.length > 40000) return { ok: false, error: "That image is too large — pick a smaller one." };
+    avatar = avatarRaw;
+  } else {
+    avatar = null;
+  }
 
   await db.user.update({ where: { id: user.id }, data: { name, avatar } });
   // Public deck pages credit the author by name and picture; refresh so the change shows.

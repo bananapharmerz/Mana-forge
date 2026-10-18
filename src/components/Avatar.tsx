@@ -14,6 +14,19 @@ export default function Avatar({
   size?: number;
   className?: string;
 }) {
+  // An uploaded photo is stored as a data URL in the same `avatar` field; render it as an image.
+  if (avatar && avatar.startsWith("data:")) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatar}
+        alt=""
+        aria-hidden
+        className={`inline-block shrink-0 rounded-full object-cover ${className}`}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   const a = avatarFor(avatar, seed);
   return (
     <span
