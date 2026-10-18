@@ -8,6 +8,7 @@ import { colorIdentityCategories, typalCategories, themeCategories } from "@/lib
 import { addDays, lastWeekEnd } from "@/lib/prices";
 import { MIGRATION_SLUGS } from "@/lib/migrations";
 import { BUDGET_COLORS } from "@/lib/budget";
+import { ARTICLES } from "@/lib/articles";
 
 // Every public page, for search engines: the main sections, browse pages, commanders with
 // public decks, the public decks themselves and the store's products. Always current.
@@ -26,6 +27,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...MIGRATION_SLUGS.map((s) => ({ url: u(`/import/from/${s}`), changeFrequency: "monthly" as const, priority: 0.6 })),
     { url: u("/edhrec-alternative"), changeFrequency: "monthly", priority: 0.7 },
     { url: u("/commander-deck-building-guide"), changeFrequency: "monthly", priority: 0.7 },
+    { url: u("/articles"), changeFrequency: "weekly", priority: 0.7 },
+    ...ARTICLES.map((a) => ({ url: u(`/articles/${a.slug}`), lastModified: new Date(`${a.updated ?? a.date}T00:00:00Z`), changeFrequency: "monthly" as const, priority: 0.6 })),
     ...(SHOP_ENABLED ? [{ url: u("/store"), changeFrequency: "weekly" as const, priority: 0.8 }] : []),
     { url: u("/prices"), changeFrequency: "daily", priority: 0.7 },
     { url: u("/prices/movers"), changeFrequency: "daily", priority: 0.7 },

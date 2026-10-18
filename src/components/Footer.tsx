@@ -40,6 +40,7 @@ export default function Footer() {
       </p>
       <nav aria-label="Footer" className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1">
         {[
+          { href: "/articles", label: "Articles" },
           { href: "/challenge", label: "Forge Challenge" },
           { href: "/vote", label: "Community vote" },
           { href: "/prices/movers", label: "Price movers" },

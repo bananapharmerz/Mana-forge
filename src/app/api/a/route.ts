@@ -22,9 +22,17 @@ export async function POST(req: Request) {
   if (!ua || BOTS.test(ua) || h.get("dnt") === "1" || h.get("sec-gpc") === "1") return ok;
   // The owner's own browser (see src/lib/ignoreMe.ts) and Nexus aren't visitors.
   if (isNexus(ua) || isIgnored(h.get("cookie"))) return ok;
-  // Only our own pages may report (a beacon from elsewhere is ignored).
+  // Only our own pages may report (a beacon from elsewhere is ignored). Match the exact hostname so
+  // a look-alike like evil-manaforgehub.com can't slip past an endsWith check.
   const origin = h.get("origin") ?? "";
-  if (origin && !origin.endsWith(host) && !origin.includes("localhost")) return ok;
+  if (origin) {
+    let okOrigin = false;
+    try {
+      const hn = new URL(origin).hostname.toLowerCase();
+      okOrigin = hn === host || hn === `www.${host}` || hn === "localhost" || hn === "127.0.0.1";
+    } catch {}
+    if (!okOrigin) return ok;
+  }
   const ip = ipFrom(h);
   if (!hit(`stats:${ip}`, 240, 60_000)) return ok;
 
