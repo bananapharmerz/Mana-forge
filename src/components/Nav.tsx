@@ -47,7 +47,10 @@ const MENUS: NavMenu[] = [
       },
       {
         header: "Sets",
-        items: [{ href: "/spoilers", label: "Spoilers" }],
+        items: [
+          { href: "/spoilers", label: "Spoilers & New Sets" },
+          { href: "/commanders/browse/sets", label: "Browse by Set" },
+        ],
       },
     ],
   },
