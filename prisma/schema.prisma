@@ -40,6 +40,15 @@ model User {
   referralRewards      Int      @default(0)
   // Community feed: set when the member accepts the 16+ community rules. Required to post.
   communityOptInAt     DateTime?
+  // Public profile (/u/<username>): a social-style profile page. Opt-in — off until the member
+  // turns it on, and they choose their own handle (null until set). showCollection decides whether
+  // the collection shows on it. bio is a short free-text line.
+  username             String?  @unique // lowercase handle (the unique key + canonical URL); null = not set
+  usernameDisplay      String?  // the handle as the member typed it, for display (e.g. "BananaBear")
+  bio                  String?
+  publicProfile        Boolean  @default(false)
+  showCollection       Boolean  @default(false)
+  profileStats         String?  // JSON array of chosen stat keys shown on the profile; null = defaults
   // Pack opening: daily rip allowance (3/day free, 10/day Premium), reset when the UTC day changes.
   packRipsDate         String?  // YYYY-MM-DD (UTC) that packRipsToday counts for
   packRipsToday        Int      @default(0)

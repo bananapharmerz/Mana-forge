@@ -9,6 +9,8 @@ import { SITE } from "@/lib/site";
 import { revalidatePath } from "next/cache";
 import { isAvatarKey } from "@/lib/avatars";
 import { HOUSE_NAME } from "@/lib/author";
+import { validateUsername } from "@/lib/username";
+import { serializeStats } from "@/lib/profileStats";
 
 async function me() {
   const session = await auth();
@@ -60,6 +62,74 @@ export async function updateProfile(
   // Public deck pages credit the author by name and picture; refresh so the change shows.
   revalidatePath("/account");
   return { ok: true, name, avatar };
+}
+
+/**
+ * The public profile at /u/<username>: the member's chosen handle, a short bio, and the two opt-in
+ * toggles (publicProfile shows the page at all; showCollection adds their collection to it). The
+ * handle is unique and optional; clearing it (blank) is allowed only while the profile is off,
+ * since the page needs a handle for its URL.
+ */
+export async function updatePublicProfile(input: {
+  username?: unknown;
+  bio?: unknown;
+  publicProfile?: unknown;
+  showCollection?: unknown;
+  stats?: unknown; // array of chosen stat keys (see src/lib/profileStats.ts)
+}): Promise<
+  | { ok: true; username: string | null; usernameDisplay: string | null; bio: string | null; publicProfile: boolean; showCollection: boolean }
+  | { ok: false; error: string }
+> {
+  const user = await me();
+  if (!user) return { ok: false, error: "Sign in first." };
+  if (!hit(`public-profile:${user.id}`, 30, 60 * 60 * 1000)) return { ok: false, error: TOO_MANY };
+
+  const wantPublic = input.publicProfile === true;
+  const wantCollection = input.showCollection === true;
+
+  // Handle: blank clears it; anything else is validated (on its lowercased form) and checked for
+  // uniqueness. We keep the member's casing for display and the lowercased form as the unique key.
+  const rawName = String(input.username ?? "").trim();
+  let username: string | null = null; // lowercased key
+  let usernameDisplay: string | null = null; // as typed
+  if (rawName) {
+    const v = validateUsername(rawName);
+    if (!v.ok) return { ok: false, error: v.error };
+    username = v.value;
+    usernameDisplay = rawName;
+    const taken = await db.user.findFirst({ where: { username, NOT: { id: user.id } }, select: { id: true } });
+    if (taken) return { ok: false, error: "That username is taken — pick another." };
+  }
+
+  // A public profile needs a handle for its URL.
+  if (wantPublic && !username) return { ok: false, error: "Pick a username before turning your public profile on." };
+
+  // Bio: strip control characters, collapse whitespace, trim, cap length. Blank clears it.
+  let bio: string | null = String(input.bio ?? "")
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (bio.length > 160) return { ok: false, error: "Keep your bio to 160 characters or fewer." };
+  if (!bio) bio = null;
+
+  const profileStats = serializeStats(input.stats);
+
+  try {
+    await db.user.update({
+      where: { id: user.id },
+      data: { username, usernameDisplay, bio, publicProfile: wantPublic, showCollection: wantCollection, profileStats },
+    });
+  } catch (e) {
+    // Unique-constraint race (two people saving the same handle at once).
+    if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {
+      return { ok: false, error: "That username was just taken — pick another." };
+    }
+    throw e;
+  }
+
+  revalidatePath("/account");
+  if (username) revalidatePath(`/u/${username}`);
+  return { ok: true, username, usernameDisplay, bio, publicProfile: wantPublic, showCollection: wantCollection };
 }
 
 /** Signs this account out on every device (all sessions carry the old session version). */
