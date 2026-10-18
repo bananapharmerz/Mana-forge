@@ -9,20 +9,84 @@ import { useProxyProject } from "./ProxyProjectProvider";
 import Ember from "./Ember";
 import ThemeToggle from "./ThemeToggle";
 import { SITE } from "@/lib/site";
-import { isShopPath, SHOP_ENABLED } from "@/lib/features";
+import { SHOP_ENABLED } from "@/lib/features";
 
-const links = [
-  { href: "/commanders", label: "Commanders" },
-  { href: "/spoilers", label: "Spoilers" },
-  { href: "/decks", label: "Public Decks" },
-  { href: "/deck-builder", label: "Profile" },
-  { href: "/prices", label: "Prices" },
-  { href: "/packs", label: "Open Packs" },
-  { href: "/play", label: "Play" },
-  { href: "/community", label: "Community" },
-  { href: "/proxies", label: "Proxies" },
-  { href: "/store", label: "Store" },
-].filter((l) => SHOP_ENABLED || !isShopPath(l.href));
+type Badge = "cart" | "proxy";
+type NavItem = { href: string; label: string; badge?: Badge };
+type NavSection = { header?: string; items: NavItem[] };
+type NavMenu = { label: string; sections: NavSection[]; shopGated?: boolean };
+
+// Standalone top-level link (not a dropdown). Profile is its own category; Premium is the gold CTA.
+const PROFILE: NavItem = { href: "/deck-builder", label: "Profile" };
+
+// The top nav, grouped into a few dropdown menus instead of one long row of tabs. Explore folds
+// in the whole discovery surface (commanders + public decks + spoilers) and carries sub-headers.
+const MENUS: NavMenu[] = [
+  {
+    label: "Explore",
+    sections: [
+      {
+        header: "Commanders",
+        items: [
+          { href: "/commanders", label: "All Commanders" },
+          { href: "/commanders/browse/colors", label: "By Color" },
+          { href: "/commanders/browse/typal", label: "By Tribe" },
+          { href: "/commanders/browse/themes", label: "By Theme" },
+        ],
+      },
+      {
+        header: "Rankings",
+        items: [
+          { href: "/commanders/popular", label: "Most Popular" },
+          { href: "/commanders/budget", label: "Best Budget" },
+        ],
+      },
+      {
+        header: "Decks",
+        items: [{ href: "/decks", label: "Public Decks" }],
+      },
+      {
+        header: "Sets",
+        items: [{ href: "/spoilers", label: "Spoilers" }],
+      },
+    ],
+  },
+  {
+    label: "Market",
+    sections: [
+      {
+        items: [
+          { href: "/prices", label: "Card Prices" },
+          { href: "/prices/budget-staples", label: "Budget Staples" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Social",
+    sections: [
+      {
+        items: [
+          { href: "/play", label: "Play" },
+          { href: "/packs", label: "Open Packs" },
+          { href: "/community", label: "Community" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Shop",
+    shopGated: true,
+    sections: [
+      {
+        items: [
+          { href: "/store", label: "Store", badge: "cart" },
+          { href: "/proxies", label: "Proxies", badge: "proxy" },
+        ],
+      },
+    ],
+  },
+];
 
 export default function Nav() {
   const pathname = usePathname();
@@ -30,10 +94,102 @@ export default function Nav() {
   const { count } = useCart();
   const { totalCount: proxyCount } = useProxyProject();
   const [open, setOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const close = () => setOpen(false);
   // The search field opens in its own row under the header instead of sitting inside the link
-  // row: the desktop row is nearly full at 1280px, and a field there would push it onto two lines.
+  // row: a field there would crowd the menu row on mid-width desktops.
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const menus = MENUS.filter((m) => SHOP_ENABLED || !m.shopGated);
+  const badgeValue = (b?: Badge) => (b === "cart" ? count : b === "proxy" ? proxyCount : 0);
+  const itemActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const menuActive = (m: NavMenu) => m.sections.some((s) => s.items.some((it) => itemActive(it.href)));
+  const menuBadge = (m: NavMenu) =>
+    m.sections.reduce((sum, s) => sum + s.items.reduce((n, it) => n + badgeValue(it.badge), 0), 0);
+
+  const renderMenu = (menu: NavMenu) => {
+    const active = menuActive(menu);
+    const isOpen = openMenu === menu.label;
+    const badge = menuBadge(menu);
+    return (
+      <div
+        key={menu.label}
+        className="relative"
+        onMouseEnter={() => setOpenMenu(menu.label)}
+        onMouseLeave={() => setOpenMenu((cur) => (cur === menu.label ? null : cur))}
+      >
+        <button
+          type="button"
+          aria-haspopup="true"
+          aria-expanded={isOpen}
+          onClick={() => setOpenMenu((cur) => (cur === menu.label ? null : menu.label))}
+          className={`flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            active || isOpen
+              ? "bg-gold text-black"
+              : "text-muted hover:bg-surface-raised hover:text-foreground"
+          }`}
+        >
+          {menu.label}
+          {badge > 0 && (
+            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-black/70 px-1 text-[10px] font-bold text-gold-bright">
+              {badge}
+            </span>
+          )}
+          <svg
+            aria-hidden
+            viewBox="0 0 12 12"
+            className={`h-3 w-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m2.5 4.5 3.5 3.5 3.5-3.5" />
+          </svg>
+        </button>
+        {isOpen && (
+          <div
+            role="menu"
+            className="absolute left-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-border bg-background p-2 shadow-xl"
+          >
+            {menu.sections.map((section, si) => (
+              <div key={section.header ?? si} className={si > 0 ? "mt-1 border-t border-border pt-1" : ""}>
+                {section.header && (
+                  <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                    {section.header}
+                  </p>
+                )}
+                {section.items.map((it) => {
+                  const b = badgeValue(it.badge);
+                  return (
+                    <Link
+                      key={it.href}
+                      href={it.href}
+                      role="menuitem"
+                      onClick={() => setOpenMenu(null)}
+                      className={`flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                        itemActive(it.href) ? "text-gold-bright" : "text-foreground hover:bg-surface-raised"
+                      }`}
+                    >
+                      {it.label}
+                      {b > 0 && (
+                        <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-black/70 px-1 text-[10px] font-bold text-gold-bright">
+                          {b}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const profileActive = itemActive(PROFILE.href);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
@@ -44,39 +200,22 @@ export default function Nav() {
             {SITE.name}
           </span>
         </Link>
-        {/* The full row only fits on one line from 1280px; below that it used to wrap onto a
-            second line, so narrower screens get the menu button instead. */}
-        <nav aria-label="Primary" className="hidden flex-wrap items-center gap-1.5 xl:flex">
-          {links.map((link) => {
-            const active = pathname === link.href || pathname.startsWith(link.href + "/");
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3 ${
-                  active
-                    ? "bg-gold text-black"
-                    : "text-muted hover:bg-surface-raised hover:text-foreground"
-                }`}
-              >
-                {link.label}
-                {link.href === "/store" && count > 0 && (
-                  <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-black/70 px-1 text-[10px] font-bold text-gold-bright">
-                    {count}
-                  </span>
-                )}
-                {link.href === "/proxies" && proxyCount > 0 && (
-                  <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-black/70 px-1 text-[10px] font-bold text-gold-bright">
-                    {proxyCount}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+        {/* Desktop: a row of dropdown menus. Below xl it collapses to the menu button. */}
+        <nav aria-label="Primary" className="hidden items-center gap-1 xl:flex">
+          {renderMenu(menus[0])}
+          <Link
+            href={PROFILE.href}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              profileActive ? "bg-gold text-black" : "text-muted hover:bg-surface-raised hover:text-foreground"
+            }`}
+          >
+            {PROFILE.label}
+          </Link>
+          {menus.slice(1).map(renderMenu)}
 
           <Link
             href="/premium"
-            className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3 ${
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               pathname === "/premium"
                 ? "bg-gold text-black"
                 : "text-gold-bright hover:bg-surface-raised"
@@ -97,7 +236,7 @@ export default function Nav() {
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="rounded-md px-2.5 py-1.5 text-sm font-medium text-muted hover:bg-surface-raised hover:text-foreground sm:px-3"
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-raised hover:text-foreground"
               >
                 Sign Out
               </button>
@@ -106,13 +245,13 @@ export default function Nav() {
             <>
               <Link
                 href="/login"
-                className="rounded-md px-2.5 py-1.5 text-sm font-medium text-muted hover:bg-surface-raised hover:text-foreground sm:px-3"
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-raised hover:text-foreground"
               >
                 Sign In
               </Link>
               <Link
                 href="/signup"
-                className="rounded-md bg-gold px-2.5 py-1.5 text-sm font-semibold text-black hover:bg-gold-bright sm:px-3"
+                className="rounded-md bg-gold px-3 py-1.5 text-sm font-semibold text-black hover:bg-gold-bright"
               >
                 Sign Up
               </Link>
@@ -180,27 +319,95 @@ export default function Nav() {
 
       {open && (
         <nav id="mobile-menu" aria-label="Mobile" className="border-t border-border bg-background px-4 pb-4 pt-2 xl:hidden">
-          <ul className="flex flex-col">
-            {[...links, { href: "/premium", label: "Premium" }].map((link) => {
-              const active = pathname === link.href || pathname.startsWith(link.href + "/");
-              const badge = link.href === "/store" ? count : link.href === "/proxies" ? proxyCount : 0;
-              return (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    onClick={close}
-                    className={`flex items-center justify-between rounded-md px-3 py-2.5 text-base font-medium ${
-                      active ? "bg-gold text-black" : link.href === "/premium" ? "text-gold-bright" : "text-foreground hover:bg-surface-raised"
-                    }`}
-                  >
-                    {link.label}
-                    {badge > 0 && (
-                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-black/70 px-1.5 text-[11px] font-bold text-gold-bright">{badge}</span>
+          <ul className="flex flex-col gap-0.5">
+            {/* Explore first */}
+            <li className="py-1">
+              <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                {menus[0].label}
+              </p>
+              {menus[0].sections.map((section, si) => (
+                <div key={section.header ?? si}>
+                  {section.header && (
+                    <p className="px-3 pt-1 text-[10px] uppercase tracking-wide text-muted/70">{section.header}</p>
+                  )}
+                  {section.items.map((it) => {
+                    const active = itemActive(it.href);
+                    return (
+                      <Link
+                        key={it.href}
+                        href={it.href}
+                        onClick={close}
+                        className={`flex items-center justify-between rounded-md px-3 py-2 text-base font-medium ${
+                          active ? "bg-gold text-black" : "text-foreground hover:bg-surface-raised"
+                        }`}
+                      >
+                        {it.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
+            </li>
+
+            {/* Profile standalone */}
+            <li className="py-1">
+              <Link
+                href={PROFILE.href}
+                onClick={close}
+                className={`flex items-center rounded-md px-3 py-2.5 text-base font-medium ${
+                  profileActive ? "bg-gold text-black" : "text-foreground hover:bg-surface-raised"
+                }`}
+              >
+                {PROFILE.label}
+              </Link>
+            </li>
+
+            {/* Remaining menus */}
+            {menus.slice(1).map((menu) => (
+              <li key={menu.label} className="py-1">
+                <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                  {menu.label}
+                </p>
+                {menu.sections.map((section, si) => (
+                  <div key={section.header ?? si}>
+                    {section.header && (
+                      <p className="px-3 pt-1 text-[10px] uppercase tracking-wide text-muted/70">{section.header}</p>
                     )}
-                  </Link>
-                </li>
-              );
-            })}
+                    {section.items.map((it) => {
+                      const active = itemActive(it.href);
+                      const b = badgeValue(it.badge);
+                      return (
+                        <Link
+                          key={it.href}
+                          href={it.href}
+                          onClick={close}
+                          className={`flex items-center justify-between rounded-md px-3 py-2 text-base font-medium ${
+                            active ? "bg-gold text-black" : "text-foreground hover:bg-surface-raised"
+                          }`}
+                        >
+                          {it.label}
+                          {b > 0 && (
+                            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-black/70 px-1.5 text-[11px] font-bold text-gold-bright">{b}</span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ))}
+              </li>
+            ))}
+
+            <li className="py-1">
+              <Link
+                href="/premium"
+                onClick={close}
+                className={`flex items-center rounded-md px-3 py-2.5 text-base font-semibold ${
+                  pathname === "/premium" ? "bg-gold text-black" : "text-gold-bright hover:bg-surface-raised"
+                }`}
+              >
+                Premium
+              </Link>
+            </li>
           </ul>
           <div className="mt-3 border-t border-border pt-3">
             {status === "authenticated" ? (
@@ -230,8 +437,8 @@ export default function Nav() {
   );
 }
 
-// A small magnifier button; it only shows or hides the search row, so it costs the crowded nav
-// row one icon's width rather than a whole text field.
+// A small magnifier button; it only shows or hides the search row, so it costs the nav row one
+// icon's width rather than a whole text field.
 function SearchToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
     <button
