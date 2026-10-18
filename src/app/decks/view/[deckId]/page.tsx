@@ -36,6 +36,8 @@ export async function generateMetadata({ params }: { params: Promise<{ deckId: s
   return {
     title,
     description,
+    // Individual public-deck views are thin/near-duplicate at scale: keep usable, keep out of the index.
+    robots: { index: false, follow: true },
     alternates: { canonical: `/decks/view/${deckId}` },
     openGraph: { type: "article", title, description, url: `/decks/view/${deckId}`, images: [{ url: card, width: 1200, height: 630, alt: `${d.name}: ${d.commanderName} Commander deck` }] },
     twitter: { card: "summary_large_image", images: [card] },

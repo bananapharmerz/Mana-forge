@@ -22,7 +22,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!c) return { title: "Card not found", robots: { index: false } };
   const title = `${c.name} price${c.setName ? ` (${c.setName})` : ""}: today, chart & history`;
   const description = `${c.name}${c.setName ? ` from ${c.setName}` : ""}: ${c.usd !== null ? `$${c.usd.toFixed(2)} today. ` : ""}Daily price chart for the last week, month and year, with alerts when it drops.`;
-  return { title, description, alternates: { canonical: `/prices/card/${id}` }, openGraph: { title: `${title} · ${SITE.name}`, description } };
+  // Thin, auto-generated page (one price + chart): keep it usable, keep it out of the index.
+  return { title, description, robots: { index: false, follow: true }, alternates: { canonical: `/prices/card/${id}` }, openGraph: { title: `${title} · ${SITE.name}`, description } };
 }
 
 export default async function CardPricePage({ params }: { params: Promise<{ id: string }> }) {
