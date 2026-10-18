@@ -87,22 +87,15 @@ export async function updatePublicProfile(input: {
   const wantPublic = input.publicProfile === true;
   const wantCollection = input.showCollection === true;
 
-  // Handle: blank clears it; anything else is validated (on its lowercased form) and checked for
-  // uniqueness. We keep the member's casing for display and the lowercased form as the unique key.
+  // Handle (required — every account has one). Validated on its lowercased form and checked for
+  // uniqueness; the member's casing is kept for display, the lowercased form is the unique key.
   const rawName = String(input.username ?? "").trim();
-  let username: string | null = null; // lowercased key
-  let usernameDisplay: string | null = null; // as typed
-  if (rawName) {
-    const v = validateUsername(rawName);
-    if (!v.ok) return { ok: false, error: v.error };
-    username = v.value;
-    usernameDisplay = rawName;
-    const taken = await db.user.findFirst({ where: { username, NOT: { id: user.id } }, select: { id: true } });
-    if (taken) return { ok: false, error: "That username is taken — pick another." };
-  }
-
-  // A public profile needs a handle for its URL.
-  if (wantPublic && !username) return { ok: false, error: "Pick a username before turning your public profile on." };
+  const v = validateUsername(rawName);
+  if (!v.ok) return { ok: false, error: v.error };
+  const username = v.value; // lowercased key
+  const usernameDisplay = rawName; // as typed
+  const taken = await db.user.findFirst({ where: { username, NOT: { id: user.id } }, select: { id: true } });
+  if (taken) return { ok: false, error: "That username is taken — pick another." };
 
   // Bio: strip control characters, collapse whitespace, trim, cap length. Blank clears it.
   let bio: string | null = String(input.bio ?? "")
@@ -130,6 +123,34 @@ export async function updatePublicProfile(input: {
   revalidatePath("/account");
   if (username) revalidatePath(`/u/${username}`);
   return { ok: true, username, usernameDisplay, bio, publicProfile: wantPublic, showCollection: wantCollection };
+}
+
+/**
+ * Claim a username (the /choose-username gate for accounts that don't have one yet — Google
+ * sign-ups and older accounts). Sets the handle only; it does not make the profile public.
+ */
+export async function claimUsername(
+  usernameRaw: unknown
+): Promise<{ ok: true; username: string } | { ok: false; error: string }> {
+  const user = await me();
+  if (!user) return { ok: false, error: "Sign in first." };
+  if (!hit(`claim-username:${user.id}`, 20, 60 * 60 * 1000)) return { ok: false, error: TOO_MANY };
+  const raw = String(usernameRaw ?? "").trim();
+  const v = validateUsername(raw);
+  if (!v.ok) return { ok: false, error: v.error };
+  const username = v.value;
+  const taken = await db.user.findFirst({ where: { username, NOT: { id: user.id } }, select: { id: true } });
+  if (taken) return { ok: false, error: "That username is taken — pick another." };
+  try {
+    await db.user.update({ where: { id: user.id }, data: { username, usernameDisplay: raw } });
+  } catch (e) {
+    if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {
+      return { ok: false, error: "That username was just taken — pick another." };
+    }
+    throw e;
+  }
+  revalidatePath("/account");
+  return { ok: true, username };
 }
 
 /** Signs this account out on every device (all sessions carry the old session version). */

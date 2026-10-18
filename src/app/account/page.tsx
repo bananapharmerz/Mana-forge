@@ -21,6 +21,7 @@ export default async function AccountPage() {
   if (!session?.user?.id) redirect("/login?callbackUrl=/account");
   const user = await db.user.findUnique({ where: { id: session.user.id }, select: { email: true, name: true, avatar: true, tier: true, createdAt: true, stripeSubscriptionId: true, emailVerifiedAt: true, weeklyEmail: true, priceAlerts: true, username: true, usernameDisplay: true, bio: true, publicProfile: true, showCollection: true, profileStats: true } });
   if (!user) redirect("/login?callbackUrl=/account");
+  if (!user.username) redirect("/choose-username?next=/account");
   const [decks, code, joined, paid] = await Promise.all([
     db.deck.count({ where: { ownerId: session.user.id } }),
     referralCodeFor(session.user.id).catch(() => null),

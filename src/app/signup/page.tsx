@@ -11,12 +11,14 @@ import GoogleButton from "@/components/GoogleButton";
 import { importGuestDeck } from "@/app/actions/decks";
 import { clearGuestDeck, loadGuestDeck } from "@/lib/guestDeck";
 import { trackGoal } from "@/components/SiteTracker";
+import { USERNAME_MAX } from "@/lib/username";
 
 const noSubscribe = () => () => {};
 
 export default function SignupPage() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [ofAge, setOfAge] = useState(false);
@@ -52,7 +54,7 @@ export default function SignupPage() {
     setLoading(true);
     setError(null);
 
-    const result = await signup(email, password, name, ofAge, human, weekly);
+    const result = await signup(email, password, name, ofAge, human, weekly, username);
     if (!result.ok) {
       setHumanReset((n) => n + 1); // a Turnstile token works once
       setError(result.error);
@@ -117,6 +119,27 @@ export default function SignupPage() {
             onChange={(e) => setName(e.target.value)}
             className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-gold focus:outline-none"
           />
+        </div>
+        <div>
+          <label htmlFor="signup-username" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+            Username
+          </label>
+          <div className="flex items-stretch overflow-hidden rounded-md border border-border bg-surface focus-within:border-gold">
+            <span className="flex select-none items-center pl-3 pr-1 text-sm text-muted">/u/</span>
+            <input
+              id="signup-username"
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              maxLength={USERNAME_MAX}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="yourname"
+              className="w-full bg-transparent py-2 pr-3 text-sm text-foreground focus:outline-none"
+            />
+          </div>
+          <p className="mt-1 text-xs text-muted">Your public handle. Letters, numbers and underscores, 3–{USERNAME_MAX} characters.</p>
         </div>
         <div>
           <label htmlFor="signup-email" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">

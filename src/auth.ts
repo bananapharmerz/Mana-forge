@@ -41,24 +41,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       authorize: async (credentials, request) => {
         const raw = String(credentials?.email ?? "").trim().slice(0, 254);
-        const email = raw.toLowerCase();
         const password = String(credentials?.password ?? "").slice(0, 200);
-        if (!email || !password) return null;
+        if (!raw || !password) return null;
+        // The identifier is an email or a username; "@" tells them apart.
+        const isEmail = raw.includes("@");
+        const email = raw.toLowerCase();
+        const idKey = isEmail ? `email:${email}` : `user:${raw.toLowerCase()}`;
 
-        // At most 8 tries per email and 30 per IP address every 15 minutes.
+        // At most 8 tries per identifier and 30 per IP address every 15 minutes.
         const ip = request instanceof Request ? ipFrom(request.headers) : "local";
-        if (!hit(`login:email:${email}`, 8, WINDOW) || !hit(`login:ip:${ip}`, 30, WINDOW)) {
+        if (!hit(`login:${idKey}`, 8, WINDOW) || !hit(`login:ip:${ip}`, 30, WINDOW)) {
           throw new TooManyAttempts();
         }
         if (!(await humanCheck(credentials?.turnstile, ip))) throw new HumanCheckFailed();
 
-        const user =
-          (await db.user.findUnique({ where: { email } })) ??
-          (raw !== email ? await db.user.findUnique({ where: { email: raw } }) : null);
+        const user = isEmail
+          ? ((await db.user.findUnique({ where: { email } })) ??
+            (raw !== email ? await db.user.findUnique({ where: { email: raw } }) : null))
+          : await db.user.findUnique({ where: { username: raw.toLowerCase() } });
         const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
         if (!user || !valid) return null;
 
-        reset(`login:email:${email}`);
+        reset(`login:${idKey}`);
         return { id: user.id, email: user.email, name: user.name ?? undefined, sv: user.sessionVersion } as { id: string; email: string; name?: string };
       },
     }),

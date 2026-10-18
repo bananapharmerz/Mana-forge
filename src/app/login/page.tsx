@@ -43,7 +43,7 @@ function LoginForm() {
           ? "Too many sign-in attempts. Please wait 15 minutes and try again."
           : res.code === "human_check"
             ? "Please confirm you're human (the check below the form), then try again."
-            : "Incorrect email or password."
+            : "Incorrect email/username or password."
       );
       return;
     }
@@ -61,12 +61,13 @@ function LoginForm() {
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <div>
           <label htmlFor="login-email" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
-            Email
+            Email or username
           </label>
           <input
             id="login-email"
-            type="email"
-            autoComplete="email"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}

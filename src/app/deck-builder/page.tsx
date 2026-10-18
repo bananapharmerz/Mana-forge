@@ -7,6 +7,7 @@ import StarterDecks from "@/components/StarterDecks";
 import EmailConfirmNote from "@/components/EmailConfirmNote";
 import WeeklyEmailNudge from "@/components/WeeklyEmailNudge";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: "Your profile", robots: { index: false, follow: false } };
 
@@ -16,6 +17,9 @@ export default async function DeckBuilderIndexPage() {
   if (!session?.user?.id) return <DeckBuilderIndexClient initialDecks={[]} deckLimit={null} tier="free" guest />;
 
   const user = await db.user.findUnique({ where: { id: session.user.id } });
+  // Every account has a public handle; accounts without one (Google sign-ups, older accounts) pick
+  // one before using account features.
+  if (user && !user.username) redirect("/choose-username?next=/deck-builder");
   const rows = await db.deck.findMany({
     where: { ownerId: session.user.id },
     orderBy: { updatedAt: "desc" },

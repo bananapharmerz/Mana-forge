@@ -11,6 +11,7 @@ import { humanCheck, turnstileSiteKey } from "@/lib/turnstile";
 import { REF_COOKIE, referrerFromCode } from "@/lib/referral";
 import { cookies } from "next/headers";
 import { AGE_COOKIE } from "@/lib/googleSignIn";
+import { validateUsername } from "@/lib/username";
 
 /** The Turnstile site key for the forms (null while Turnstile is off). */
 export async function getTurnstileSiteKey(): Promise<string | null> {
@@ -25,13 +26,20 @@ export async function signup(
   name?: unknown,
   ofAge?: unknown,
   human?: unknown, // Turnstile token
-  weekly?: unknown // ticked "send me the weekly roundup" (unticked by default)
+  weekly?: unknown, // ticked "send me the weekly roundup" (unticked by default)
+  username?: unknown // the chosen public handle (required: every account gets one)
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   // Accounts are for people 16 and over (GDPR consent age in Germany; see the Terms).
   if (ofAge !== true) return { ok: false, error: "You need to be 16 or older to create an account." };
   const cleanEmail = String(email ?? "").trim().toLowerCase();
   const pass = String(password ?? "");
   const cleanName = String(name ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
+
+  // Every account gets a unique public handle, chosen at sign-up.
+  const vu = validateUsername(username);
+  if (!vu.ok) return { ok: false, error: vu.error };
+  const uname = vu.value; // lowercase key
+  const unameDisplay = String(username ?? "").trim(); // as typed
 
   // At most 5 new accounts per hour from one address.
   const ip = await clientIp();
@@ -48,6 +56,8 @@ export async function signup(
   if (existing) {
     return { ok: false, error: "An account with that email already exists. Try signing in." };
   }
+  const takenU = await db.user.findUnique({ where: { username: uname }, select: { id: true } });
+  if (takenU) return { ok: false, error: "That username is taken — pick another." };
 
   const passwordHash = await bcrypt.hash(pass, 12);
 
@@ -55,17 +65,28 @@ export async function signup(
   const jar = await cookies();
   const referredById = await referrerFromCode(jar.get(REF_COOKIE)?.value, cleanEmail).catch(() => null);
 
-  const created = await db.user.create({
-    data: {
-      email: cleanEmail,
-      passwordHash,
-      name: cleanName || undefined,
-      referredById,
-      // Their own tick on the form is the consent (time kept). Nothing is sent until they confirm
-      // the address with the link in the welcome email (runWeeklyEmail only mails confirmed ones).
-      ...(weekly === true ? { weeklyEmail: true, weeklyEmailConsentAt: new Date() } : {}),
-    },
-  });
+  let created;
+  try {
+    created = await db.user.create({
+      data: {
+        email: cleanEmail,
+        passwordHash,
+        name: cleanName || undefined,
+        username: uname,
+        usernameDisplay: unameDisplay,
+        referredById,
+        // Their own tick on the form is the consent (time kept). Nothing is sent until they confirm
+        // the address with the link in the welcome email (runWeeklyEmail only mails confirmed ones).
+        ...(weekly === true ? { weeklyEmail: true, weeklyEmailConsentAt: new Date() } : {}),
+      },
+    });
+  } catch (e) {
+    // Unique-constraint race on email or username (two sign-ups at once).
+    if (e && typeof e === "object" && "code" in e && (e as { code?: string }).code === "P2002") {
+      return { ok: false, error: "That email or username was just taken — try again." };
+    }
+    throw e;
+  }
   if (referredById) jar.delete(REF_COOKIE);
 
   // A short welcome email with the "confirm your email" link (sending isn't awaited: sign-up never
