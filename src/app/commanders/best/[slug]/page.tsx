@@ -5,6 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import BreadcrumbLd from "@/components/BreadcrumbLd";
 import { searchCards, cardImage } from "@/lib/scryfall";
 import { findCategory, colorIdentityCategories, typalCategories, themeCategories } from "@/lib/categories";
+import CategoryGuide from "@/components/CategoryGuide";
 
 // EDHREC-ranked lists come from Scryfall at request time (cached a day); the build has no network.
 export const revalidate = 86400;
@@ -47,6 +48,7 @@ export default async function BestCommandersPage({ params }: { params: Promise<{
   // Scryfall's edhrec order is most-played first — exactly the "best / most popular" ranking.
   const res = await searchCards(cat.query, { order: "edhrec", dir: "asc", unique: "cards", page: 1 }).catch(() => null);
   const cards = (res?.data ?? []).slice(0, 40);
+  const topCommanders = cards.slice(0, 3).map((c) => c.name.split(" // ")[0]);
 
   return (
     <>
@@ -54,10 +56,7 @@ export default async function BestCommandersPage({ params }: { params: Promise<{
       <div className="mx-auto max-w-[1600px] px-4 py-10 sm:px-6">
         <BreadcrumbLd trail={[["Commanders", "/commanders"], [h, `/commanders/best/${slug}`]]} />
         <Link href="/commanders" className="text-xs text-muted underline hover:text-gold-bright">← All commanders</Link>
-        <p className="mt-4 max-w-2xl text-sm text-muted">
-          The {cat.label} commanders players build most in Commander (EDH), ranked by deck count. Open any one for its top cards,
-          a sample decklist and live prices — or start building for free.
-        </p>
+        <CategoryGuide slug={slug} label={cat.label} topCommanders={topCommanders} />
 
         {cards.length === 0 ? (
           <p className="mt-8 text-sm text-muted">Couldn&apos;t load this list just now — try again in a minute.</p>
