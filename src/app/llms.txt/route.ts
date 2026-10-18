@@ -10,7 +10,7 @@ export function GET() {
 
 > ${SITE.description}
 
-${SITE.name} is a free Magic: The Gathering site focused on Commander (EDH). No account is needed to start building a deck; a free account saves up to 10 decks, and Premium adds unlimited decks, price alerts, deck value graphs and budget upgrade ideas.
+${SITE.name} is a free Magic: The Gathering site focused on Commander (EDH). A free account saves up to 10 decks, and Premium adds unlimited decks, price alerts, deck value graphs and budget upgrade ideas.
 
 ## Main pages
 - [Deck builder](${u("/deck-builder")}): build a 100-card Commander deck, see what other players run with your commander, and what the deck costs.

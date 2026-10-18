@@ -370,7 +370,7 @@ export default function PackOpener() {
                 </p>
               ) : (
                 <p className="mt-3 max-w-xs text-center text-xs text-muted">
-                  <span className="font-semibold text-gold-bright">{rips.ripsLeft}</span> free {rips.ripsLeft === 1 ? "rip" : "rips"} today — no account needed. Want more?{" "}
+                  <span className="font-semibold text-gold-bright">{rips.ripsLeft}</span> free {rips.ripsLeft === 1 ? "rip" : "rips"} today. Want more?{" "}
                   <Link href="/signup?next=/packs" className="underline hover:text-gold-bright">Create a free account</Link> for 3 a day and to save your pulls.
                 </p>
               )}

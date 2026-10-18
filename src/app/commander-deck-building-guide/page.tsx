@@ -156,7 +156,7 @@ export default function CommanderDeckGuidePage() {
           <h2 className="font-display text-2xl font-semibold text-foreground">Ready to build?</h2>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-muted">
             Pick a commander and {SITE.name} shows you what to run, prices the deck as you go, and lets you play it online —
-            free, no account needed to start.
+            free.
           </p>
           <Link
             href="/deck-builder"

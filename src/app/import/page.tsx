@@ -7,7 +7,7 @@ import ImportDeckPanel from "@/components/ImportDeckPanel";
 export const metadata: Metadata = {
   title: "Import a Commander deck from Moxfield, Archidekt or Arena",
   description:
-    "Bring your Commander decks to Mana Forge in seconds. Paste a decklist from Moxfield, Archidekt, MTG Arena or MTGO, or an Archidekt link. Free, no account needed to try.",
+    "Bring your Commander decks to Mana Forge in seconds. Paste a decklist from Moxfield, Archidekt, MTG Arena or MTGO, or an Archidekt link. Free to try.",
   alternates: { canonical: "/import" },
   openGraph: { images: ["/opengraph-image"],
     title: "Import your Commander decks · Mana Forge",
@@ -37,7 +37,7 @@ export default async function ImportPage() {
           <ImportDeckPanel signedIn={signedIn} />
           {!signedIn && (
             <p className="mt-3 text-xs text-muted">
-              No account needed to try it. The deck stays in this browser until you{" "}
+              The deck stays in this browser until you{" "}
               <Link href="/signup?callbackUrl=/import" className="underline hover:text-gold-bright">
                 make a free account
               </Link>{" "}

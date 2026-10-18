@@ -5,7 +5,7 @@ import PackOpener from "@/components/PackOpener";
 export const metadata: Metadata = {
   title: "MTG Pack Opening Simulator — rip free booster packs",
   description:
-    "A free MTG pack opening simulator — rip virtual booster packs from any set, with animated pulls, real card prices and your best hits. No cards or account required.",
+    "A free MTG pack opening simulator — rip virtual booster packs from any set, with animated pulls, real card prices and your best hits. No cards required.",
   alternates: { canonical: "/packs" },
 };
 

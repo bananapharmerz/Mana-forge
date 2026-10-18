@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ source: s
 const PERKS: [string, string][] = [
   ["See what your deck is worth", "Live card prices and a value chart that tracks your deck over time, so you catch a card before it spikes."],
   ["Built commander-first", "Open any commander and see the cards other players actually run with it, pulled from community play data."],
-  ["Free to build and share", "Make and share full 100-card decks for free. No account needed to try an import."],
+  ["Free to build and share", "Make and share full 100-card decks for free."],
   ["More than a list", "Price movers, the $50 deck challenge, and playing online with friends — all in one place."],
 ];
 
@@ -80,7 +80,7 @@ export default async function MigrationPage({ params }: { params: Promise<{ sour
             <ImportDeckPanel signedIn={signedIn} />
             {!signedIn && (
               <p className="mt-3 text-xs text-muted">
-                No account needed to try it. The deck stays in this browser until you{" "}
+                The deck stays in this browser until you{" "}
                 <Link href={`/signup?callbackUrl=/import/from/${m.slug}`} className="underline hover:text-gold-bright">
                   make a free account
                 </Link>{" "}

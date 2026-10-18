@@ -78,7 +78,7 @@ export default function ForgeHero({ stats }: { stats: { label: string; value: st
             </Link>
           </div>
           <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-[#d8ccb0]/80">
-            {["No sign-up to start", "Daily card prices", "Play online with friends"].map((t) => (
+            {["Free to play", "Daily card prices", "Play online with friends"].map((t) => (
               <li key={t} className="flex items-center gap-1.5">
                 <span aria-hidden className="text-[#e0b252]">✓</span>
                 {t}

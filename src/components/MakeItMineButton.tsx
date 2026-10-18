@@ -55,8 +55,8 @@ export default function MakeItMineButton({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signedIn]);
 
-  // Copying saves the deck to an account, so say so up front: the home page promises
-  // "No sign-up to start" (true for building), and this button shouldn't quietly break that.
+  // Copying saves the deck to an account, so say so up front with "Copy with free account"
+  // rather than a bare "Make it mine".
   if (!signedIn) {
     return (
       <Link href={`/signup?callbackUrl=${encodeURIComponent(`/decks/view/${deckId}?mine=1`)}`} className={cls}>

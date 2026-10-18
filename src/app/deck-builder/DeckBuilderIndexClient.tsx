@@ -212,7 +212,7 @@ export default function DeckBuilderIndexClient({
         title={guest ? "Deck builder" : profileName || "Your profile"}
         description={
           guest
-            ? "Pick a commander and start adding cards. No account needed; sign up any time to keep the deck."
+            ? "Pick a commander and start adding cards. Sign up any time to keep the deck."
             : deckLimit !== null
             ? `${decks.length} of ${deckLimit} decks used on your ${tier} account.`
             : `${decks.length} decks on your ${tier} account.`

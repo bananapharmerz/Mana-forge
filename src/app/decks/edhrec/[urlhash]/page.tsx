@@ -77,7 +77,7 @@ export default async function EdhrecDeckPage({ params }: { params: Promise<{ url
             <Link href={`/deck-builder?commander=${encodeURIComponent(commanderName)}`} className="text-gold-bright underline hover:text-[#f5ecd6]">
               Build your own {commanderName} deck
             </Link>{" "}
-            — free, no account needed. Sign up to save decks to your collection.
+            — free. Sign up to save decks to your collection.
           </p>
         </div>
       </ArtBand>

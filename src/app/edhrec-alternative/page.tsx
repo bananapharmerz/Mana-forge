@@ -4,7 +4,7 @@ import PageHeader from "@/components/PageHeader";
 
 const title = "Free EDHREC alternative — commander data, decks & prices";
 const description =
-  "Looking for a free EDHREC alternative? Mana Forge shows the cards players run with any commander, ranked by real deck data — then lets you build, price and play the deck, all in one place. Free, no account needed to try.";
+  "Looking for a free EDHREC alternative? Mana Forge shows the cards players run with any commander, ranked by real deck data — then lets you build, price and play the deck, all in one place. Free to try.";
 
 export const metadata: Metadata = {
   title,
@@ -66,7 +66,7 @@ export default function EdhrecAlternativePage() {
           <h2 className="font-display text-2xl font-semibold text-foreground">Go from browsing to building</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted">
             EDHREC tells you what to play. Mana Forge lets you build the 100-card deck, see what it costs, and play it
-            online with friends — free, no account needed to start.
+            online with friends — free.
           </p>
           <Link
             href="/deck-builder"

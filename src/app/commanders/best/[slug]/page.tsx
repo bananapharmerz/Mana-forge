@@ -56,7 +56,7 @@ export default async function BestCommandersPage({ params }: { params: Promise<{
         <Link href="/commanders" className="text-xs text-muted underline hover:text-gold-bright">← All commanders</Link>
         <p className="mt-4 max-w-2xl text-sm text-muted">
           The {cat.label} commanders players build most in Commander (EDH), ranked by deck count. Open any one for its top cards,
-          a sample decklist and live prices — or start building for free, no account needed.
+          a sample decklist and live prices — or start building for free.
         </p>
 
         {cards.length === 0 ? (

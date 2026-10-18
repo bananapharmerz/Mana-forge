@@ -40,7 +40,7 @@ export const MIGRATIONS: Record<string, Migration> = {
     note: "You don't have to leave Moxfield behind. Import a deck here, keep the original there, and see which you reach for.",
     title: "Free Moxfield alternative — import your Commander decks",
     description:
-      "Looking for a free Moxfield alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Moxfield decks over in seconds — paste your export, no account needed to try.",
+      "Looking for a free Moxfield alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Moxfield decks over in seconds — paste your export.",
   },
   archidekt: {
     slug: "archidekt",
@@ -56,7 +56,7 @@ export const MIGRATIONS: Record<string, Migration> = {
     note: "No need to delete anything on Archidekt. Pull a deck in here, keep the original, and compare for yourself.",
     title: "Free Archidekt alternative — import your Commander decks",
     description:
-      "Looking for a free Archidekt alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Archidekt decks over in seconds — paste a list or public link, no account needed to try.",
+      "Looking for a free Archidekt alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Archidekt decks over in seconds — paste a list or public link.",
   },
   arena: {
     slug: "arena",
@@ -73,7 +73,7 @@ export const MIGRATIONS: Record<string, Migration> = {
     note: "Arena's export uses set codes and collector numbers; Mana Forge reads them and matches each card.",
     title: "Import an MTG Arena deck to Mana Forge — free",
     description:
-      "Exported a deck from MTG Arena? Paste the list into Mana Forge to build, price and share it — free, no account needed to try, with Commander prices and deck-value tracking.",
+      "Exported a deck from MTG Arena? Paste the list into Mana Forge to build, price and share it — free, with Commander prices and deck-value tracking.",
   },
   mtgo: {
     slug: "mtgo",
@@ -90,7 +90,7 @@ export const MIGRATIONS: Record<string, Migration> = {
     note: "A plain “1 Card Name” per line is all Mana Forge needs, so any MTGO text export works.",
     title: "Import an MTGO (Magic Online) deck to Mana Forge — free",
     description:
-      "Bring a Magic Online decklist into Mana Forge — paste your MTGO text export and build, price and share your deck. Free, no account needed to try.",
+      "Bring a Magic Online decklist into Mana Forge — paste your MTGO text export and build, price and share your deck. Free.",
   },
   tappedout: {
     slug: "tappedout",
@@ -106,7 +106,7 @@ export const MIGRATIONS: Record<string, Migration> = {
     note: "No need to take anything down on TappedOut. Pull a deck in here and keep the original.",
     title: "Free TappedOut alternative — import your Commander decks",
     description:
-      "Looking for a free TappedOut alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your TappedOut decks over in seconds — paste a text or MTGO export, no account needed to try.",
+      "Looking for a free TappedOut alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your TappedOut decks over in seconds — paste a text or MTGO export.",
   },
   deckstats: {
     slug: "deckstats",
@@ -122,7 +122,7 @@ export const MIGRATIONS: Record<string, Migration> = {
     note: "Keep your Deckstats copy — just pull a deck in here and compare.",
     title: "Free Deckstats alternative — import your Commander decks",
     description:
-      "Looking for a free Deckstats alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Deckstats decks over in seconds — paste your export, no account needed to try.",
+      "Looking for a free Deckstats alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Deckstats decks over in seconds — paste your export.",
   },
   mtggoldfish: {
     slug: "mtggoldfish",
@@ -139,7 +139,7 @@ export const MIGRATIONS: Record<string, Migration> = {
     note: "MTGGoldfish is great for prices; Mana Forge keeps the price view attached to the deck you're building.",
     title: "Import an MTGGoldfish deck to Mana Forge — free",
     description:
-      "Bring a MTGGoldfish decklist into Mana Forge — paste the export and build, price and share your Commander deck. Free, no account needed to try.",
+      "Bring a MTGGoldfish decklist into Mana Forge — paste the export and build, price and share your Commander deck. Free.",
   },
   deckbox: {
     slug: "deckbox",
@@ -155,7 +155,7 @@ export const MIGRATIONS: Record<string, Migration> = {
     note: "No need to change anything on Deckbox — pull a deck in and keep the original.",
     title: "Free Deckbox alternative — import your Commander decks",
     description:
-      "Looking for a free Deckbox alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Deckbox decks over in seconds — paste your export, no account needed to try.",
+      "Looking for a free Deckbox alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your Deckbox decks over in seconds — paste your export.",
   },
 };
 
