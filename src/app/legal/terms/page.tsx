@@ -74,7 +74,8 @@ export default function TermsPage() {
         <li>
           EU and UK consumers normally have 14 days to withdraw from an online purchase. Because
           Premium starts straight away at your request, that right ends once Premium begins — you
-          confirm this when you subscribe.
+          confirm this when you subscribe. See the{" "}
+          <Link href="/legal/widerruf">Right of withdrawal</Link> for the full instructions and model form.
         </li>
         <li>We may change the price for future months; we&apos;ll tell you in advance, and you can cancel before it applies.</li>
       </ul>

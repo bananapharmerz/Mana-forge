@@ -153,7 +153,23 @@ export default function PremiumPage() {
         <aside className="card-frame h-fit min-w-0 p-5 lg:sticky lg:top-6">
           <h2 className="font-display text-2xl font-semibold text-foreground">{isPremium ? "Your plan" : "Choose a plan"}</h2>
         {tier === undefined && status !== "unauthenticated" && (
-          <p className="mt-2 text-sm text-muted">Loading your account...</p>
+          <div className="mt-3">
+            <div className="mb-3 grid grid-cols-2 gap-2" aria-hidden>
+              {(Object.keys(PREMIUM_PLANS) as PremiumPlan[]).map((k) => (
+                <div key={k} className={`relative rounded-xl border p-3 ${k === "year" ? "border-gold bg-gold/10" : "border-border"}`}>
+                  {PREMIUM_PLANS[k].note && (
+                    <span className="absolute -top-2 right-2 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-black">{PREMIUM_PLANS[k].note}</span>
+                  )}
+                  <span className="block text-xs text-muted">{PREMIUM_PLANS[k].label}</span>
+                  <span className="block text-lg font-bold text-foreground">
+                    {planPrice(k)}
+                    <span className="text-xs font-normal text-muted">{PREMIUM_PLANS[k].per}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-center text-xs text-muted">Checking your account…</p>
+          </div>
         )}
 
         {status === "unauthenticated" && (
@@ -255,6 +271,7 @@ export default function PremiumPage() {
                   {PREMIUM_PLANS[plan].per} and renews every {PREMIUM_PLANS[plan].interval} until I{" "}
                   <Link href="/cancel" className="underline hover:text-gold-bright">cancel</Link>. Cancelling before the
                   trial ends costs nothing. I understand that my 14-day right of withdrawal ends once Premium starts. See the{" "}
+                  <Link href="/legal/widerruf" className="underline hover:text-gold-bright">Right of withdrawal</Link> and{" "}
                   <Link href="/legal/terms" className="underline hover:text-gold-bright">Terms</Link>.
                 </span>
                 ) : (
@@ -263,6 +280,7 @@ export default function PremiumPage() {
                   Premium starts. It renews every {PREMIUM_PLANS[plan].interval} and I can{" "}
                   <Link href="/cancel" className="underline hover:text-gold-bright">cancel any time</Link>; I keep
                   Premium until the end of the {PREMIUM_PLANS[plan].interval} I paid for. See the{" "}
+                  <Link href="/legal/widerruf" className="underline hover:text-gold-bright">Right of withdrawal</Link> and{" "}
                   <Link href="/legal/terms" className="underline hover:text-gold-bright">Terms</Link>.
                 </span>
                 )}
