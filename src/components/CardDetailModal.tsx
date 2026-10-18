@@ -1,37 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useCardSelection } from "./CardSelectionContext";
+import { useEffect, useState } from "react";
 import { ManaCost, ManaText } from "./ManaText";
-import type { DeckCard } from "@/lib/deckTypes";
-
-// One face of a card, for the text panel (double-faced cards, adventures and split cards list both).
-export interface CardFaceDetail {
-  name: string;
-  typeLine?: string;
-  oracle?: string;
-}
-
-// Everything the detail popup shows, built server-side from a Scryfall card so the whole raw card
-// doesn't have to cross to the browser for every tile.
-export interface CardDetail {
-  name: string;
-  typeLine: string;
-  manaCost?: string;
-  frontImg?: string;
-  backImg?: string; // only set for true double-faced cards (transform / MDFC / battle) — enables flip
-  oracle?: string;
-  faces?: CardFaceDetail[];
-  priceUsd?: string | null;
-  priceEur?: string | null;
-  scryfallUri?: string;
-}
-
-export interface CardStats {
-  pctDecks?: number; // 0–100, "% of decks"
-  synergy?: number; // Scryfall/EDHREC synergy as a fraction, e.g. 0.17
-  numDecks?: number;
-}
+import type { CardDetail, CardStats } from "@/lib/cardDetail";
 
 const money = (v: string | null | undefined, sym: string) => {
   if (!v) return null;
@@ -39,32 +10,62 @@ const money = (v: string | null | undefined, sym: string) => {
   return Number.isFinite(n) ? `${sym}${n.toFixed(2)}` : null;
 };
 
-export default function CardDetailModal({
-  detail,
-  deckCard,
-  stats,
-  onClose,
-}: {
-  detail: CardDetail;
-  deckCard: DeckCard;
-  stats?: CardStats;
-  onClose: () => void;
-}) {
-  const { isSelected, toggle } = useCardSelection();
-  const selected = isSelected(deckCard.scryfallId);
-  const [showBack, setShowBack] = useState(false);
-  const img = showBack && detail.backImg ? detail.backImg : detail.frontImg;
-
-  const usd = money(detail.priceUsd, "$");
-  const eur = money(detail.priceEur, "€");
-  const faces = detail.faces && detail.faces.length > 1 ? detail.faces : null;
-
-  const Stat = ({ label, value }: { label: string; value: string }) => (
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
     <div className="flex flex-col items-center rounded-md bg-surface px-3 py-2">
       <span className="text-sm font-semibold text-foreground">{value}</span>
       <span className="text-[10px] uppercase tracking-wide text-muted">{label}</span>
     </div>
   );
+}
+
+// The EDHREC-style card detail popup. Either given a `detail` (commander page tiles already have
+// it) or just a `name` — in which case it fetches the detail from /api/card. The add button is
+// generic: pass `onAdd` (+ `added`) and the parent decides what adding means (a deck-selection
+// toggle on commander pages, the deck-builder's add handler in the builder). Give it a `key` of the
+// card name at the call site so it starts fresh when a different card is opened.
+export default function CardDetailModal({
+  name,
+  detail,
+  stats,
+  onAdd,
+  added,
+  onClose,
+}: {
+  name: string;
+  detail?: CardDetail;
+  stats?: CardStats;
+  onAdd?: () => void;
+  added?: boolean;
+  onClose: () => void;
+}) {
+  const [fetched, setFetched] = useState<CardDetail | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [showBack, setShowBack] = useState(false);
+
+  useEffect(() => {
+    if (detail) return; // already have what we need
+    let cancelled = false;
+    fetch(`/api/card?name=${encodeURIComponent(name)}`)
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (cancelled) return;
+        if (!r.ok || !data) setLoadErr(data?.error ?? "Couldn't load this card.");
+        else setFetched(data as CardDetail);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadErr("Couldn't load this card.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [name, detail]);
+
+  const d = detail ?? fetched;
+  const img = d ? (showBack && d.backImg ? d.backImg : d.frontImg) : undefined;
+  const usd = money(d?.priceUsd, "$");
+  const eur = money(d?.priceEur, "€");
+  const faces = d?.faces && d.faces.length > 1 ? d.faces : null;
 
   return (
     <div
@@ -72,7 +73,7 @@ export default function CardDetailModal({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label={detail.name}
+      aria-label={name}
     >
       <div
         className="card-frame flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden sm:flex-row"
@@ -82,13 +83,13 @@ export default function CardDetailModal({
         <div className="relative shrink-0 bg-surface-raised p-4 sm:w-64">
           {img ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={img} alt={detail.name} className="mx-auto w-48 rounded-[4.5%] shadow-lg sm:w-full" />
+            <img src={img} alt={name} className="mx-auto w-48 rounded-[4.5%] shadow-lg sm:w-full" />
           ) : (
             <div className="mx-auto flex aspect-[5/7] w-48 items-center justify-center rounded-[4.5%] bg-surface text-xs text-muted sm:w-full">
-              No image
+              {loadErr ?? "Loading…"}
             </div>
           )}
-          {detail.backImg && (
+          {d?.backImg && (
             <button
               type="button"
               onClick={() => setShowBack((s) => !s)}
@@ -106,10 +107,10 @@ export default function CardDetailModal({
         <div className="flex min-w-0 flex-1 flex-col overflow-y-auto p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="font-display text-lg font-semibold text-foreground">{detail.name}</h3>
+              <h3 className="font-display text-lg font-semibold text-foreground">{d?.name ?? name}</h3>
               <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted">
-                {detail.typeLine}
-                {detail.manaCost && <ManaCost cost={detail.manaCost} className="text-sm" />}
+                {d?.typeLine}
+                {d?.manaCost && <ManaCost cost={d.manaCost} className="text-sm" />}
               </p>
             </div>
             <button onClick={onClose} aria-label="Close" className="shrink-0 text-muted hover:text-foreground">
@@ -144,23 +145,26 @@ export default function CardDetailModal({
                 </div>
               ))
             ) : (
-              detail.oracle && <p className="whitespace-pre-line"><ManaText text={detail.oracle} /></p>
+              d?.oracle && <p className="whitespace-pre-line"><ManaText text={d.oracle} /></p>
             )}
+            {loadErr && !d && <p className="text-sm text-down">{loadErr}</p>}
           </div>
 
           <div className="mt-auto flex items-center gap-3 pt-5">
-            <button
-              type="button"
-              onClick={() => toggle(deckCard)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                selected ? "border border-gold bg-gold/15 text-gold-bright" : "bg-gold text-black hover:bg-gold-bright"
-              }`}
-            >
-              {selected ? "✓ Added — tap to remove" : "Add to deck"}
-            </button>
-            {detail.scryfallUri && (
+            {onAdd && (
+              <button
+                type="button"
+                onClick={onAdd}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                  added ? "border border-gold bg-gold/15 text-gold-bright" : "bg-gold text-black hover:bg-gold-bright"
+                }`}
+              >
+                {added ? "✓ Added — tap to remove" : "Add to deck"}
+              </button>
+            )}
+            {d?.scryfallUri && (
               <a
-                href={detail.scryfallUri}
+                href={d.scryfallUri}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-muted underline hover:text-foreground"

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import PremiumLockedPreview from "@/components/PremiumLockedPreview";
+import CardDetailModal from "@/components/CardDetailModal";
 import { getBudgetUpgrades, type Upgrade } from "@/app/actions/upgrades";
 
 const CAPS = [1, 3, 5, 10];
@@ -25,6 +26,8 @@ export default function BudgetUpgradesPanel({
   const [error, setError] = useState<string | null>(null);
   const [locked, setLocked] = useState(!!guest || !!lockedAtStart);
   const [added, setAdded] = useState<Set<string>>(new Set());
+  const [openName, setOpenName] = useState<string | null>(null);
+  const [openPct, setOpenPct] = useState<number | undefined>(undefined);
 
   async function find(next = cap) {
     setBusy(true);
@@ -78,13 +81,27 @@ export default function BudgetUpgradesPanel({
             <ul className="flex flex-col gap-2">
               {list.map((u) => (
                 <li key={u.name} className="flex items-center gap-2">
-                  {u.imageUrl && <Image src={u.imageUrl} alt="" width={32} height={45} className="rounded-sm" unoptimized />}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs text-foreground">{u.name}</p>
-                    <p className="text-[11px] text-muted">
-                      ${u.usd.toFixed(2)} · in {Math.round(u.playRate * 100)}% of decks
-                    </p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenName(u.name);
+                      setOpenPct(Math.round(u.playRate * 100));
+                    }}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    aria-label={`Details for ${u.name}`}
+                  >
+                    {u.imageUrl ? (
+                      <Image src={u.imageUrl} alt="" width={32} height={45} className="rounded-sm" unoptimized />
+                    ) : (
+                      <span className="h-[45px] w-8 rounded-sm bg-surface-raised" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs text-foreground hover:text-gold-bright">{u.name}</span>
+                      <span className="block text-[11px] text-muted">
+                        ${u.usd.toFixed(2)} · in {Math.round(u.playRate * 100)}% of decks
+                      </span>
+                    </span>
+                  </button>
                   <button
                     onClick={async () => {
                       await onAdd(u.name);
@@ -100,6 +117,20 @@ export default function BudgetUpgradesPanel({
             </ul>
           )}
         </>
+      )}
+
+      {openName && (
+        <CardDetailModal
+          key={openName}
+          name={openName}
+          stats={openPct != null ? { pctDecks: openPct } : undefined}
+          onAdd={() => {
+            void onAdd(openName);
+            setAdded((s) => new Set(s).add(openName));
+          }}
+          added={added.has(openName)}
+          onClose={() => setOpenName(null)}
+        />
       )}
     </div>
   );

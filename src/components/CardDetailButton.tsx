@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import CardDetailModal, { type CardDetail, type CardStats } from "./CardDetailModal";
+import { useCardSelection } from "./CardSelectionContext";
+import CardDetailModal from "./CardDetailModal";
+import type { CardDetail, CardStats } from "@/lib/cardDetail";
 import type { DeckCard } from "@/lib/deckTypes";
 
-// The card image as a button: clicking it opens the EDHREC-style detail popup (big image with a
-// flip for double-faced cards, oracle text, play stats, prices and an add button). The quick-add
-// "+" lives separately in the tile corner.
+// The card image as a button: clicking it opens the EDHREC-style detail popup. On commander pages
+// adding a card toggles it in the deck selection, so the add handler comes from the selection
+// context here. The quick-add "+" lives separately in the tile corner.
 export default function CardDetailButton({
   detail,
   deckCard,
@@ -21,6 +23,7 @@ export default function CardDetailButton({
   alt: string;
 }) {
   const [open, setOpen] = useState(false);
+  const { isSelected, toggle } = useCardSelection();
   return (
     <>
       <button
@@ -38,7 +41,16 @@ export default function CardDetailButton({
           </div>
         )}
       </button>
-      {open && <CardDetailModal detail={detail} deckCard={deckCard} stats={stats} onClose={() => setOpen(false)} />}
+      {open && (
+        <CardDetailModal
+          name={deckCard.name}
+          detail={detail}
+          stats={stats}
+          onAdd={() => toggle(deckCard)}
+          added={isSelected(deckCard.scryfallId)}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   );
 }
