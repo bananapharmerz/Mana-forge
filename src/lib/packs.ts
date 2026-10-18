@@ -99,6 +99,30 @@ async function getSetPool(code: string): Promise<SetPool> {
   return pool;
 }
 
+// Just the count of distinct cards obtainable from a set (the pack pool size), for set-completion
+// on the collection page. Uses the exact pool query above, so "complete" means every card you
+// could actually pull. Reuses the full pool if it's already cached; otherwise one cheap search.
+const poolSizes = ((globalThis as unknown as { __mfPackPoolSizes?: Map<string, { at: number; size: number }> }).__mfPackPoolSizes ??= new Map());
+export async function getSetPoolSize(code: string): Promise<number | null> {
+  const key = code.toLowerCase();
+  const cached = poolSizes.get(key);
+  if (cached && Date.now() - cached.at < POOL_TTL) return cached.size;
+  const full = pools.get(key);
+  if (full && Date.now() - full.at < POOL_TTL) {
+    const size = (Object.values(full.byRarity) as ScryfallCard[][]).reduce((s, arr) => s + arr.length, 0);
+    poolSizes.set(key, { at: Date.now(), size });
+    return size;
+  }
+  try {
+    const resp = await searchCards(`set:${key} game:paper -t:"basic land" -is:extra`, { unique: "cards" });
+    const size = resp.total_cards ?? resp.data.length;
+    poolSizes.set(key, { at: Date.now(), size });
+    return size;
+  } catch {
+    return null;
+  }
+}
+
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }

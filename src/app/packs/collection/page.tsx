@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getCardsByIds } from "@/lib/scryfall";
+import { getSetPoolSize } from "@/lib/packs";
 import PageHeader from "@/components/PageHeader";
 import BuildFromCollection from "./BuildFromCollection";
 
@@ -32,6 +33,7 @@ type Card = {
   firstPulledAt: Date;
   imageUrl: string | null;
   scryfallUri: string | null;
+  setCode: string;
   setName: string;
 };
 
@@ -128,6 +130,32 @@ export default async function CollectionPage({ searchParams }: { searchParams: P
   const totalValue = cards.reduce((s, c) => s + (c.priceUsd ?? 0) * qtyOf(c), 0);
   const best = cards.reduce<Card | null>((b, c) => ((c.priceUsd ?? 0) > (b?.priceUsd ?? 0) ? c : b), null);
 
+  // Set completion: how many of each set's pullable cards you own. The denominator is the pack
+  // pool (the exact query packs draw from), so 100% means you've pulled every card that set can
+  // give. Count by card name, since the pool collapses art variants to one card.
+  const bySet = new Map<string, { code: string; name: string; names: Set<string>; copies: number; value: number }>();
+  for (const c of cards) {
+    let e = bySet.get(c.setCode);
+    if (!e) {
+      e = { code: c.setCode, name: c.setName, names: new Set(), copies: 0, value: 0 };
+      bySet.set(c.setCode, e);
+    }
+    e.names.add(c.name);
+    e.copies += qtyOf(c);
+    e.value += (c.priceUsd ?? 0) * qtyOf(c);
+  }
+  const setSizes = new Map(
+    await Promise.all([...bySet.keys()].map(async (code) => [code, await getSetPoolSize(code)] as const))
+  );
+  const setStats = [...bySet.values()]
+    .map((e) => {
+      const total = setSizes.get(e.code) ?? null;
+      const owned = total != null ? Math.min(e.names.size, total) : e.names.size;
+      const pct = total && total > 0 ? Math.min(100, Math.round((owned / total) * 100)) : null;
+      return { ...e, total, owned, pct };
+    })
+    .sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1) || b.owned - a.owned || a.name.localeCompare(b.name));
+
   return (
     <>
       <PageHeader
@@ -220,9 +248,39 @@ export default async function CollectionPage({ searchParams }: { searchParams: P
 
             <BuildFromCollection />
 
-            <p className="mx-auto mt-8 max-w-md text-center text-xs text-muted">
-              Coming soon: track set completion.
-            </p>
+            {setStats.length > 0 && (
+              <div className="mt-10">
+                <h2 className="mb-1 font-display text-lg font-semibold text-foreground">Set completion</h2>
+                <p className="mb-4 text-xs text-muted">
+                  How many of each set&apos;s pullable cards you&apos;ve collected — basic lands and
+                  special variants aside, so 100% means the whole set.
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  {setStats.map((s) => (
+                    <div key={s.code} className="card-frame p-3">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="truncate text-sm font-semibold text-foreground">{s.name}</span>
+                        <span className="shrink-0 text-xs text-muted">
+                          {s.total != null ? (
+                            <>
+                              <span className="font-semibold text-foreground">{s.owned}</span> / {s.total}
+                              {s.pct != null ? ` · ${s.pct}%` : ""}
+                            </>
+                          ) : (
+                            <>{s.owned} cards</>
+                          )}
+                        </span>
+                      </div>
+                      {s.pct != null && (
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
+                          <div className="h-full rounded-full bg-gold" style={{ width: `${s.pct}%` }} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
