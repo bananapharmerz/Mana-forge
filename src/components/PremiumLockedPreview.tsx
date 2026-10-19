@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TRIAL_DAYS } from "@/lib/tier";
+import PremiumFlame from "@/components/PremiumFlame";
 
 // A blurred look at a Premium feature with an unlock button on top. The content underneath is a
 // made-up sample, never the member's real Premium data, so nothing is given away in the HTML.
@@ -21,9 +22,11 @@ export default function PremiumLockedPreview({
         <p className={`max-w-sm text-foreground ${compact ? "text-xs" : "text-sm"}`}>{pitch}</p>
         <Link
           href="/premium"
-          className={`rounded-md bg-gold font-semibold text-black shadow hover:bg-gold-bright ${compact ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"}`}
+          // Ember, not gold: Premium has its own colour so a locked feature can be spotted at a glance.
+          className={`inline-flex items-center gap-1.5 rounded-md bg-premium font-semibold text-premium-fg shadow hover:brightness-110 ${compact ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"}`}
         >
-          🔒 Unlock with a {TRIAL_DAYS}-day free trial
+          <PremiumFlame className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
+          Unlock with a {TRIAL_DAYS}-day free trial
         </Link>
       </div>
     </div>
