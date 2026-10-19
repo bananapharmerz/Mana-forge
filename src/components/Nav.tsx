@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useCart } from "./CartProvider";
@@ -103,6 +103,25 @@ export default function Nav() {
   // row: a field there would crowd the menu row on mid-width desktops.
   const [searchOpen, setSearchOpen] = useState(false);
 
+  // Click-to-open menus: a tab opens its menu and it stays open until you pick an item, click the
+  // tab again, click outside the nav, or press Escape — no hover race.
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!openMenu) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) setOpenMenu(null);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenMenu(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [openMenu]);
+
   const menus = MENUS.filter((m) => SHOP_ENABLED || !m.shopGated);
   const badgeValue = (b?: Badge) => (b === "cart" ? count : b === "proxy" ? proxyCount : 0);
   const itemActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -115,12 +134,7 @@ export default function Nav() {
     const isOpen = openMenu === menu.label;
     const badge = menuBadge(menu);
     return (
-      <div
-        key={menu.label}
-        className="relative"
-        onMouseEnter={() => setOpenMenu(menu.label)}
-        onMouseLeave={() => setOpenMenu((cur) => (cur === menu.label ? null : cur))}
-      >
+      <div key={menu.label} className="relative">
         <button
           type="button"
           aria-haspopup="true"
@@ -204,7 +218,7 @@ export default function Nav() {
           </span>
         </Link>
         {/* Desktop: a row of dropdown menus. Below xl it collapses to the menu button. */}
-        <nav aria-label="Primary" className="hidden items-center gap-1 xl:flex">
+        <nav ref={navRef} aria-label="Primary" className="hidden items-center gap-1 xl:flex">
           {renderMenu(menus[0])}
           <Link
             href={PROFILE.href}
