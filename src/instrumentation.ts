@@ -7,6 +7,10 @@ export async function register() {
     startPriceTracker();
     const { startBanSync } = await import("./lib/bans");
     startBanSync();
+    // Submit the sitemap's evergreen + busiest pages to IndexNow once a day (no-op off a public
+    // https host). New decks are pinged live on publish; this covers the landing pages too.
+    const { startIndexNowDaily } = await import("./lib/indexnowDaily");
+    startIndexNowDaily();
     // Build the full commander list for the sitemap in the background.
     const { commanderNames } = await import("./lib/commanderIndex");
     commanderNames();
