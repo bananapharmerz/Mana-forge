@@ -381,6 +381,22 @@ export async function updateDeckCompanion(deckId: string, companion: DeckCard | 
   revalidatePath(`/deck-builder/${deckId}`);
 }
 
+// Change the commander's printing/art (same card, a different printing). Keeps the commander in
+// place — only its stored data (image, set, price) changes.
+export async function updateDeckCommander(deckId: string, commander: DeckCard) {
+  const userId = await requireUserId();
+  const deck = await db.deck.findUnique({ where: { id: deckId } });
+  if (!deck || deck.ownerId !== userId) throw new Error("Deck not found.");
+  const clean = cleanDeckCard(commander);
+  if (!clean) throw new Error("That card isn't valid.");
+
+  await db.deck.update({
+    where: { id: deckId },
+    data: { commanderName: clean.name, commanderData: JSON.stringify(clean) },
+  });
+  revalidatePath(`/deck-builder/${deckId}`);
+}
+
 export async function updateDeckName(deckId: string, name: string) {
   const userId = await requireUserId();
   const deck = await db.deck.findUnique({ where: { id: deckId } });

@@ -32,6 +32,7 @@ import {
   updateDeckPlaymat,
   updateDeckPartner,
   updateDeckCompanion,
+  updateDeckCommander,
   setDeckPublic,
 } from "@/app/actions/decks";
 import { hasSecondCommanderMechanic } from "@/lib/partnerMechanics";
@@ -69,6 +70,10 @@ export default function DeckEditor({
   }, [guest, deck]);
   const [addError, setAddError] = useState<string | null>(null);
   const [pickerCardName, setPickerCardName] = useState<string | null>(null);
+  // Set when changing the art/printing of a card already in the deck (vs. the add flow above).
+  const [artTarget, setArtTarget] = useState<
+    { name: string; slot: "card" | "commander" | "partner" | "companion" } | null
+  >(null);
   const [nameDraft, setNameDraft] = useState(initialDeck.name);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [publicBusy, setPublicBusy] = useState(false);
@@ -241,6 +246,54 @@ export default function DeckEditor({
     });
   }
 
+  // --- Changing the art of a card that's already in the deck -----------------------------------
+  function changeArt(name: string, slot: "card" | "commander" | "partner" | "companion") {
+    setArtTarget({ name, slot });
+  }
+
+  function handleArtPrinting(card: ScryfallCard) {
+    if (!artTarget) return;
+    const next = cardToDeckCard(card);
+    const { slot, name } = artTarget;
+    if (slot === "card") {
+      // Only the printing changes — keep the existing quantity and category.
+      updateCards(deck.cards.map((c) => (c.name === name ? { ...next, quantity: c.quantity, category: c.category } : c)));
+    } else if (slot === "commander") {
+      setDeck((d) => ({ ...d, commander: next }));
+      if (!guest) void updateDeckCommander(deck.id, next);
+    } else if (slot === "partner") {
+      setDeck((d) => ({ ...d, partner: next }));
+      if (!guest) void updateDeckPartner(deck.id, next);
+    } else {
+      setDeck((d) => ({ ...d, companion: next }));
+      if (!guest) void updateDeckCompanion(deck.id, next);
+    }
+    setArtTarget(null);
+  }
+
+  function handleArtCustom(art: { imageUrl: string }) {
+    if (!artTarget) return;
+    const { slot, name } = artTarget;
+    // A custom-art front has no matching custom back, so clear the back image.
+    const patch = (c: DeckCard): DeckCard => ({ ...c, imageUrl: art.imageUrl, backImageUrl: undefined });
+    if (slot === "card") {
+      updateCards(deck.cards.map((c) => (c.name === name ? patch(c) : c)));
+    } else if (slot === "commander" && deck.commander) {
+      const next = patch(deck.commander);
+      setDeck((d) => ({ ...d, commander: next }));
+      if (!guest) void updateDeckCommander(deck.id, next);
+    } else if (slot === "partner" && deck.partner) {
+      const next = patch(deck.partner);
+      setDeck((d) => ({ ...d, partner: next }));
+      if (!guest) void updateDeckPartner(deck.id, next);
+    } else if (slot === "companion" && deck.companion) {
+      const next = patch(deck.companion);
+      setDeck((d) => ({ ...d, companion: next }));
+      if (!guest) void updateDeckCompanion(deck.id, next);
+    }
+    setArtTarget(null);
+  }
+
   function updateQuantity(name: string, delta: number) {
     const next = deck.cards
       .map((c) => (c.name === name ? { ...c, quantity: c.quantity + delta } : c))
@@ -347,6 +400,27 @@ export default function DeckEditor({
             {deck.commander?.name}
             {deck.partner && ` & ${deck.partner.name}`}
           </p>
+          {deck.commander && (
+            <p className="mt-1 text-center text-[11px]">
+              <button
+                onClick={() => changeArt(deck.commander!.name, "commander")}
+                className="text-muted underline hover:text-gold-bright"
+              >
+                Change art
+              </button>
+              {deck.partner && (
+                <>
+                  {" · "}
+                  <button
+                    onClick={() => changeArt(deck.partner!.name, "partner")}
+                    className="text-muted underline hover:text-gold-bright"
+                  >
+                    Partner art
+                  </button>
+                </>
+              )}
+            </p>
+          )}
           {deck.partner && (
             <p className="text-center">
               <button onClick={removePartner} className="text-[11px] text-muted underline hover:text-down">
@@ -372,6 +446,13 @@ export default function DeckEditor({
                 Companion: {deck.companion.name}
               </p>
               <p className="text-center">
+                <button
+                  onClick={() => changeArt(deck.companion!.name, "companion")}
+                  className="text-[11px] text-muted underline hover:text-gold-bright"
+                >
+                  Change art
+                </button>
+                {" · "}
                 <button
                   onClick={removeCompanion}
                   className="text-[11px] text-muted underline hover:text-down"
@@ -523,6 +604,14 @@ export default function DeckEditor({
                   onClose={() => setPickerCardName(null)}
                 />
               )}
+              {artTarget && (
+                <PrintingPicker
+                  cardName={artTarget.name}
+                  onSelect={handleArtPrinting}
+                  onSelectCustom={handleArtCustom}
+                  onClose={() => setArtTarget(null)}
+                />
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5">
               {BASIC_LANDS.map((land) => (
@@ -586,6 +675,13 @@ export default function DeckEditor({
                           </button>
                         </div>
                       )}
+                      <button
+                        onClick={() => changeArt(c.name, "card")}
+                        className="text-xs text-muted hover:text-gold-bright"
+                        title="Change this card's art"
+                      >
+                        Art
+                      </button>
                       <button
                         onClick={() => removeCard(c.name)}
                         className="text-xs text-muted hover:text-down"
