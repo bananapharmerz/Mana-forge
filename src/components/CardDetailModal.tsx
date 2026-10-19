@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ManaCost, ManaText } from "./ManaText";
 import type { CardDetail, CardStats } from "@/lib/cardDetail";
 
@@ -67,7 +68,7 @@ export default function CardDetailModal({
   const eur = money(d?.priceEur, "€");
   const faces = d?.faces && d.faces.length > 1 ? d.faces : null;
 
-  return (
+  const modal = (
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       onClick={onClose}
@@ -177,4 +178,9 @@ export default function CardDetailModal({
       </div>
     </div>
   );
+
+  // Portal to <body> so the fixed overlay centres on the viewport, not on a transformed ancestor
+  // (inside the deck editor that was dropping it at the middle of the page).
+  if (typeof document === "undefined") return null;
+  return createPortal(modal, document.body);
 }

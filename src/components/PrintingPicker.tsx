@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   getAllPrintings,
   cardImageForPrint,
@@ -58,7 +59,7 @@ export default function PrintingPicker({
     onSelectCustom({ imageUrl: customPreview });
   }
 
-  return (
+  const modal = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       onClick={onClose}
@@ -168,4 +169,10 @@ export default function PrintingPicker({
       </div>
     </div>
   );
+
+  // Render through a portal on <body> so the fixed overlay centres on the viewport (the screen),
+  // not on whatever ancestor in the deck editor creates a containing block (a CSS transform turns
+  // `position: fixed` into page-relative, which was dropping the picker at the middle of the page).
+  if (typeof document === "undefined") return null;
+  return createPortal(modal, document.body);
 }
