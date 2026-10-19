@@ -55,6 +55,9 @@ export function deckValue(deck: CardPool, live: LivePriceMap): DeckValue {
   return { totalUsd, weekAgoUsd, missingPriceCount, movers: movers.slice(0, 5), updatedAt };
 }
 
-export const usd = (n: number) => `$${n.toFixed(2)}`;
-export const signedUsd = (n: number) => `${n >= 0 ? "+" : "−"}$${Math.abs(n).toFixed(2)}`;
+// One price format everywhere ("$2,150.99"): bare numbers without separators get misread.
+// Built once and reused, because Intl formatters are slow to create and prices render in long lists.
+const USD = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+export const usd = (n: number) => USD.format(n);
+export const signedUsd = (n: number) => `${n >= 0 ? "+" : "−"}${USD.format(Math.abs(n))}`;
 export const signedPct = (p: number) => `${p >= 0 ? "+" : "−"}${Math.abs(p * 100).toFixed(p !== 0 && Math.abs(p) < 0.1 ? 1 : 0)}%`;
