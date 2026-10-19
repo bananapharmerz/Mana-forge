@@ -52,9 +52,21 @@ export async function signup(
   const problem = await passwordProblem(pass, cleanEmail, "signup");
   if (problem) return { ok: false, error: problem };
 
-  const existing = await db.user.findUnique({ where: { email: cleanEmail } });
+  const existing = await db.user.findUnique({ where: { email: cleanEmail }, select: { id: true } });
   if (existing) {
-    return { ok: false, error: "An account with that email already exists. Try signing in." };
+    // Don't reveal that this address is already registered (email enumeration). Tell the real
+    // owner by email instead, and return the same neutral result a brand-new sign-up gets.
+    void sendEmail({
+      to: cleanEmail,
+      subject: `You already have a ${SITE.name} account`,
+      text: `Someone tried to create a ${SITE.name} account with this email address, but you already have one.\n\nSign in: ${SITE.url}/login\nForgot your password? ${SITE.url}/forgot-password\n\nIf this wasn't you, you can safely ignore this email.`,
+      html: emailHtml({
+        heading: "You already have an account",
+        body: `<p>Someone tried to create a ${esc(SITE.name)} account with this email address, but you already have one. Tap below to sign in, or reset your password if you've forgotten it.</p><p style="color:#7a7488;font-size:13px">If this wasn't you, you can safely ignore this email.</p>`,
+        button: { label: "Sign in", url: `${SITE.url}/login` },
+      }),
+    }).catch(() => null);
+    return { ok: true };
   }
   const takenU = await db.user.findUnique({ where: { username: uname }, select: { id: true } });
   if (takenU) return { ok: false, error: "That username is taken — pick another." };

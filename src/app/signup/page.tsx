@@ -66,7 +66,9 @@ export default function SignupPage() {
     setLoading(false);
 
     if (res?.error) {
-      setError("Account created, but sign-in failed. Try signing in manually.");
+      // Covers a rare sign-in glitch and the "this email already has an account" case, without
+      // revealing which — the account owner is emailed separately.
+      setError("Almost there — check your email to finish. If you already have an account with this email, please sign in instead.");
       return;
     }
     trackGoal("signup");

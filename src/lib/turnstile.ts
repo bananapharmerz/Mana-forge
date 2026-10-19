@@ -6,8 +6,10 @@ export const turnstileSiteKey = () => process.env.TURNSTILE_SITE_KEY?.trim() || 
 const secret = () => process.env.TURNSTILE_SECRET_KEY?.trim() || "";
 export const turnstileOn = () => !!turnstileSiteKey() && !!secret();
 
-/** True when the visitor passed (or Turnstile isn't switched on). If Cloudflare can't be reached,
- *  let them through rather than lock real people out; the rate limits still apply. */
+/** True when the visitor passed. When Turnstile isn't switched on there's nothing to check, so it
+ *  returns true. When it IS switched on it fails closed: a missing token, a failed check, or an
+ *  unreachable Cloudflare all return false (the rate limits still apply either way). Configure the
+ *  Turnstile keys in production for this to protect anything. */
 export async function humanCheck(token: unknown, ip?: string): Promise<boolean> {
   if (!turnstileOn()) return true;
   const t = typeof token === "string" ? token.slice(0, 2048) : "";
@@ -18,6 +20,7 @@ export async function humanCheck(token: unknown, ip?: string): Promise<boolean> 
     const j = (await r.json()) as { success?: boolean };
     return j.success === true;
   } catch {
-    return true;
+    // Configured but Cloudflare couldn't be reached: fail closed rather than wave bots through.
+    return false;
   }
 }
