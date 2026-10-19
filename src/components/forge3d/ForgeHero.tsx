@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import CursorGlow from "@/components/fx/CursorGlow";
 import ForgeEmberScene from "./ForgeEmberScene";
-import ForgeSparks from "./ForgeSparks";
 
-// Homepage hero: a dark, cinematic band with Ember at work on the anvil (sparks, forge glow),
+// Homepage hero: a dark, cinematic band with Ember at work on the anvil (forge glow),
 // fading into the parchment site below. It used to be a floating 3D card in a mana vortex; Ember
 // says "forge" at a glance, shows up instantly (plain SVG and CSS) and is the same on every device.
 
@@ -47,8 +46,6 @@ export default function ForgeHero({ stats }: { stats: { label: string; value: st
       />
       {/* Ember at the anvil: above the headline on phones, beside it on bigger screens. */}
       <ForgeEmberScene className="absolute left-1/2 top-2 -z-10 aspect-[4/5] w-[min(52vw,240px)] -translate-x-1/2 md:left-auto md:right-[6%] md:top-1/2 md:w-[clamp(320px,34vw,470px)] md:translate-x-0 md:-translate-y-1/2" />
-      {/* Sparks fly up and out across the whole band, from the anvil strike point. */}
-      <ForgeSparks className="pointer-events-none absolute inset-0 -z-10" />
       {/* On phones Ember sits above the headline; keep the text readable below it. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[62%] bg-gradient-to-b from-transparent via-[#09060f]/80 to-[#09060f] md:hidden" />
 
