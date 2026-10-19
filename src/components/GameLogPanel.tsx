@@ -11,16 +11,35 @@ export interface GameRow {
   players: number;
   playedAt: string; // ISO
   notes: string | null;
+  deckName?: string | null; // the linked deck's name, if the game was logged against one
+}
+
+export interface DeckOption {
+  id: string;
+  name: string;
+  commanderName: string;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
 
 // Record games you played (paper or online) to build your win-rate and game stats. The list and
 // notes are private to you; your profile shows only the totals (games, win-rate, record).
-export default function GameLogPanel({ games, total, wins }: { games: GameRow[]; total: number; wins: number }) {
+export default function GameLogPanel({
+  games,
+  total,
+  wins,
+  decks = [],
+}: {
+  games: GameRow[];
+  total: number;
+  wins: number;
+  decks?: DeckOption[];
+}) {
   const router = useRouter();
   const [won, setWon] = useState(true);
   const [commander, setCommander] = useState("");
+  const [commanderTouched, setCommanderTouched] = useState(false);
+  const [deckId, setDeckId] = useState("");
   const [players, setPlayers] = useState(4);
   const [date, setDate] = useState(today());
   const [notes, setNotes] = useState("");
@@ -30,15 +49,26 @@ export default function GameLogPanel({ games, total, wins }: { games: GameRow[];
   const losses = total - wins;
   const rate = total > 0 ? Math.round((wins / total) * 100) : null;
 
+  // Picking a deck fills the commander from that deck, unless the member has typed their own. This
+  // updates when switching between decks (so deck A's commander doesn't linger after picking B);
+  // choosing "No deck" clears the autofill but leaves a manually-typed commander alone.
+  function chooseDeck(id: string) {
+    setDeckId(id);
+    if (commanderTouched) return;
+    const d = decks.find((x) => x.id === id);
+    setCommander(d ? d.commanderName : "");
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setMsg(null);
-    const r = await logGame({ won, commanderName: commander, players, playedAt: date, notes });
+    const r = await logGame({ won, commanderName: commander, players, playedAt: date, notes, deckId: deckId || undefined });
     setBusy(false);
     if (!r.ok) return setMsg({ ok: false, text: r.error });
     setMsg({ ok: true, text: "Game logged." });
     setCommander("");
+    setCommanderTouched(false);
     setNotes("");
     router.refresh();
   }
@@ -84,11 +114,31 @@ export default function GameLogPanel({ games, total, wins }: { games: GameRow[];
             Loss
           </button>
         </div>
+        {decks.length > 0 && (
+          <div>
+            <label className="block text-[11px] text-muted">Deck (optional)</label>
+            <select
+              value={deckId}
+              onChange={(e) => chooseDeck(e.target.value)}
+              className="mt-0.5 w-44 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground focus:border-gold focus:outline-none"
+            >
+              <option value="">No deck</option>
+              {decks.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="block text-[11px] text-muted">Commander (optional)</label>
           <input
             value={commander}
-            onChange={(e) => setCommander(e.target.value)}
+            onChange={(e) => {
+              setCommander(e.target.value);
+              setCommanderTouched(true);
+            }}
             maxLength={150}
             placeholder="e.g. Atraxa"
             className="mt-0.5 w-44 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground focus:border-gold focus:outline-none"
@@ -148,7 +198,11 @@ export default function GameLogPanel({ games, total, wins }: { games: GameRow[];
               </span>
               <span className="w-24 shrink-0 text-xs text-muted">{fmtDate(g.playedAt)}</span>
               <span className="flex-1 truncate text-foreground">
-                {g.commanderName || <span className="text-muted">No commander</span>}
+                {g.deckName ? (
+                  <span className="font-medium">{g.deckName}</span>
+                ) : (
+                  g.commanderName || <span className="text-muted">No commander</span>
+                )}
                 <span className="text-muted"> · {g.players}p</span>
                 {g.notes && <span className="text-muted"> — {g.notes}</span>}
               </span>

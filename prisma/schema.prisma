@@ -63,6 +63,7 @@ model User {
   postVotes            PostVote[]
   collection           CollectionCard[]
   gameLogs             GameLog[]
+  ownedCards           OwnedCard[]
 
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
@@ -118,6 +119,7 @@ model Deck {
   favorites            Favorite[]
   snapshots            DeckSnapshot[]
   feedPosts            Post[]
+  gameLogs             GameLog[]
 
   @@index([commanderName])
   @@index([ownerId])
@@ -545,7 +547,31 @@ model GameLog {
   players       Int      @default(4) // pod size (2–8)
   playedAt      DateTime @default(now()) // the date the game was played
   notes         String? // optional short note (private to the owner)
+  // Optional link to one of the member's own decks, so win-rate can be shown per deck. SetNull
+  // (emulated in app code on deck delete — the SQLite column has no DB-level FK) keeps the game
+  // history when a deck is deleted; the commanderName snapshot above stays as a record either way.
+  deckId        String?
+  deck          Deck?    @relation(fields: [deckId], references: [id], onDelete: SetNull)
   createdAt     DateTime @default(now())
 
   @@index([userId, playedAt])
+  @@index([deckId])
+}
+
+// ---- Owned cards (real-world inventory) -----------------------------------------------------
+// The physical cards a member says they own, kept SEPARATE from the pack-opening CollectionCard
+// game. Populated by pasting/importing a list; matched to deck cards by name (any printing) to
+// show owned-vs-needed in the deck builder. One row per (user, normalized name).
+model OwnedCard {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String // the card name as the member entered it (for display)
+  nameKey   String // normalized match key (front face, lowercased) — see src/lib/cardName.ts
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, nameKey])
+  @@index([userId])
 }

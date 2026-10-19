@@ -64,6 +64,9 @@ export default function DeckBuilderIndexClient({
   starter,
   profileName = null,
   profileAvatar = null,
+  deckStats = {},
+  ownedCounts = {},
+  hasOwnedList = false,
 }: {
   initialDecks: Deck[];
   deckLimit: number | null;
@@ -72,6 +75,9 @@ export default function DeckBuilderIndexClient({
   starter?: React.ReactNode; // "copy a ready-made deck", rendered on the server (new members only)
   profileName?: string | null; // the member's display name, for the profile header
   profileAvatar?: string | null; // their chosen avatar preset key
+  deckStats?: Record<string, { wins: number; losses: number }>; // per-deck logged W–L
+  ownedCounts?: Record<string, { owned: number; needed: number }>; // owned-vs-needed per deck
+  hasOwnedList?: boolean; // whether the member has any owned cards recorded
 }) {
   const router = useRouter();
   const [decks, setDecks] = useState(initialDecks);
@@ -373,7 +379,12 @@ export default function DeckBuilderIndexClient({
       ) : (
         <>
           {error && !showNew && <p className="mb-4 text-sm text-down">{error}</p>}
-          <h2 className="mb-4 font-display text-lg font-semibold text-foreground">Your decks</h2>
+          <div className="mb-4 flex items-baseline justify-between gap-3">
+            <h2 className="font-display text-lg font-semibold text-foreground">Your decks</h2>
+            <Link href="/collection" className="shrink-0 text-xs font-semibold text-gold-bright hover:underline">
+              {hasOwnedList ? "Cards I own" : "Add cards you own"} →
+            </Link>
+          </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             {decks.map((deck) => (
               <div key={deck.id} className="card-frame flex flex-col gap-3 p-4">
@@ -422,6 +433,30 @@ export default function DeckBuilderIndexClient({
                     <p className="text-xs text-muted">
                       {deckSize(deck)} / 100 cards {deck.isPublic && "· Public"}
                     </p>
+                    {(() => {
+                      const st = deckStats[deck.id];
+                      const played = st ? st.wins + st.losses : 0;
+                      const oc = ownedCounts[deck.id];
+                      if (played === 0 && !(oc && oc.needed > 0)) return null;
+                      return (
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {played > 0 && (
+                            <span className="rounded-full bg-surface-raised px-2 py-0.5 text-[10px] font-semibold text-foreground" title="Logged games with this deck">
+                              {st.wins}–{st.losses}
+                              {played >= 3 ? ` · ${Math.round((st.wins / played) * 100)}%` : ""}
+                            </span>
+                          )}
+                          {oc && oc.needed > 0 && (
+                            <span
+                              className="rounded-full bg-surface-raised px-2 py-0.5 text-[10px] font-semibold text-gold-bright"
+                              title="Cards from this deck you own (by name, excl. basics)"
+                            >
+                              own {oc.owned}/{oc.needed}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="mt-auto flex flex-wrap gap-2">

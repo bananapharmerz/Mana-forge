@@ -9,6 +9,8 @@ import PriceChart from "@/app/prices/PriceChart";
 import PremiumLockedPreview, { SampleValueChart } from "@/components/PremiumLockedPreview";
 import { deckValueHistory } from "@/lib/prices";
 import DeckSnapshotsPanel from "@/components/DeckSnapshotsPanel";
+import OwnedVsNeeded from "@/components/OwnedVsNeeded";
+import { computeNeeds } from "@/lib/ownedList";
 
 export default async function DeckBuilderEditPage({
   params,
@@ -42,6 +44,14 @@ export default async function DeckBuilderEditPage({
     ? (await db.deckSnapshot.findMany({ where: { deckId: row.id }, orderBy: { createdAt: "desc" }, select: { id: true, label: true, cardCount: true, createdAt: true } })).map((s) => ({ ...s, createdAt: s.createdAt.toISOString() }))
     : [];
 
+  // Owned-vs-needed for this deck, from the member's real-world owned-card list.
+  const owned = await db.ownedCard.findMany({ where: { userId: session.user.id }, select: { nameKey: true, quantity: true } });
+  const ownedMap = new Map(owned.map((o) => [o.nameKey, o.quantity]));
+  const needCards = [deck.commander, deck.partner, deck.companion, ...deck.cards]
+    .filter((c): c is NonNullable<typeof c> => !!c)
+    .map((c) => ({ name: c.name, quantity: c.quantity, category: c.category }));
+  const ownedResult = computeNeeds(needCards, ownedMap);
+
   return (
     <>
       <DeckEditor initialDeck={deck} premium={premium} firstDeck={firstDeck} />
@@ -61,6 +71,10 @@ export default async function DeckBuilderEditPage({
             <SampleValueChart />
           </PremiumLockedPreview>
         )}
+      </section>
+      <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
+        <h2 className="mb-2 font-display text-2xl font-semibold text-foreground">Cards you own</h2>
+        <OwnedVsNeeded result={ownedResult} hasOwnedList={ownedMap.size > 0} />
       </section>
       <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
         <h2 className="mb-2 font-display text-2xl font-semibold text-foreground">Versions</h2>

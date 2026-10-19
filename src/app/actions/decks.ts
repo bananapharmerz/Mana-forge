@@ -714,7 +714,12 @@ export async function deleteDeckAction(deckId: string) {
   const deck = await db.deck.findUnique({ where: { id: deckId } });
   if (!deck || deck.ownerId !== userId) throw new Error("Deck not found.");
 
-  await db.deck.delete({ where: { id: deckId } });
+  // Emulate the GameLog.deck SetNull relation (the SQLite column has no DB-level FK): unlink any
+  // logged games from this deck first so the game history survives, then delete the deck.
+  await db.$transaction([
+    db.gameLog.updateMany({ where: { deckId }, data: { deckId: null } }),
+    db.deck.delete({ where: { id: deckId } }),
+  ]);
   revalidatePath("/deck-builder");
 }
 

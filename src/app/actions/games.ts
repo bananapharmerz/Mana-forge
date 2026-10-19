@@ -28,14 +28,30 @@ export async function logGame(input: {
   players?: unknown;
   playedAt?: unknown; // "YYYY-MM-DD"
   notes?: unknown;
+  deckId?: unknown; // optional: one of the member's own decks, for per-deck win-rate
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const session = await auth();
   if (!session?.user?.id) return { ok: false, error: "Sign in first." };
   if (!hit(`log-game:${session.user.id}`, 60, 60 * 60 * 1000)) return { ok: false, error: TOO_MANY };
 
   const won = input.won === true;
-  const commanderName = clean(input.commanderName, 150) || null;
+  let commanderName = clean(input.commanderName, 150) || null;
   const notes = clean(input.notes, 200) || null;
+
+  // Optional deck link. Omitted = unlinked game. A supplied id that isn't one of the caller's own
+  // decks is an error (not silently dropped). When a deck is chosen and no commander was typed,
+  // snapshot the deck's commander so the log still reads well if the deck is later deleted.
+  let deckId: string | null = null;
+  const rawDeck = input.deckId == null ? "" : String(input.deckId);
+  if (rawDeck) {
+    const deck = await db.deck.findUnique({
+      where: { id: rawDeck },
+      select: { id: true, ownerId: true, commanderName: true },
+    });
+    if (!deck || deck.ownerId !== session.user.id) return { ok: false, error: "That deck isn't yours." };
+    deckId = deck.id;
+    if (!commanderName) commanderName = deck.commanderName;
+  }
 
   let players = Math.floor(Number(input.players));
   if (!Number.isFinite(players)) players = 4;
@@ -54,7 +70,7 @@ export async function logGame(input: {
   }
 
   await db.gameLog.create({
-    data: { userId: session.user.id, won, commanderName, players, playedAt, notes },
+    data: { userId: session.user.id, won, commanderName, players, playedAt, notes, deckId },
   });
   await revalidateProfile(session.user.id);
   return { ok: true };
