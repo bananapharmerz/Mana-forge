@@ -66,7 +66,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ handle
   const display = user.usernameDisplay ?? user.username ?? "";
   const name = authorName(user.name);
 
-  const [publicDeckCount, totalDeckCount, postCount, decks, posts, favoritesReceived, upvotes, collection] = await Promise.all([
+  const [publicDeckCount, totalDeckCount, postCount, decks, posts, favoritesReceived, upvotes, collection, gamesTotal, gamesWon] = await Promise.all([
     db.deck.count({ where: { ownerId: user.id, isPublic: true } }),
     db.deck.count({ where: { ownerId: user.id } }),
     db.post.count({ where: { authorId: user.id, status: "visible" } }),
@@ -87,6 +87,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ handle
     // Always aggregated so a "cards owned / unique cards" stat tile works; the collection *section*
     // below is still gated by showCollection.
     db.collectionCard.aggregate({ where: { userId: user.id }, _sum: { quantity: true, foilQuantity: true }, _count: true }),
+    db.gameLog.count({ where: { userId: user.id } }),
+    db.gameLog.count({ where: { userId: user.id, won: true } }),
   ]);
 
   const deckSize = (cardsJson: string) => {
@@ -101,11 +103,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ handle
   const postsTotalScore = upvotes._sum.score ?? 0;
   const collectionCopies = collection ? (collection._sum.quantity ?? 0) + (collection._sum.foilQuantity ?? 0) : 0;
   const collectionUnique = collection ? collection._count : 0;
+  const winRatePct = gamesTotal > 0 ? Math.round((gamesWon / gamesTotal) * 100) : null;
   const joined = user.createdAt.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   const profileUrl = `${SITE.url}/u/${user.username}`;
 
-  // The stat tiles the member chose to show (falls back to a sensible default set). Win-rate and
-  // games have no data source yet, so they read "—" until game tracking lands.
+  // The stat tiles the member chose to show (falls back to a sensible default set). Win-rate reads
+  // "—" until they've logged at least one game.
   const statValues: Record<StatKey, string | number> = {
     publicDecks: publicDeckCount,
     totalDecks: totalDeckCount,
@@ -114,8 +117,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ handle
     favorites: favoritesReceived,
     cardsOwned: collectionCopies,
     uniqueCards: collectionUnique,
-    winRate: "—",
-    gamesPlayed: "—",
+    winRate: winRatePct !== null ? `${winRatePct}%` : "—",
+    gamesPlayed: gamesTotal,
   };
   const chosenStats = parseStats(user.profileStats);
 
@@ -209,13 +212,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ handle
         </p>
       </section>
 
-      {/* Game stats — coming soon */}
+      {/* Game stats — from the member's own game log */}
       <section className="mt-10">
-        <h2 className="mb-3 text-xl font-bold text-foreground">Game stats</h2>
-        <div className="rounded-lg border border-dashed border-border bg-surface/50 px-5 py-6 text-center">
-          <p className="text-sm font-medium text-foreground">Win-rate &amp; game stats are coming soon.</p>
-          <p className="mt-1 text-xs text-muted">Once games are tracked, this is where your record shows up.</p>
-        </div>
+        <h2 className="mb-4 text-xl font-bold text-foreground">Game stats</h2>
+        {gamesTotal === 0 ? (
+          <p className="text-sm text-muted">No games logged yet.</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="Games" value={gamesTotal} />
+            <Stat label="Win rate" value={winRatePct !== null ? `${winRatePct}%` : "—"} />
+            <Stat label="Record" value={`${gamesWon}–${gamesTotal - gamesWon}`} />
+          </div>
+        )}
       </section>
     </div>
   );

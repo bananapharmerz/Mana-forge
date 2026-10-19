@@ -6,6 +6,7 @@ import DeckBuilderIndexClient from "./DeckBuilderIndexClient";
 import StarterDecks from "@/components/StarterDecks";
 import EmailConfirmNote from "@/components/EmailConfirmNote";
 import WeeklyEmailNudge from "@/components/WeeklyEmailNudge";
+import GameLogPanel from "@/components/GameLogPanel";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -32,6 +33,20 @@ export default async function DeckBuilderIndexPage() {
   const showWeeklyNudge =
     !!user && rows.length >= 1 && !!user.emailVerifiedAt && !user.weeklyEmail && !user.weeklyEmailPromptedAt;
 
+  const [games, gameTotal, gameWins] = await Promise.all([
+    db.gameLog.findMany({ where: { userId: session.user.id }, orderBy: { playedAt: "desc" }, take: 20 }),
+    db.gameLog.count({ where: { userId: session.user.id } }),
+    db.gameLog.count({ where: { userId: session.user.id, won: true } }),
+  ]);
+  const gameRows = games.map((g) => ({
+    id: g.id,
+    won: g.won,
+    commanderName: g.commanderName,
+    players: g.players,
+    playedAt: g.playedAt.toISOString(),
+    notes: g.notes,
+  }));
+
   return (
     <>
     {!user?.emailVerifiedAt && user?.email && (
@@ -52,6 +67,9 @@ export default async function DeckBuilderIndexPage() {
       profileAvatar={user?.avatar ?? null}
       starter={decks.length === 0 ? <StarterDecks signedIn title="Or copy a ready-made deck" /> : undefined}
     />
+    <div className="mx-auto max-w-5xl px-4 pb-12 sm:px-6">
+      <GameLogPanel games={gameRows} total={gameTotal} wins={gameWins} />
+    </div>
     </>
   );
 }

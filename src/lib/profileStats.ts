@@ -28,8 +28,8 @@ export const STAT_CATALOG: StatDef[] = [
   { key: "favorites", label: "Favorites" },
   { key: "cardsOwned", label: "Cards owned" },
   { key: "uniqueCards", label: "Unique cards" },
-  { key: "winRate", label: "Win rate", soon: true },
-  { key: "gamesPlayed", label: "Games played", soon: true },
+  { key: "winRate", label: "Win rate" },
+  { key: "gamesPlayed", label: "Games played" },
 ];
 
 export const STAT_LABELS: Record<StatKey, string> = Object.fromEntries(
