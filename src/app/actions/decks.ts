@@ -12,6 +12,8 @@ import { scryfallCardToDeckCard } from "@/lib/deckTypes";
 import { cleanCardBack, cleanDeckCard, cleanDeckCards, text } from "@/lib/validate";
 import { cleanPlaymat } from "@/lib/playmats";
 import { hit } from "@/lib/rateLimit";
+import { pingIndexNow } from "@/lib/indexnow";
+import { SITE } from "@/lib/site";
 
 const CARD_BACK_PRESETS = [
   "classic", "crimson", "emerald", "amethyst", "obsidian", "sunburst",
@@ -418,6 +420,16 @@ export async function setDeckPublic(deckId: string, isPublic: boolean) {
   revalidatePath("/deck-builder");
   revalidatePath(`/decks/${encodeURIComponent(deck.commanderName)}`);
   revalidatePath("/decks");
+
+  // Tell IndexNow (Bing/Yandex/…) the moment a deck goes public, so the new deck page and its
+  // commander page get crawled fast instead of waiting for the next sitemap pass. Fire-and-forget
+  // and a no-op in dev (indexNowEnabled() is false off a public https host).
+  if (isPublic) {
+    void pingIndexNow([
+      `${SITE.url}/decks/view/${deck.id}`,
+      `${SITE.url}/decks/${encodeURIComponent(deck.commanderName)}`,
+    ]);
+  }
 }
 
 export interface SiteDeckRow {
