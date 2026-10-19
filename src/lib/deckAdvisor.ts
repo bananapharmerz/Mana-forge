@@ -141,7 +141,7 @@ export async function adviseDeck(commanderName: string, opts: AdviseOptions): Pr
       playRatePct: pct,
       gameChanger: gameChangers.has(norm(cv.name)),
     });
-    if (synergy.length >= 12) break;
+    if (synergy.length >= 10) break;
   }
 
   if (!data && combos.length === 0) return null;
