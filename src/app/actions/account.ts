@@ -11,6 +11,7 @@ import { isAvatarKey } from "@/lib/avatars";
 import { HOUSE_NAME } from "@/lib/author";
 import { validateUsername } from "@/lib/username";
 import { serializeStats } from "@/lib/profileStats";
+import { uploadedImage } from "@/lib/validate";
 
 async function me() {
   const session = await auth();
@@ -49,11 +50,14 @@ export async function updateProfile(
   let avatar: string | null;
   if (isAvatarKey(avatarRaw)) {
     avatar = avatarRaw;
-  } else if (typeof avatarRaw === "string" && /^data:image\/(png|jpe?g|webp);base64,/.test(avatarRaw)) {
+  } else if (typeof avatarRaw === "string" && avatarRaw.startsWith("data:image/")) {
     // Cap the size so a photo can't bloat the row or the deck feeds that read it. The client
     // resizes to a 128px square (~5–15KB); 40000 chars (~30KB) leaves generous headroom.
     if (avatarRaw.length > 40000) return { ok: false, error: "That image is too large — pick a smaller one." };
-    avatar = avatarRaw;
+    // Strict validation: a real base64 PNG/JPEG/WebP/GIF data URL only (no SVG, no junk body).
+    const img = uploadedImage(avatarRaw, 40000);
+    if (!img) return { ok: false, error: "That image isn't a valid PNG, JPEG, WebP or GIF." };
+    avatar = img;
   } else {
     avatar = null;
   }

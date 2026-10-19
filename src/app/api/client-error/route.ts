@@ -22,9 +22,17 @@ export async function POST(req: Request) {
   const h = req.headers;
   const ua = h.get("user-agent") ?? "";
   if (!ua || BOTS.test(ua)) return ok;
-  // Only our own pages may report (a beacon from elsewhere is ignored).
+  // Only our own pages may report (a beacon from elsewhere is ignored). Match the exact hostname so
+  // a look-alike like evil-manaforgehub.com can't slip past an endsWith check.
   const origin = h.get("origin") ?? "";
-  if (origin && !origin.endsWith(host) && !origin.includes("localhost")) return ok;
+  if (origin) {
+    let okOrigin = false;
+    try {
+      const hn = new URL(origin).hostname.toLowerCase();
+      okOrigin = hn === host || hn === `www.${host}` || hn === "localhost" || hn === "127.0.0.1";
+    } catch {}
+    if (!okOrigin) return ok;
+  }
   // A crash loop in one browser shouldn't flood the log: 10 reports a minute per IP.
   if (!hit(`client-error:${ipFrom(h)}`, 10, 60_000)) return ok;
 

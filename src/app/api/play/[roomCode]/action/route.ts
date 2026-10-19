@@ -188,13 +188,13 @@ export async function POST(
       selectNewDeck(
         roomCode,
         playerId,
-        body.deckCards,
-        body.cardBackUrl,
-        body.commanderName,
-        body.commanderCard,
-        body.tokenCards,
-        body.extraCommandZoneCard,
-        body.extraCommandZoneKind,
+        cleanPlayCards(body.deckCards, 300),
+        cleanCardBack(body.cardBackUrl, CARD_BACK_PRESETS) ?? undefined,
+        body.commanderName === undefined ? undefined : text(body.commanderName, 150),
+        cleanPlayCard(body.commanderCard) ?? undefined,
+        cleanPlayCards(body.tokenCards, 100),
+        cleanPlayCard(body.extraCommandZoneCard) ?? undefined,
+        body.extraCommandZoneKind === "companion" ? "companion" : "partner",
         cleanPlaymat(body.playmat)
       );
       break;
