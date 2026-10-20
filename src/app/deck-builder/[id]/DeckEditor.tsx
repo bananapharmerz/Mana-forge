@@ -13,6 +13,7 @@ import BuyDeckPanel from "@/components/BuyDeckPanel";
 import PartnerCardStack from "@/components/PartnerCardStack";
 import DeckValuePanel from "@/components/DeckValuePanel";
 import GameChangersPanel from "@/components/GameChangersPanel";
+import OpeningHandOdds from "@/components/OpeningHandOdds";
 import DeckBuddy from "@/components/DeckBuddy";
 import { useLivePrices } from "@/components/useLivePrices";
 import { currentPrice, deckValue, signedPct, weekChange } from "@/lib/livePrice";
@@ -555,6 +556,8 @@ export default function DeckEditor({
           />
 
           <GameChangersPanel cards={[deck.commander, deck.partner, ...deck.cards].flatMap((c) => (c ? [c.name] : []))} />
+
+          <OpeningHandOdds cards={deck.cards} locked={!!guest || !premium} />
 
           <DeckValuePanel value={value} />
 
