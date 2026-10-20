@@ -35,8 +35,8 @@ export interface ProxyPdfOptions {
   /** Premium: also print each double-faced card's back face (flip art). */
   includeBacks?: boolean;
   /**
-   * Card back for double-sided printing. When set, every front page is followed by a page of backs,
-   * mirrored so they line up when the sheet is flipped on its long edge. A double-faced card gets
+   * Card back for double-sided printing. When set, every front page is followed by a page of backs
+   * in the same positions as the fronts. A double-faced card gets
    * its own flip art on the reverse instead (when includeBacks is on), making a true two-sided card.
    */
   cardBack?: { url: string; custom: boolean } | null;
@@ -201,7 +201,7 @@ export async function buildProxyPdf(cards: ProxyCard[], opts: ProxyPdfOptions): 
     const page = doc.addPage([pageW, pageH]);
     slice.forEach((pc, i) => drawSlot(page, pc.front, i % COLS, Math.floor(i / COLS)));
     drawCropMarks(page, xs, ys, grid);
-    const sides = duplex ? " Print double-sided, flip on long edge." : "";
+    const sides = duplex ? " Print double-sided." : "";
     const note = `Mana Forge playtest proxies - not for sale. Print at 100% / actual size.${sides} Card images via Scryfall; Magic: The Gathering is (c) Wizards of the Coast.   Sheet ${p + 1} of ${sheetCount}`;
     // Runs up the left margin, clear of the crop marks, so it fits on both paper sizes.
     const noteSize = 6;
@@ -210,10 +210,10 @@ export async function buildProxyPdf(cards: ProxyCard[], opts: ProxyPdfOptions): 
     page.drawText(note, { x: noteX, y: bottom + Math.max(0, (gridH - noteWidth) / 2), size: noteSize, font, color: rgb(0.45, 0.45, 0.45), rotate: degrees(90), maxWidth: gridH });
 
     if (duplex) {
-      // The reverse page: columns mirrored so each back lands behind its front after a long-edge flip.
+      // The reverse page: each back in the same grid position as its front.
       const backPage = doc.addPage([pageW, pageH]);
       slice.forEach((pc, i) => {
-        if (pc.reverse) drawSlot(backPage, pc.reverse, COLS - 1 - (i % COLS), Math.floor(i / COLS));
+        if (pc.reverse) drawSlot(backPage, pc.reverse, i % COLS, Math.floor(i / COLS));
       });
     }
   }

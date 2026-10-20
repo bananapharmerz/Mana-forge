@@ -243,15 +243,8 @@ export default function ProxiesPage() {
   for (let i = 0; i < flat.length; i += CARDS_PER_SHEET) {
     sheets.push(flat.slice(i, i + CARDS_PER_SHEET));
   }
-  // Reverse side of a sheet as printed: columns mirrored for a long-edge flip.
-  const mirrored = (sheet: (typeof flat)) => {
-    const out: (PreviewCard | null)[] = Array(CARDS_PER_SHEET).fill(null);
-    sheet.forEach((pc, i) => {
-      const row = Math.floor(i / 3);
-      out[row * 3 + (2 - (i % 3))] = pc.reverse ?? null;
-    });
-    return out;
-  };
+  // Reverse side of a sheet as printed: each back in the same position as its front.
+  const reverseSide = (sheet: typeof flat) => sheet.map((pc) => pc.reverse ?? null);
 
   const bundleEligible = totalCount > 0 && totalCount <= DECK_BUNDLE_MAX_CARDS;
   const effectiveMode: PricingMode = bundleEligible ? pricingMode : "per-card";
@@ -469,7 +462,7 @@ export default function ProxiesPage() {
                       {backChoice === "custom" && !customBack ? (
                         <span>Choose an image for the back of every card.</span>
                       ) : (
-                        <span>Prints on the reverse of every sheet. Print double-sided and flip on the long edge.{showFlips ? " Double-faced cards get their flip side there instead." : ""}</span>
+                        <span>Prints on the reverse of every sheet. Print double-sided.{showFlips ? " Double-faced cards get their flip side there instead." : ""}</span>
                       )}
                     </div>
                   </div>
@@ -569,8 +562,8 @@ export default function ProxiesPage() {
                   <PreviewSheet label={`Sheet ${i + 1}${cardBack ? " — front" : ""}`} cards={sheet.map((pc) => pc.front)} />
                   {cardBack && (
                     <PreviewSheet
-                      label={`Sheet ${i + 1} — back (mirrored to line up when you flip the page)`}
-                      cards={mirrored(sheet)}
+                      label={`Sheet ${i + 1} — back`}
+                      cards={reverseSide(sheet)}
                     />
                   )}
                 </div>
