@@ -6,6 +6,7 @@ import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import Ember from "@/components/Ember";
 import PremiumThanks from "@/components/PremiumThanks";
+import PremiumFlame from "@/components/PremiumFlame";
 import {
   createPremiumCheckoutSession,
   createBillingPortalSession,
@@ -190,8 +191,10 @@ export default function PremiumPage() {
             </div>
             <Link
               href="/signup?callbackUrl=/premium"
-              className="block w-full rounded-lg bg-gold px-8 py-3 text-center text-sm font-semibold text-black hover:bg-[#d4a23e]"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-premium px-8 py-3 text-center text-sm font-semibold text-premium-fg hover:brightness-110"
             >
+              {/* Premium's ember colour. The Stripe order button further down stays as it is on purpose. */}
+              <PremiumFlame />
               Start your {TRIAL_DAYS}-day free trial
             </Link>
             <p className="mt-2 text-center text-xs text-muted">

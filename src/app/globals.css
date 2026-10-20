@@ -11,6 +11,10 @@
   --muted: #a1947a;
   --gold: #d2a142;
   --gold-bright: #f4ce71;
+  /* Premium's own colour (ember), used only for Premium cues so they don't look like any other
+     gold button. 8.4:1 on the background; the dark text on it is 8:1. */
+  --premium: #ff8a3d;
+  --premium-fg: #1a0f05;
   /* Up/down (gains/losses, success/error) — lighter on dark so they pass WCAG contrast. */
   --up: #3fcf5f;
   --down: #ff6d76;
@@ -33,6 +37,9 @@
   --muted: #766c53;
   --gold: #b5872a;
   --gold-bright: #7c5814;
+  /* Darker ember for light pages: 5:1 on the background (4.6:1 on raised surfaces), white text on it 5.5:1. */
+  --premium: #b2470e;
+  --premium-fg: #ffffff;
   --up: #0a6e2e;
   --down: #c01616;
 }
@@ -46,6 +53,8 @@
   --color-muted: var(--muted);
   --color-gold: var(--gold);
   --color-gold-bright: var(--gold-bright);
+  --color-premium: var(--premium);
+  --color-premium-fg: var(--premium-fg);
   --color-up: var(--up);
   --color-down: var(--down);
   --font-sans: var(--font-geist-sans);
