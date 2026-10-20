@@ -15,11 +15,46 @@ import {
   type PricingMode,
 } from "@/lib/proxyTypes";
 import { formatCents } from "@/lib/money";
+import { SHOP_ENABLED } from "@/lib/features";
+import { buildProxyPdf, type CardSpacing, type PaperSize } from "@/lib/proxyPdf";
 
 export default function ProxiesPage() {
   const { cards, addCard, updateQuantity, removeCard, totalCount } = useProxyProject();
   const [pickerCardName, setPickerCardName] = useState<string | null>(null);
   const [pricingMode, setPricingMode] = useState<PricingMode>("per-card");
+  const [paper, setPaper] = useState<PaperSize>("a4");
+  const [spacing, setSpacing] = useState<CardSpacing>("none");
+  const [pdfStatus, setPdfStatus] = useState<string | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  async function downloadPdf() {
+    if (pdfBusy || cards.length === 0) return;
+    setPdfBusy(true);
+    setPdfStatus("Loading card images…");
+    try {
+      const result = await buildProxyPdf(cards, {
+        paper,
+        spacing,
+        onProgress: (done, total) => setPdfStatus(`Loading card images… ${done}/${total}`),
+      });
+      const blob = new Blob([result.bytes as BlobPart], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `manaforge-proxies-${result.cards}-cards.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      setPdfStatus(
+        result.failed.length
+          ? `PDF ready (${result.pages} page${result.pages !== 1 ? "s" : ""}). ${result.failed.length} image${result.failed.length !== 1 ? "s" : ""} couldn't load and printed as a labelled blank: ${result.failed.slice(0, 3).join(", ")}${result.failed.length > 3 ? "…" : ""}`
+          : `PDF ready — ${result.pages} page${result.pages !== 1 ? "s" : ""}. Print at 100% / "Actual size", not "Fit to page".`
+      );
+    } catch {
+      setPdfStatus("Couldn't build the PDF. Check your connection and try again.");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
 
   function handlePrintingSelected(card: ScryfallCard) {
     addCard({
@@ -79,9 +114,9 @@ export default function ProxiesPage() {
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <h1 className="text-3xl font-bold text-foreground">Proxy Builder</h1>
       <p className="mt-1 text-muted">
-        Build a print project from real card art — pick the exact printing you want, preview
-        the print sheets, and order physical proxies shipped to you. Inspired by MPCFill and
-        MakePlayingCards.
+        Playtest a card before you buy it. Pick the exact printing you want, preview the sheets,
+        and download a free print-at-home PDF with real-size cards and cut marks
+        {SHOP_ENABLED ? " — or order printed proxies shipped to you" : ""}.
       </p>
 
       <div className="mt-6 max-w-md">
@@ -147,7 +182,51 @@ export default function ProxiesPage() {
               ))}
             </div>
 
-            <div className="card-frame mt-4 p-4">
+<div className="card-frame mt-4 p-4">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                Print at home — free
+              </h3>
+              <div className="flex flex-col gap-2 text-xs text-foreground">
+                <label className="flex items-center justify-between gap-2">
+                  Paper
+                  <select
+                    value={paper}
+                    onChange={(e) => setPaper(e.target.value as PaperSize)}
+                    className="rounded border border-border bg-surface px-2 py-1"
+                  >
+                    <option value="a4">A4</option>
+                    <option value="letter">US Letter</option>
+                  </select>
+                </label>
+                <label className="flex items-center justify-between gap-2">
+                  Spacing
+                  <select
+                    value={spacing}
+                    onChange={(e) => setSpacing(e.target.value as CardSpacing)}
+                    className="rounded border border-border bg-surface px-2 py-1"
+                  >
+                    <option value="none">No gaps (fastest cutting)</option>
+                    <option value="gap">2 mm gaps</option>
+                  </select>
+                </label>
+              </div>
+              <button
+                onClick={downloadPdf}
+                disabled={pdfBusy}
+                className="mt-3 w-full rounded-lg bg-gold px-4 py-2.5 text-center text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-60"
+              >
+                {pdfBusy ? "Building PDF…" : "Download PDF"}
+              </button>
+              {pdfStatus && <p className="mt-2 text-[11px] text-muted" aria-live="polite">{pdfStatus}</p>}
+              <p className="mt-2 text-[10px] text-muted/80">
+                Real card size (63 × 88 mm), 9 per page, fits standard sleeves. Print at 100% and
+                sleeve them in front of a real card for the best feel.
+              </p>
+            </div>
+
+{SHOP_ENABLED ? (
+              <>
+                <div className="card-frame mt-4 p-4">
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
                 Pricing
               </h3>
@@ -178,6 +257,18 @@ export default function ProxiesPage() {
                 <span className="text-gold-bright">{formatCents(totalCents)}</span>
               </div>
             </div>
+                <Link
+              href={`/proxies/checkout?mode=${effectiveMode}`}
+              className="mt-2 block w-full rounded-lg border border-gold px-4 py-2.5 text-center text-sm font-semibold text-gold-bright hover:bg-gold hover:text-black"
+            >
+              Order Printed Proxies
+            </Link>
+              </>
+            ) : (
+              <p className="mt-4 rounded-md border border-border bg-surface px-3 py-2 text-[11px] text-muted">
+                Printed &amp; shipped proxies are coming soon.
+              </p>
+            )}
 
             <button
               onClick={downloadProject}
@@ -185,12 +276,6 @@ export default function ProxiesPage() {
             >
               Download Project (CSV)
             </button>
-            <Link
-              href={`/proxies/checkout?mode=${effectiveMode}`}
-              className="mt-2 block w-full rounded-lg bg-gold px-4 py-2.5 text-center text-sm font-semibold text-black hover:bg-gold-bright"
-            >
-              Order Proxies
-            </Link>
           </div>
 
           <div className="flex-1">

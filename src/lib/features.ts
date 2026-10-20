@@ -3,6 +3,7 @@
 //   NEXT_PUBLIC_SHOP_ENABLED=1   → the store (sleeves, deck boxes…) and proxy printing are open
 //   NEXT_PUBLIC_SHOP_ENABLED=0   → both are hidden: no menu links, their pages show "coming soon",
 //                                  and their checkouts refuse orders. Premium is not affected.
+//                                  The free print-at-home proxy PDF (/proxies) is always open.
 //
 // Off unless set to 1, so a fresh launch never takes shop orders by accident.
 
@@ -20,7 +21,7 @@ export const ADSENSE_SLOTS = {
 };
 
 /** Paths that belong to the shop (store + proxies). */
-export const SHOP_PATHS = ["/store", "/proxies"] as const;
+export const SHOP_PATHS = ["/store", "/proxies/checkout", "/proxies/success"] as const;
 
 export const isShopPath = (pathname: string) => SHOP_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 

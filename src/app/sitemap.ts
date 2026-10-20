@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: u("/halloween"), changeFrequency: "weekly", priority: 0.6 },
     { url: u("/community"), changeFrequency: "hourly", priority: 0.6 },
     { url: u("/vote"), changeFrequency: "weekly", priority: 0.5 },
-    ...(SHOP_ENABLED ? [{ url: u("/proxies"), changeFrequency: "monthly" as const, priority: 0.7 }] : []),
+    { url: u("/proxies"), changeFrequency: "monthly" as const, priority: 0.7 },
     { url: u("/play"), changeFrequency: "monthly", priority: 0.6 },
     { url: u("/premium"), changeFrequency: "monthly", priority: 0.5 },
     { url: u("/links"), changeFrequency: "monthly", priority: 0.3 },

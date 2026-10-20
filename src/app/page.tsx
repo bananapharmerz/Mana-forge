@@ -62,8 +62,8 @@ const features = [
   {
     href: "/proxies",
     title: "Proxies",
-    desc: "Design and order custom proxy cards, or print your own.",
-    status: SHOP_ENABLED ? "live" : "soon",
+    desc: "Playtest before you buy: free print-at-home proxy sheets at real card size.",
+    status: "live",
   },
   {
     href: "/store",

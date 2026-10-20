@@ -72,6 +72,7 @@ const MENUS: NavMenu[] = [
         items: [
           { href: "/play", label: "Play" },
           { href: "/packs", label: "Open Packs" },
+          { href: "/proxies", label: "Print Proxies", badge: "proxy" },
           { href: "/community", label: "Community" },
         ],
       },
@@ -84,7 +85,6 @@ const MENUS: NavMenu[] = [
       {
         items: [
           { href: "/store", label: "Store", badge: "cart" },
-          { href: "/proxies", label: "Proxies", badge: "proxy" },
         ],
       },
     ],

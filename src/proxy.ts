@@ -8,7 +8,8 @@ import { isIgnored, isNexus } from "@/lib/ignoreMe";
 // 1. Banned IPs (src/lib/bans.ts) see /banned instead of the site. The list is a small JSON file
 //    re-read at most every 10 seconds, and only when it changed.
 // 2. While the shop is switched off (NEXT_PUBLIC_SHOP_ENABLED, see src/lib/features.ts), every
-//    store and proxy page shows the "coming soon" page instead.
+//    store page and the proxy checkout show the "coming soon" page instead (the free
+//    print-at-home builder at /proxies stays open).
 // 3. Page loads are counted (browsers vs bots) for Nexus's Activity panel.
 
 const g = globalThis as unknown as { __mfBans?: { checked: number; mtime: number; bans: BansFile } };
@@ -51,7 +52,8 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  const shop = pathname === "/store" || pathname.startsWith("/store/") || pathname === "/proxies" || pathname.startsWith("/proxies/");
+  // The free print-at-home proxy builder (/proxies) stays open; only paid ordering is shop-gated.
+  const shop = pathname === "/store" || pathname.startsWith("/store/") || pathname.startsWith("/proxies/");
   if (shop && process.env.NEXT_PUBLIC_SHOP_ENABLED !== "1") return NextResponse.rewrite(new URL("/coming-soon", request.url));
   return NextResponse.next();
 }
