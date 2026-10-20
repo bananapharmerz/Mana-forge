@@ -101,6 +101,21 @@ export default function PremiumPage() {
         <Ember mood="hyped" size={130} className="hidden sm:block" title="Ember, excited about Premium" />
       </PageHeader>
       <PremiumThanks trialDays={TRIAL_DAYS} />
+      {/* On phones the comparison table comes first and pushes the plan picker a long way down,
+          so half the visitors left before seeing it. This only jumps to it; the plans, prices,
+          consent tick and order button all stay in the plan box. Only promise "free" to people
+          who'd actually get the trial. */}
+      {!isPremium && (
+        <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-6 lg:hidden">
+          <a
+            href="#choose-plan"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-gold-bright underline-offset-4 hover:underline"
+          >
+            {trial ? `Try Premium free for ${TRIAL_DAYS} days` : "See the plans"}
+            <span aria-hidden>↓</span>
+          </a>
+        </div>
+      )}
       <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section aria-label="Free and Premium compared" className="min-w-0">
           <h2 className="font-display text-2xl font-semibold text-foreground">Free vs Premium</h2>
@@ -151,7 +166,7 @@ export default function PremiumPage() {
           <p className="mt-4 text-xs text-muted">{PREMIUM_VAT_NOTE} Card names and images stay free for everyone.</p>
         </section>
 
-        <aside className="card-frame h-fit min-w-0 p-5 lg:sticky lg:top-6">
+        <aside id="choose-plan" className="card-frame h-fit min-w-0 scroll-mt-20 p-5 lg:sticky lg:top-6">
           <h2 className="font-display text-2xl font-semibold text-foreground">{isPremium ? "Your plan" : "Choose a plan"}</h2>
         {tier === undefined && status !== "unauthenticated" && (
           <div className="mt-3">
