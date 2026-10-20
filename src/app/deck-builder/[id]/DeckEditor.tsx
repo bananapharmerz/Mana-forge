@@ -42,7 +42,9 @@ import GuestSaveBanner from "@/components/GuestSaveBanner";
 import BudgetUpgradesPanel from "@/components/BudgetUpgradesPanel";
 import FirstDeckNudge from "@/components/FirstDeckNudge";
 import { ManaCost } from "@/components/ManaText";
+import { cleanCardNote } from "@/lib/validate";
 import {
+  CARD_NOTE_MAX,
   CATEGORY_ORDER,
   defaultCategory,
   deckSize,
@@ -75,6 +77,8 @@ export default function DeckEditor({
   const [artTarget, setArtTarget] = useState<
     { name: string; slot: "card" | "commander" | "partner" | "companion" } | null
   >(null);
+  // The card whose note field is open (one at a time keeps the list tidy).
+  const [noteFor, setNoteFor] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState(initialDeck.name);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [publicBusy, setPublicBusy] = useState(false);
@@ -257,8 +261,8 @@ export default function DeckEditor({
     const next = cardToDeckCard(card);
     const { slot, name } = artTarget;
     if (slot === "card") {
-      // Only the printing changes — keep the existing quantity and category.
-      updateCards(deck.cards.map((c) => (c.name === name ? { ...next, quantity: c.quantity, category: c.category } : c)));
+      // Only the printing changes — keep the existing quantity, category and note.
+      updateCards(deck.cards.map((c) => (c.name === name ? { ...next, quantity: c.quantity, category: c.category, note: c.note } : c)));
     } else if (slot === "commander") {
       setDeck((d) => ({ ...d, commander: next }));
       if (!guest) void updateDeckCommander(deck.id, next);
@@ -304,6 +308,11 @@ export default function DeckEditor({
 
   function removeCard(name: string) {
     updateCards(deck.cards.filter((c) => c.name !== name));
+  }
+
+  // Saved through the normal autosave; the server trims it and drops anything link-like.
+  function updateNote(name: string, note: string) {
+    updateCards(deck.cards.map((c) => (c.name === name ? { ...c, note: note.slice(0, CARD_NOTE_MAX) || undefined } : c)));
   }
 
   function updateCategory(name: string, category: string) {
@@ -641,10 +650,8 @@ export default function DeckEditor({
                 </h3>
                 <div className="flex flex-col gap-1">
                   {group.cards.map((c) => (
-                    <div
-                      key={c.name}
-                      className="flex items-center gap-3 rounded-md border border-border bg-surface px-3 py-2"
-                    >
+                    <div key={c.name} className="rounded-md border border-border bg-surface px-3 py-2">
+                    <div className="flex items-center gap-3">
                       <span className="w-6 text-right text-xs text-muted">{c.quantity}x</span>
                       <CardNameZoom name={c.name} imageUrl={c.imageUrl} />
                       <ManaCost cost={c.manaCost} className="hidden text-sm sm:inline-flex" />
@@ -679,6 +686,13 @@ export default function DeckEditor({
                         </div>
                       )}
                       <button
+                        onClick={() => setNoteFor(noteFor === c.name ? null : c.name)}
+                        className={`text-xs hover:text-gold-bright ${c.note ? "text-gold" : "text-muted"}`}
+                        title="Add a short note on why this card is here (shown on your public deck)"
+                      >
+                        Note
+                      </button>
+                      <button
                         onClick={() => changeArt(c.name, "card")}
                         className="text-xs text-muted hover:text-gold-bright"
                         title="Change this card's art"
@@ -691,6 +705,31 @@ export default function DeckEditor({
                       >
                         Remove
                       </button>
+                    </div>
+                    {noteFor === c.name ? (
+                      <div className="ml-9 mt-1.5">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={c.note ?? ""}
+                          maxLength={CARD_NOTE_MAX}
+                          onChange={(e) => updateNote(c.name, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === "Escape") setNoteFor(null);
+                          }}
+                          placeholder="Why it's here, e.g. wins through Drannith"
+                          aria-label={`Note for ${c.name}`}
+                          className="w-full rounded-md border border-border bg-surface-raised px-2 py-1 text-xs text-foreground"
+                        />
+                        <p className="mt-0.5 text-[11px] text-muted">
+                          {c.note && !cleanCardNote(c.note)
+                            ? "Links and web addresses aren't allowed, so this note won't be saved."
+                            : `${(c.note ?? "").length}/${CARD_NOTE_MAX} · shown under the card on your public deck`}
+                        </p>
+                      </div>
+                    ) : (
+                      c.note && <p className="ml-9 mt-0.5 text-xs italic text-muted">{c.note}</p>
+                    )}
                     </div>
                   ))}
                 </div>

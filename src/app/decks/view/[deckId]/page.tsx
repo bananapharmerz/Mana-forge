@@ -255,13 +255,15 @@ export default async function ViewDeckPage({
                 </h3>
                 <div className="flex flex-col gap-1">
                   {group.cards.map((c) => (
-                    <div
-                      key={c.name}
-                      className="flex items-center gap-3 rounded-md border border-border bg-surface px-3 py-2"
-                    >
-                      <span className="w-6 text-right text-xs text-muted">{c.quantity}x</span>
-                      <CardNameZoom name={c.name} imageUrl={c.imageUrl} />
-                      <ManaCost cost={c.manaCost} className="ml-auto text-sm" />
+                    <div key={c.name} className="rounded-md border border-border bg-surface px-3 py-2">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 text-right text-xs text-muted">{c.quantity}x</span>
+                        <CardNameZoom name={c.name} imageUrl={c.imageUrl} />
+                        <ManaCost cost={c.manaCost} className="ml-auto text-sm" />
+                      </div>
+                      {/* The owner's own "why it's here" line. Plain text: React escapes it and
+                          the server already dropped anything that looked like a link. */}
+                      {c.note && <p className="ml-9 mt-0.5 text-xs italic text-muted">{c.note}</p>}
                     </div>
                   ))}
                 </div>

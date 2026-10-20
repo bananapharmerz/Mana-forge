@@ -10,7 +10,12 @@ export interface DeckCard {
   quantity: number;
   category: string;
   priceUsd?: number | null;
+  // The owner's short "why it's here" line, shown under the card on the public deck page.
+  // Plain text, at most CARD_NOTE_MAX characters (cleaned on the server in validate.ts).
+  note?: string;
 }
+
+export const CARD_NOTE_MAX = 80;
 
 // Minimal shape needed from a Scryfall card to build a DeckCard — kept as a structural type
 // (rather than importing ScryfallCard directly) so this file has no dependency on scryfall.ts.

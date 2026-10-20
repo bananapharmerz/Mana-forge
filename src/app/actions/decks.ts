@@ -628,6 +628,23 @@ export async function getMixedDecksPage(
   };
 }
 
+// A copy of someone else's deck starts without their card notes: those are the original owner's
+// words, and they shouldn't end up on another player's deck if the copy is made public.
+function withoutCardNotes(cardsJson: string): string {
+  try {
+    const cards = JSON.parse(cardsJson) as DeckCard[];
+    return JSON.stringify(
+      cards.map((c) => {
+        const copy = { ...c };
+        delete copy.note;
+        return copy;
+      })
+    );
+  } catch {
+    return cardsJson;
+  }
+}
+
 export async function saveDeckCopy(
   sourceDeckId: string
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
@@ -662,7 +679,7 @@ export async function saveDeckCopy(
       name: source.name,
       commanderName: source.commanderName,
       commanderData: source.commanderData,
-      cards: source.cards,
+      cards: withoutCardNotes(source.cards),
       ownerId: session.user.id,
       isPublic: false,
     },
