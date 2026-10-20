@@ -34,6 +34,10 @@ function saveFile(url: string, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
+const PROXY_BACK_URL = "/proxy/manaforge-proxy-back.jpg";
+
+type PreviewCard = { key: string; name: string; imageUrl?: string; artist?: string; flip?: boolean };
+
 export default function ProxiesPage() {
   const { cards, addCard, addCards, updateQuantity, removeCard, totalCount } = useProxyProject();
   const [searchMode, setSearchMode] = useState<"cards" | "tokens">("cards");
@@ -43,7 +47,28 @@ export default function ProxiesPage() {
   const [deckStatus, setDeckStatus] = useState<string | null>(null);
   const [deckBusy, setDeckBusy] = useState(false);
   const [includeBacks, setIncludeBacks] = useState(true);
+  // Card back for double-sided printing: our "PROXY" back by default, your own image, or none.
+  const [backChoice, setBackChoice] = useState<"proxy" | "custom" | "none">("proxy");
+  const [customBack, setCustomBack] = useState<string | null>(null);
+  const [backError, setBackError] = useState<string | null>(null);
   const premium = access?.premium === true;
+  const showFlips = premium && includeBacks;
+  const cardBack =
+    backChoice === "proxy"
+      ? { url: PROXY_BACK_URL, custom: false }
+      : backChoice === "custom" && customBack
+        ? { url: customBack, custom: true }
+        : null;
+
+  function handleBackFile(file: File | undefined) {
+    setBackError(null);
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return setBackError("Please choose an image file.");
+    if (file.size > 5 * 1024 * 1024) return setBackError("Image is too large — please use one under 5MB.");
+    const reader = new FileReader();
+    reader.onload = () => setCustomBack(reader.result as string);
+    reader.readAsDataURL(file);
+  }
 
   useEffect(() => {
     getProxyAccess()
@@ -94,7 +119,8 @@ export default function ProxiesPage() {
       const result = await buildProxyPdf(cards, {
         paper,
         spacing,
-        includeBacks: premium && includeBacks,
+        includeBacks: showFlips,
+        cardBack,
         onProgress: (done, total) => setPdfStatus(`Loading card images… ${done}/${total}`),
       });
       const blob = new Blob([result.bytes as BlobPart], { type: "application/pdf" });
@@ -137,7 +163,8 @@ export default function ProxiesPage() {
     try {
       const { buildProxyZip } = await import("@/lib/proxyZip");
       const result = await buildProxyZip(cards, {
-        includeBacks: premium && includeBacks,
+        includeBacks: showFlips,
+        cardBack,
         onProgress: (done, total) => setPdfStatus(`Loading card images… ${done}/${total}`),
       });
       saveFile(URL.createObjectURL(result.blob), "manaforge-proxy-images.zip");
@@ -194,16 +221,37 @@ export default function ProxiesPage() {
     URL.revokeObjectURL(url);
   }
 
-  const flat: { scryfallId: string; name: string; imageUrl?: string; artist?: string }[] = [];
+  // Mirrors what the PDF prints (src/lib/proxyPdf.ts): double-sided puts flip art or the card back
+  // on each card's reverse; single-sided prints flip art as its own card after the front.
+  const flat: { front: PreviewCard; reverse?: PreviewCard }[] = [];
+  const backPreview: PreviewCard | undefined = cardBack ? { key: "card-back", name: "Card back", imageUrl: cardBack.url } : undefined;
   for (const c of cards) {
+    const front: PreviewCard = { key: c.scryfallId, name: c.name, imageUrl: c.imageUrl, artist: c.artist };
+    const flipCard: PreviewCard | undefined =
+      showFlips && c.backImageUrl && !c.isCustomArt
+        ? { key: `${c.scryfallId}:back`, name: `${c.name} (back)`, imageUrl: c.backImageUrl, artist: c.artist, flip: true }
+        : undefined;
     for (let i = 0; i < c.quantity; i++) {
-      flat.push({ scryfallId: c.scryfallId, name: c.name, imageUrl: c.imageUrl, artist: c.artist });
+      if (backPreview) flat.push({ front, reverse: flipCard ?? backPreview });
+      else {
+        flat.push({ front });
+        if (flipCard) flat.push({ front: flipCard });
+      }
     }
   }
   const sheets: (typeof flat)[] = [];
   for (let i = 0; i < flat.length; i += CARDS_PER_SHEET) {
     sheets.push(flat.slice(i, i + CARDS_PER_SHEET));
   }
+  // Reverse side of a sheet as printed: columns mirrored for a long-edge flip.
+  const mirrored = (sheet: (typeof flat)) => {
+    const out: (PreviewCard | null)[] = Array(CARDS_PER_SHEET).fill(null);
+    sheet.forEach((pc, i) => {
+      const row = Math.floor(i / 3);
+      out[row * 3 + (2 - (i % 3))] = pc.reverse ?? null;
+    });
+    return out;
+  };
 
   const bundleEligible = totalCount > 0 && totalCount <= DECK_BUNDLE_MAX_CARDS;
   const effectiveMode: PricingMode = bundleEligible ? pricingMode : "per-card";
@@ -390,9 +438,42 @@ export default function ProxiesPage() {
                     disabled={!premium}
                     onChange={(e) => setIncludeBacks(e.target.checked)}
                   />
-                  Print back faces of double-faced cards
+                  Print flip side of double-faced cards
                   {!premium && <span className="text-[10px] font-semibold uppercase text-gold-bright">Premium</span>}
                 </label>
+                <label className="flex items-center justify-between gap-2">
+                  Card back
+                  <select
+                    value={backChoice}
+                    onChange={(e) => setBackChoice(e.target.value as "proxy" | "custom" | "none")}
+                    className="rounded border border-border bg-surface px-2 py-1"
+                  >
+                    <option value="proxy">Mana Forge proxy back</option>
+                    <option value="custom">Upload my own</option>
+                    <option value="none">None (single-sided)</option>
+                  </select>
+                </label>
+                {backChoice !== "none" && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 shrink-0 overflow-hidden rounded border border-border bg-surface-raised" style={{ aspectRatio: "2.5 / 3.5" }}>
+                      {cardBack && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={cardBack.url} alt="Card back" className="h-full w-full object-cover" />
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1 text-[10px] text-muted">
+                      {backChoice === "custom" && (
+                        <input type="file" accept="image/*" onChange={(e) => handleBackFile(e.target.files?.[0])} className="text-[10px]" />
+                      )}
+                      {backError && <span className="text-down">{backError}</span>}
+                      {backChoice === "custom" && !customBack ? (
+                        <span>Choose an image for the back of every card.</span>
+                      ) : (
+                        <span>Prints on the reverse of every sheet. Print double-sided and flip on the long edge.{showFlips ? " Double-faced cards get their flip side there instead." : ""}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => makeSheets("print")}
@@ -484,38 +565,14 @@ export default function ProxiesPage() {
             </h2>
             <div className="flex flex-col gap-6">
               {sheets.map((sheet, i) => (
-                <div key={i} className="card-frame p-4">
-                  <p className="mb-2 text-xs text-muted">Sheet {i + 1}</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {sheet.map((c, j) => (
-                      <div key={`${c.scryfallId}-${j}`} className="flex flex-col gap-0.5">
-                        <div
-                          className="overflow-hidden rounded"
-                          style={{ aspectRatio: "2.5 / 3.5" }}
-                        >
-                          {c.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={c.imageUrl}
-                              alt={c.name}
-                              loading="lazy"
-                              decoding="async"
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center bg-surface-raised text-[10px] text-muted">
-                              {c.name}
-                            </div>
-                          )}
-                        </div>
-                        {c.artist && (
-                          <p className="truncate text-center text-[8px] text-muted">
-                            Art: {c.artist}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                <div key={i} className="flex flex-col gap-3">
+                  <PreviewSheet label={`Sheet ${i + 1}${cardBack ? " — front" : ""}`} cards={sheet.map((pc) => pc.front)} />
+                  {cardBack && (
+                    <PreviewSheet
+                      label={`Sheet ${i + 1} — back (mirrored to line up when you flip the page)`}
+                      cards={mirrored(sheet)}
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -527,6 +584,35 @@ export default function ProxiesPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function PreviewSheet({ label, cards }: { label: string; cards: (PreviewCard | null)[] }) {
+  return (
+    <div className="card-frame p-4">
+      <p className="mb-2 text-xs text-muted">{label}</p>
+      <div className="grid grid-cols-3 gap-2">
+        {cards.map((c, j) => (
+          <div key={`${c?.key ?? "empty"}-${j}`} className="flex flex-col gap-0.5">
+            <div className="overflow-hidden rounded" style={{ aspectRatio: "2.5 / 3.5" }}>
+              {c?.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={c.imageUrl} alt={c.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+              ) : c ? (
+                <div className="flex h-full items-center justify-center bg-surface-raised text-[10px] text-muted">{c.name}</div>
+              ) : (
+                <div className="h-full w-full rounded border border-dashed border-border/50" />
+              )}
+            </div>
+            {c?.flip ? (
+              <p className="truncate text-center text-[8px] font-semibold text-gold-bright">Flip side</p>
+            ) : c?.artist ? (
+              <p className="truncate text-center text-[8px] text-muted">Art: {c.artist}</p>
+            ) : null}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

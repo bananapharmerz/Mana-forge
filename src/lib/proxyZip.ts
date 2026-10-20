@@ -19,7 +19,11 @@ function safeName(s: string): string {
 
 export async function buildProxyZip(
   cards: ProxyCard[],
-  opts: { includeBacks?: boolean; onProgress?: (done: number, total: number) => void }
+  opts: {
+    includeBacks?: boolean;
+    cardBack?: { url: string } | null;
+    onProgress?: (done: number, total: number) => void;
+  }
 ): Promise<ProxyZipResult> {
   const { default: JSZip } = await import("jszip");
   const zip = new JSZip();
@@ -34,6 +38,7 @@ export async function buildProxyZip(
       if (opts.includeBacks && c.backImageUrl && !c.isCustomArt) list.push({ name: `${base} - back`, label: `${c.name} (back)`, url: c.backImageUrl });
       return list;
     });
+  if (opts.cardBack) jobs.unshift({ name: "000 card back", label: "Card back", url: opts.cardBack.url });
 
   const failed: string[] = [];
   let done = 0;

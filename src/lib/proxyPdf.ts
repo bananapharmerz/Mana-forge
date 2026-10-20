@@ -32,8 +32,14 @@ const FETCH_CONCURRENCY = 6;
 export interface ProxyPdfOptions {
   paper: PaperSize;
   spacing: CardSpacing;
-  /** Premium: print each double-faced card's back face right after its front. */
+  /** Premium: also print each double-faced card's back face (flip art). */
   includeBacks?: boolean;
+  /**
+   * Card back for double-sided printing. When set, every front page is followed by a page of backs,
+   * mirrored so they line up when the sheet is flipped on its long edge. A double-faced card gets
+   * its own flip art on the reverse instead (when includeBacks is on), making a true two-sided card.
+   */
+  cardBack?: { url: string; custom: boolean } | null;
   onProgress?: (done: number, total: number) => void;
 }
 
@@ -104,13 +110,33 @@ function drawCropMarks(page: PDFPage, xs: number[], ys: number[], grid: { left: 
   }
 }
 
+interface PrintCard {
+  front: Slot;
+  /** What goes on the reverse when printing double-sided. */
+  reverse?: Slot;
+}
+
 export async function buildProxyPdf(cards: ProxyCard[], opts: ProxyPdfOptions): Promise<ProxyPdfResult> {
   const front = (c: ProxyCard): Slot => ({ key: c.scryfallId, name: c.name, url: c.imageUrl, custom: !!c.isCustomArt });
-  const back = (c: ProxyCard): Slot => ({ key: `${c.scryfallId}:back`, name: `${c.name} (back)`, url: c.backImageUrl, custom: false });
-  const withBack = (c: ProxyCard) => !!(opts.includeBacks && c.backImageUrl && !c.isCustomArt);
-  const flat: Slot[] = cards.flatMap((c) =>
-    Array.from({ length: c.quantity }, () => (withBack(c) ? [front(c), back(c)] : [front(c)])).flat()
+  const flip = (c: ProxyCard): Slot => ({ key: `${c.scryfallId}:back`, name: `${c.name} (back)`, url: c.backImageUrl, custom: false });
+  const hasFlip = (c: ProxyCard) => !!(opts.includeBacks && c.backImageUrl && !c.isCustomArt);
+  const backSlot: Slot | null = opts.cardBack
+    ? { key: "card-back", name: "Card back", url: opts.cardBack.url, custom: opts.cardBack.custom }
+    : null;
+  const duplex = !!backSlot;
+
+  // Double-sided: one card per copy, flip art (or the card back) on its reverse.
+  // Single-sided: flip art prints as its own card right after the front.
+  const flat: PrintCard[] = cards.flatMap((c) =>
+    Array.from({ length: c.quantity }, (): PrintCard[] =>
+      duplex
+        ? [{ front: front(c), reverse: hasFlip(c) ? flip(c) : backSlot! }]
+        : hasFlip(c)
+          ? [{ front: front(c) }, { front: flip(c) }]
+          : [{ front: front(c) }]
+    ).flat()
   );
+
   const doc = await PDFDocument.create();
   doc.setTitle("Mana Forge proxy sheets");
   doc.setCreator("Mana Forge (manaforgehub.com)");
@@ -118,9 +144,12 @@ export async function buildProxyPdf(cards: ProxyCard[], opts: ProxyPdfOptions): 
   const font = await doc.embedFont(StandardFonts.Helvetica);
 
   // Load each distinct image once, a few at a time.
-  const unique: Slot[] = cards
-    .filter((c) => c.quantity > 0)
-    .flatMap((c) => (withBack(c) ? [front(c), back(c)] : [front(c)]));
+  const uniqueMap = new Map<string, Slot>();
+  for (const pc of flat) {
+    uniqueMap.set(pc.front.key, pc.front);
+    if (pc.reverse) uniqueMap.set(pc.reverse.key, pc.reverse);
+  }
+  const unique = [...uniqueMap.values()];
   const images = new Map<string, PDFImage | null>();
   const failed: string[] = [];
   let done = 0;
@@ -152,33 +181,42 @@ export async function buildProxyPdf(cards: ProxyCard[], opts: ProxyPdfOptions): 
   const xs = [...new Set(Array.from({ length: COLS }, (_, c) => [left + c * (CARD_W + gap), left + c * (CARD_W + gap) + CARD_W]).flat().map((v) => v.toFixed(2)))].map(Number);
   const ys = [...new Set(Array.from({ length: ROWS }, (_, r) => [bottom + r * (CARD_H + gap), bottom + r * (CARD_H + gap) + CARD_H]).flat().map((v) => v.toFixed(2)))].map(Number);
 
+  function drawSlot(page: PDFPage, slot: Slot, col: number, row: number) {
+    const x = left + col * (CARD_W + gap);
+    const y = grid.top - (row + 1) * CARD_H - row * gap; // fill from the top row down
+    const img = images.get(slot.key);
+    if (img) {
+      page.drawImage(img, { x, y, width: CARD_W, height: CARD_H });
+    } else {
+      page.drawRectangle({ x, y, width: CARD_W, height: CARD_H, borderColor: rgb(0.6, 0.6, 0.6), borderWidth: 0.6 });
+      const label = slot.name.length > 34 ? `${slot.name.slice(0, 33)}...` : slot.name;
+      page.drawText(label, { x: x + 4 * MM, y: y + CARD_H / 2, size: 9, font, color: rgb(0.3, 0.3, 0.3) });
+    }
+  }
+
   const perPage = COLS * ROWS;
-  const pageCount = Math.max(1, Math.ceil(flat.length / perPage));
-  for (let p = 0; p < pageCount; p++) {
-    const page = doc.addPage([pageW, pageH]);
+  const sheetCount = Math.max(1, Math.ceil(flat.length / perPage));
+  for (let p = 0; p < sheetCount; p++) {
     const slice = flat.slice(p * perPage, (p + 1) * perPage);
-    slice.forEach((slot, i) => {
-      const col = i % COLS;
-      const row = Math.floor(i / COLS);
-      const x = left + col * (CARD_W + gap);
-      const y = grid.top - (row + 1) * CARD_H - row * gap; // fill from the top row down
-      const img = images.get(slot.key);
-      if (img) {
-        page.drawImage(img, { x, y, width: CARD_W, height: CARD_H });
-      } else {
-        page.drawRectangle({ x, y, width: CARD_W, height: CARD_H, borderColor: rgb(0.6, 0.6, 0.6), borderWidth: 0.6 });
-        const label = slot.name.length > 34 ? `${slot.name.slice(0, 33)}...` : slot.name;
-        page.drawText(label, { x: x + 4 * MM, y: y + CARD_H / 2, size: 9, font, color: rgb(0.3, 0.3, 0.3) });
-      }
-    });
+    const page = doc.addPage([pageW, pageH]);
+    slice.forEach((pc, i) => drawSlot(page, pc.front, i % COLS, Math.floor(i / COLS)));
     drawCropMarks(page, xs, ys, grid);
-    const note = `Mana Forge playtest proxies - not for sale. Print at 100% / actual size. Card images via Scryfall; Magic: The Gathering is (c) Wizards of the Coast.   Page ${p + 1} of ${pageCount}`;
+    const sides = duplex ? " Print double-sided, flip on long edge." : "";
+    const note = `Mana Forge playtest proxies - not for sale. Print at 100% / actual size.${sides} Card images via Scryfall; Magic: The Gathering is (c) Wizards of the Coast.   Sheet ${p + 1} of ${sheetCount}`;
     // Runs up the left margin, clear of the crop marks, so it fits on both paper sizes.
     const noteSize = 6;
     const noteX = left - MARK_OFFSET - MARK_LEN - 1.5 * MM;
     const noteWidth = font.widthOfTextAtSize(note, noteSize);
     page.drawText(note, { x: noteX, y: bottom + Math.max(0, (gridH - noteWidth) / 2), size: noteSize, font, color: rgb(0.45, 0.45, 0.45), rotate: degrees(90), maxWidth: gridH });
+
+    if (duplex) {
+      // The reverse page: columns mirrored so each back lands behind its front after a long-edge flip.
+      const backPage = doc.addPage([pageW, pageH]);
+      slice.forEach((pc, i) => {
+        if (pc.reverse) drawSlot(backPage, pc.reverse, COLS - 1 - (i % COLS), Math.floor(i / COLS));
+      });
+    }
   }
 
-  return { bytes: await doc.save(), pages: pageCount, cards: flat.length, failed };
+  return { bytes: await doc.save(), pages: doc.getPageCount(), cards: flat.length, failed };
 }

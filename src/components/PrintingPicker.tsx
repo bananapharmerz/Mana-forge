@@ -6,6 +6,7 @@ import {
   streamAllPrintings,
   printingTags,
   cardImage,
+  cardBackImage,
   cardArtist,
   cardDistinguishingText,
   type ScryfallCard,
@@ -29,6 +30,15 @@ export default function PrintingPicker({
   const [loadingMore, setLoadingMore] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [multilingual, setMultilingual] = useState(false);
+  // Double-faced options currently showing their flip side.
+  const [flipped, setFlipped] = useState<Set<string>>(new Set());
+  const toggleFlip = (id: string) =>
+    setFlipped((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const [showCustom, setShowCustom] = useState(false);
   const [customPreview, setCustomPreview] = useState<string | null>(null);
   const [customError, setCustomError] = useState<string | null>(null);
@@ -171,39 +181,53 @@ export default function PrintingPicker({
           {printings?.map((card) => {
             // The "normal" thumbnail is about a third of the print image's size, and lazy loading
             // means only the options on screen download.
-            const img = cardImage(card);
+            const back = cardBackImage(card);
+            const showBack = !!back && flipped.has(card.id);
+            const img = showBack ? back : cardImage(card);
             const details = cardDistinguishingText(card);
             const tags = printingTags(card);
             return (
-              <button
-                key={card.id}
-                onClick={() => onSelect(card)}
-                className="flex flex-col gap-1 rounded-md border border-border p-1.5 text-left hover:border-gold"
-              >
-                <div className="overflow-hidden rounded" style={{ aspectRatio: "2.5 / 3.5" }}>
-                  {img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={img} alt={card.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center bg-surface-raised text-[9px] text-muted">
-                      No image
-                    </div>
+              <div key={card.id} className="relative">
+                <button
+                  onClick={() => onSelect(card)}
+                  className="flex w-full flex-col gap-1 rounded-md border border-border p-1.5 text-left hover:border-gold"
+                >
+                  <div className="overflow-hidden rounded" style={{ aspectRatio: "2.5 / 3.5" }}>
+                    {img ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={img} alt={card.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-surface-raised text-[9px] text-muted">
+                        No image
+                      </div>
+                    )}
+                  </div>
+                  <p className="line-clamp-1 text-[10px] text-muted">
+                    {card.set_name}
+                    {card.collector_number ? ` #${card.collector_number}` : ""}
+                  </p>
+                  {tags.length > 0 && (
+                    <p className="line-clamp-1 text-[9px] font-semibold text-gold-bright">{tags.join(" · ")}</p>
                   )}
-                </div>
-                <p className="line-clamp-1 text-[10px] text-muted">
-                  {card.set_name}
-                  {card.collector_number ? ` #${card.collector_number}` : ""}
-                </p>
-                {tags.length > 0 && (
-                  <p className="line-clamp-1 text-[9px] font-semibold text-gold-bright">{tags.join(" · ")}</p>
+                  {cardArtist(card) && (
+                    <p className="line-clamp-1 text-[9px] text-muted/70">Art by {cardArtist(card)}</p>
+                  )}
+                  {details && (
+                    <p className="line-clamp-3 text-[9px] text-foreground/80">{details}</p>
+                  )}
+                </button>
+                {back && (
+                  <button
+                    type="button"
+                    onClick={() => toggleFlip(card.id)}
+                    aria-label={showBack ? "Show front" : "Show flip side"}
+                    title={showBack ? "Show front" : "Show flip side"}
+                    className="absolute right-2.5 top-2.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-black/90"
+                  >
+                    ⟲ {showBack ? "Front" : "Flip"}
+                  </button>
                 )}
-                {cardArtist(card) && (
-                  <p className="line-clamp-1 text-[9px] text-muted/70">Art by {cardArtist(card)}</p>
-                )}
-                {details && (
-                  <p className="line-clamp-3 text-[9px] text-foreground/80">{details}</p>
-                )}
-              </button>
+              </div>
             );
           })}
         </div>
