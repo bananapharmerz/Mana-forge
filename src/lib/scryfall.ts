@@ -35,6 +35,12 @@ export interface ScryfallCard {
   set?: string;
   rarity?: "common" | "uncommon" | "rare" | "mythic" | "special" | "bonus";
   collector_number?: string;
+  lang?: string;
+  full_art?: boolean;
+  border_color?: string;
+  frame_effects?: string[];
+  promo_types?: string[];
+  variation?: boolean;
   finishes?: string[];
   booster?: boolean;
   reprint?: boolean; // false on a card's first printing; the 'New' badge only marks first printings
@@ -296,6 +302,56 @@ export async function getAllPrintings(name: string): Promise<ScryfallCard[]> {
     dir: "desc",
   });
   return result.data ?? [];
+}
+
+/**
+ * Every printing of a card, page by page (Scryfall returns 175 per page), so the art picker can
+ * show the first results straight away. Includes extras (tokens, art series), rare variants that
+ * Scryfall hides by default (include_variations) and, when asked, non-English printings.
+ */
+export async function streamAllPrintings(
+  name: string,
+  opts: { multilingual?: boolean; signal?: AbortSignal },
+  onPage: (cards: ScryfallCard[], info: { total: number; done: boolean }) => void
+): Promise<void> {
+  const params = new URLSearchParams({
+    q: `!"${name}"`,
+    unique: "prints",
+    order: "released",
+    dir: "desc",
+    include_extras: "true",
+    include_variations: "true",
+    include_multilingual: opts.multilingual ? "true" : "false",
+  });
+  let url: string | undefined = `${SCRYFALL_API}/cards/search?${params}`;
+  while (url) {
+    const res = await sfetch(url, { headers: { Accept: "application/json" }, signal: opts.signal });
+    if (res.status === 404) {
+      onPage([], { total: 0, done: true });
+      return;
+    }
+    if (!res.ok) throw new ScryfallBusyError(`Scryfall search failed (${res.status})`);
+    const page = (await res.json()) as ScryfallSearchResponse;
+    url = page.has_more ? page.next_page : undefined;
+    onPage(page.data ?? [], { total: page.total_cards ?? 0, done: !url });
+  }
+}
+
+/** Short labels for what makes a printing special (shown under each option in the art picker). */
+export function printingTags(card: ScryfallCard): string[] {
+  const tags: string[] = [];
+  const fx = card.frame_effects ?? [];
+  if (card.border_color === "borderless") tags.push("Borderless");
+  if (fx.includes("showcase")) tags.push("Showcase");
+  if (fx.includes("extendedart")) tags.push("Extended art");
+  if (fx.includes("etched") || card.finishes?.includes("etched")) tags.push("Etched");
+  if (fx.includes("inverted")) tags.push("Inverted");
+  if (card.full_art) tags.push("Full art");
+  if (card.promo_types?.includes("serialized")) tags.push("Serialized");
+  else if (card.promo_types?.length) tags.push("Promo");
+  if (card.variation) tags.push("Variant");
+  if (card.lang && card.lang !== "en") tags.push(card.lang.toUpperCase());
+  return tags;
 }
 
 export interface ScryfallSet {

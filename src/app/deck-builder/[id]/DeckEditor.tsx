@@ -601,6 +601,7 @@ export default function DeckEditor({
               </label>
               {pickerCardName && (
                 <PrintingPicker
+                  key={pickerCardName}
                   cardName={pickerCardName}
                   onSelect={handlePrintingSelected}
                   onSelectCustom={handleCustomArtSelected}
@@ -609,6 +610,7 @@ export default function DeckEditor({
               )}
               {artTarget && (
                 <PrintingPicker
+                  key={artTarget.name}
                   cardName={artTarget.name}
                   onSelect={handleArtPrinting}
                   onSelectCustom={handleArtCustom}

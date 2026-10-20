@@ -129,6 +129,7 @@ export default function ProxiesPage() {
 
       {pickerCardName && (
         <PrintingPicker
+          key={pickerCardName}
           cardName={pickerCardName}
           onSelect={handlePrintingSelected}
           onSelectCustom={handleCustomArtSelected}
@@ -298,6 +299,8 @@ export default function ProxiesPage() {
                             <img
                               src={c.imageUrl}
                               alt={c.name}
+                              loading="lazy"
+                              decoding="async"
                               className="h-full w-full object-cover"
                             />
                           ) : (

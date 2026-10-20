@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  getAllPrintings,
-  cardImageForPrint,
+  streamAllPrintings,
+  printingTags,
+  cardImage,
   cardArtist,
   cardDistinguishingText,
   type ScryfallCard,
@@ -24,19 +25,30 @@ export default function PrintingPicker({
   onClose: () => void;
 }) {
   const [printings, setPrintings] = useState<ScryfallCard[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [multilingual, setMultilingual] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customPreview, setCustomPreview] = useState<string | null>(null);
   const [customError, setCustomError] = useState<string | null>(null);
 
+  // Printings arrive a page (175) at a time, so the first ones show straight away while the rest load.
   useEffect(() => {
-    let cancelled = false;
-    getAllPrintings(cardName).then((cards) => {
-      if (!cancelled) setPrintings(cards);
+    const ctrl = new AbortController();
+    streamAllPrintings(cardName, { multilingual, signal: ctrl.signal }, (cards, info) => {
+      if (ctrl.signal.aborted) return;
+      setPrintings((prev) => [...(prev ?? []), ...cards]);
+      setTotal(info.total);
+      if (info.done) setLoadingMore(false);
+    }).catch(() => {
+      if (ctrl.signal.aborted) return;
+      setLoadError(true);
+      setLoadingMore(false);
+      setPrintings((prev) => prev ?? []);
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [cardName]);
+    return () => ctrl.abort();
+  }, [cardName, multilingual]);
 
   function handleFile(file: File | undefined) {
     setCustomError(null);
@@ -120,9 +132,29 @@ export default function PrintingPicker({
           </div>
         )}
 
-        {printings === null && <p className="text-sm text-muted">Loading printings...</p>}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+          <span>
+            {printings === null
+              ? "Loading printings…"
+              : `${printings.length}${loadingMore && total > printings.length ? ` of ${total}` : ""} printing${printings.length !== 1 ? "s" : ""}${loadingMore ? " — loading more…" : ""}`}
+          </span>
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={multilingual} onChange={(e) => {
+                // Start the list over; the effect then reloads it with or without other languages.
+                setPrintings(null);
+                setTotal(0);
+                setLoadingMore(true);
+                setLoadError(false);
+                setMultilingual(e.target.checked);
+              }} />
+            Include other languages
+          </label>
+        </div>
+        {loadError && (
+          <p className="mb-3 text-xs text-down">Scryfall is busy, so some printings may be missing. Close and reopen to try again.</p>
+        )}
 
-        {printings !== null && printings.length === 0 && (
+        {printings !== null && printings.length === 0 && !loadingMore && (
           <p className="text-sm text-muted">No printings found.</p>
         )}
 
@@ -137,8 +169,11 @@ export default function PrintingPicker({
 
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
           {printings?.map((card) => {
-            const img = cardImageForPrint(card);
+            // The "normal" thumbnail is about a third of the print image's size, and lazy loading
+            // means only the options on screen download.
+            const img = cardImage(card);
             const details = cardDistinguishingText(card);
+            const tags = printingTags(card);
             return (
               <button
                 key={card.id}
@@ -148,14 +183,20 @@ export default function PrintingPicker({
                 <div className="overflow-hidden rounded" style={{ aspectRatio: "2.5 / 3.5" }}>
                   {img ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={img} alt={card.name} className="h-full w-full object-cover" />
+                    <img src={img} alt={card.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-surface-raised text-[9px] text-muted">
                       No image
                     </div>
                   )}
                 </div>
-                <p className="line-clamp-1 text-[10px] text-muted">{card.set_name}</p>
+                <p className="line-clamp-1 text-[10px] text-muted">
+                  {card.set_name}
+                  {card.collector_number ? ` #${card.collector_number}` : ""}
+                </p>
+                {tags.length > 0 && (
+                  <p className="line-clamp-1 text-[9px] font-semibold text-gold-bright">{tags.join(" · ")}</p>
+                )}
                 {cardArtist(card) && (
                   <p className="line-clamp-1 text-[9px] text-muted/70">Art by {cardArtist(card)}</p>
                 )}
