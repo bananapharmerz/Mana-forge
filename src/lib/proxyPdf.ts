@@ -25,7 +25,7 @@ const COLS = 3;
 const ROWS = 3;
 // 2 mm is the most that still fits 3 rows on US Letter with room for the crop marks.
 const GAP = { none: 0, gap: 2 * MM } as const;
-const MARK_LEN = 4 * MM;
+const MARK_LEN = 5 * MM;
 const MARK_OFFSET = 1.5 * MM;
 const FETCH_CONCURRENCY = 6;
 
@@ -98,16 +98,66 @@ async function loadImage(doc: PDFDocument, slot: Slot): Promise<PDFImage> {
   return doc.embedJpg(await blobToJpegCover(blob));
 }
 
+// A small pair of scissors drawn with lines and circles (the standard PDF fonts have no ✂).
+// (x, y) is the blade tip; `angle` is the direction from the tip back to the handles, in degrees.
+// `scale` shrinks them to fit a narrow margin. Full size is about 9 mm long.
+const SCISSORS_LEN = 8.7 * MM;
+function drawScissors(page: PDFPage, x: number, y: number, angle: number, scale = 1) {
+  const a = (angle * Math.PI) / 180;
+  const ux = Math.cos(a);
+  const uy = Math.sin(a);
+  const px = -uy;
+  const py = ux;
+  const at = (along: number, side: number) => ({ x: x + ux * along + px * side, y: y + uy * along + py * side });
+  const ink = rgb(0.1, 0.1, 0.1);
+  const len = 4.2 * MM * scale; // tip to pivot
+  const handle = 1.15 * MM * scale; // finger-hole radius
+  const spread = 1.6 * MM * scale;
+  const tail = 2.2 * MM * scale;
+  // Blades: from the tip back past the pivot to each handle (crossing at the pivot).
+  page.drawLine({ start: at(0, 0.35 * MM * scale), end: at(len + tail, -spread), thickness: 0.8, color: ink });
+  page.drawLine({ start: at(0, -0.35 * MM * scale), end: at(len + tail, spread), thickness: 0.8, color: ink });
+  const h1 = at(len + tail + handle, -spread - 0.3 * MM * scale);
+  const h2 = at(len + tail + handle, spread + 0.3 * MM * scale);
+  page.drawCircle({ x: h1.x, y: h1.y, size: handle, borderColor: ink, borderWidth: 0.8 });
+  page.drawCircle({ x: h2.x, y: h2.y, size: handle, borderColor: ink, borderWidth: 0.8 });
+  const pivot = at(len * 0.55, 0);
+  page.drawCircle({ x: pivot.x, y: pivot.y, size: 0.35, color: ink });
+}
+
+// Cut guides: bold marks at every card edge, dashed lines out to the paper edge, and scissors at
+// the end of each line (top for vertical cuts, right side for horizontal ones). Nothing is drawn
+// over the cards themselves.
 function drawCropMarks(page: PDFPage, xs: number[], ys: number[], grid: { left: number; right: number; bottom: number; top: number }) {
-  const line = { thickness: 0.4, color: rgb(0.45, 0.45, 0.45) };
+  const { width: pageW, height: pageH } = page.getSize();
+  const bold = { thickness: 0.9, color: rgb(0.12, 0.12, 0.12) };
+  const dashed = { thickness: 0.5, color: rgb(0.45, 0.45, 0.45), dashArray: [2.5, 2] };
+  const markLen = MARK_LEN;
   for (const x of xs) {
-    page.drawLine({ start: { x, y: grid.top + MARK_OFFSET }, end: { x, y: grid.top + MARK_OFFSET + MARK_LEN }, ...line });
-    page.drawLine({ start: { x, y: grid.bottom - MARK_OFFSET }, end: { x, y: grid.bottom - MARK_OFFSET - MARK_LEN }, ...line });
+    page.drawLine({ start: { x, y: grid.top + MARK_OFFSET }, end: { x, y: grid.top + MARK_OFFSET + markLen }, ...bold });
+    page.drawLine({ start: { x, y: grid.bottom - MARK_OFFSET }, end: { x, y: grid.bottom - MARK_OFFSET - markLen }, ...bold });
+    page.drawLine({ start: { x, y: grid.top + MARK_OFFSET + markLen }, end: { x, y: pageH - 3 * MM }, ...dashed });
+    page.drawLine({ start: { x, y: grid.bottom - MARK_OFFSET - markLen }, end: { x, y: 3 * MM }, ...dashed });
   }
   for (const y of ys) {
-    page.drawLine({ start: { x: grid.left - MARK_OFFSET, y }, end: { x: grid.left - MARK_OFFSET - MARK_LEN, y }, ...line });
-    page.drawLine({ start: { x: grid.right + MARK_OFFSET, y }, end: { x: grid.right + MARK_OFFSET + MARK_LEN, y }, ...line });
+    page.drawLine({ start: { x: grid.left - MARK_OFFSET, y }, end: { x: grid.left - MARK_OFFSET - markLen, y }, ...bold });
+    page.drawLine({ start: { x: grid.right + MARK_OFFSET, y }, end: { x: grid.right + MARK_OFFSET + markLen, y }, ...bold });
+    page.drawLine({ start: { x: grid.right + MARK_OFFSET + markLen, y }, end: { x: pageW - 3 * MM, y }, ...dashed });
   }
+  // Scissors with their tips at the card edge, on each cut line, sized to the margin.
+  const fit = (room: number) => Math.max(0.5, Math.min(1, (room - MARK_OFFSET - 1.5 * MM) / SCISSORS_LEN));
+  // With gaps between cards, the two edges of a gap get one pair of scissors in the middle.
+  const merged = (vals: number[]) =>
+    [...vals].sort((p, q) => p - q).reduce<number[][]>((groups, v) => {
+      const last = groups[groups.length - 1];
+      if (last && v - last[last.length - 1] < 4 * MM) last.push(v);
+      else groups.push([v]);
+      return groups;
+    }, []).map((g) => (g[0] + g[g.length - 1]) / 2);
+  const topScale = fit(pageH - grid.top);
+  for (const x of merged(xs)) drawScissors(page, x, grid.top + MARK_OFFSET, 90, topScale);
+  const rightScale = fit(pageW - grid.right);
+  for (const y of merged(ys)) drawScissors(page, grid.right + MARK_OFFSET, y, 0, rightScale);
 }
 
 interface PrintCard {
