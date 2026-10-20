@@ -26,6 +26,14 @@ import { formatCents } from "@/lib/money";
 import { SHOP_ENABLED } from "@/lib/features";
 import { buildProxyPdf, type CardSpacing, type PaperSize } from "@/lib/proxyPdf";
 
+function saveFile(url: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
 export default function ProxiesPage() {
   const { cards, addCard, addCards, updateQuantity, removeCard, totalCount } = useProxyProject();
   const [searchMode, setSearchMode] = useState<"cards" | "tokens">("cards");
@@ -70,7 +78,15 @@ export default function ProxiesPage() {
   const [pdfStatus, setPdfStatus] = useState<string | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
 
-  async function downloadPdf() {
+  function readyNote(pages: number, failed: string[]) {
+    const p = `${pages} page${pages !== 1 ? "s" : ""}`;
+    return failed.length
+      ? `${p}. ${failed.length} image${failed.length !== 1 ? "s" : ""} couldn't load and printed as a labelled blank: ${failed.slice(0, 3).join(", ")}${failed.length > 3 ? "…" : ""}`
+      : `${p}. Print at 100% / "Actual size", not "Fit to page".`;
+  }
+
+  // Builds the real-size sheets, then either opens the printer window ("print") or saves the PDF.
+  async function makeSheets(mode: "print" | "download") {
     if (pdfBusy || cards.length === 0) return;
     setPdfBusy(true);
     setPdfStatus("Loading card images…");
@@ -83,18 +99,55 @@ export default function ProxiesPage() {
       });
       const blob = new Blob([result.bytes as BlobPart], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `manaforge-proxies-${result.cards}-cards.pdf`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      if (mode === "download") {
+        saveFile(url, `manaforge-proxies-${result.cards}-cards.pdf`);
+        setPdfStatus(`PDF saved — ${readyNote(result.pages, result.failed)}`);
+        return;
+      }
+      // Print from a hidden frame so the browser's print window opens right on this page. If the
+      // browser won't print a PDF from a frame (some Safari versions), open it in a new tab instead.
+      const frame = document.createElement("iframe");
+      frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+      frame.src = url;
+      frame.onload = () => {
+        try {
+          frame.contentWindow?.focus();
+          frame.contentWindow?.print();
+        } catch {
+          window.open(url, "_blank", "noopener");
+        }
+        setTimeout(() => {
+          frame.remove();
+          URL.revokeObjectURL(url);
+        }, 60_000);
+      };
+      document.body.appendChild(frame);
+      setPdfStatus(`Opening the print window — ${readyNote(result.pages, result.failed)}`);
+    } catch {
+      setPdfStatus("Couldn't build the sheets. Check your connection and try again.");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
+  async function downloadImages() {
+    if (pdfBusy || cards.length === 0) return;
+    setPdfBusy(true);
+    setPdfStatus("Loading card images…");
+    try {
+      const { buildProxyZip } = await import("@/lib/proxyZip");
+      const result = await buildProxyZip(cards, {
+        includeBacks: premium && includeBacks,
+        onProgress: (done, total) => setPdfStatus(`Loading card images… ${done}/${total}`),
+      });
+      saveFile(URL.createObjectURL(result.blob), "manaforge-proxy-images.zip");
       setPdfStatus(
         result.failed.length
-          ? `PDF ready (${result.pages} page${result.pages !== 1 ? "s" : ""}). ${result.failed.length} image${result.failed.length !== 1 ? "s" : ""} couldn't load and printed as a labelled blank: ${result.failed.slice(0, 3).join(", ")}${result.failed.length > 3 ? "…" : ""}`
-          : `PDF ready — ${result.pages} page${result.pages !== 1 ? "s" : ""}. Print at 100% / "Actual size", not "Fit to page".`
+          ? `ZIP saved with ${result.files} images. ${result.failed.length} couldn't load: ${result.failed.slice(0, 3).join(", ")}${result.failed.length > 3 ? "…" : ""}`
+          : `ZIP saved with ${result.files} image${result.files !== 1 ? "s" : ""}. File names start with how many copies to print.`
       );
     } catch {
-      setPdfStatus("Couldn't build the PDF. Check your connection and try again.");
+      setPdfStatus("Couldn't build the ZIP. Check your connection and try again.");
     } finally {
       setPdfBusy(false);
     }
@@ -161,7 +214,7 @@ export default function ProxiesPage() {
       <h1 className="text-3xl font-bold text-foreground">Proxy Builder</h1>
       <p className="mt-1 text-muted">
         Playtest a card before you buy it. Pick the exact printing you want, preview the sheets,
-        and download a free print-at-home PDF with real-size cards and cut marks
+        and print free real-size sheets with cut marks at home
         {SHOP_ENABLED ? " — or order printed proxies shipped to you" : ""}.
       </p>
 
@@ -193,7 +246,7 @@ export default function ProxiesPage() {
 
       <div className="card-frame mt-4 max-w-xl p-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-foreground">Print a whole deck</h2>
+          <h2 className="text-sm font-semibold text-foreground">Add a whole deck</h2>
           <span className="rounded-full bg-surface-raised px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold-bright">
             Premium
           </span>
@@ -302,7 +355,7 @@ export default function ProxiesPage() {
 
 <div className="card-frame mt-4 p-4">
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                Print at home — free
+                Print at home
               </h3>
               <div className="flex flex-col gap-2 text-xs text-foreground">
                 <label className="flex items-center justify-between gap-2">
@@ -342,12 +395,28 @@ export default function ProxiesPage() {
                 </label>
               </div>
               <button
-                onClick={downloadPdf}
+                onClick={() => makeSheets("print")}
                 disabled={pdfBusy}
                 className="mt-3 w-full rounded-lg bg-gold px-4 py-2.5 text-center text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-60"
               >
-                {pdfBusy ? "Building PDF…" : "Download PDF"}
+                {pdfBusy ? "Preparing…" : "Print"}
               </button>
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={downloadImages}
+                  disabled={pdfBusy}
+                  className="flex-1 rounded-md border border-border px-2 py-1.5 text-[11px] text-foreground hover:border-gold disabled:opacity-60"
+                >
+                  Download card images (ZIP)
+                </button>
+                <button
+                  onClick={() => makeSheets("download")}
+                  disabled={pdfBusy}
+                  className="rounded-md border border-border px-2 py-1.5 text-[11px] text-foreground hover:border-gold disabled:opacity-60"
+                >
+                  Save as PDF
+                </button>
+              </div>
               {pdfStatus && <p className="mt-2 text-[11px] text-muted" aria-live="polite">{pdfStatus}</p>}
               <p className="mt-2 text-[10px] text-muted/80">
                 Real card size (63 × 88 mm), 9 per page, fits standard sleeves. Print at 100% and
@@ -403,9 +472,9 @@ export default function ProxiesPage() {
 
             <button
               onClick={downloadProject}
-              className="mt-3 w-full rounded-md border border-border px-4 py-2 text-sm text-foreground hover:border-gold"
+              className="mt-3 text-[11px] text-muted underline-offset-2 hover:text-foreground hover:underline"
             >
-              Download Project (CSV)
+              Export card list (CSV)
             </button>
           </div>
 
