@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import CardSearchBox from "@/components/CardSearchBox";
 import PrintingPicker from "@/components/PrintingPicker";
 import { useProxyProject } from "@/components/ProxyProjectProvider";
-import { autocompleteCardNames, cardImageForPrint, cardArtist, type ScryfallCard } from "@/lib/scryfall";
+import {
+  autocompleteCardNames,
+  autocompleteTokenNames,
+  cardBackImage,
+  cardImageForPrint,
+  cardArtist,
+  type ScryfallCard,
+} from "@/lib/scryfall";
+import { getDeckProxyCards, getProxyAccess, type ProxyAccess } from "@/app/actions/proxyDecks";
 import {
   CARDS_PER_SHEET,
   DECK_BUNDLE_MAX_CARDS,
@@ -19,7 +27,42 @@ import { SHOP_ENABLED } from "@/lib/features";
 import { buildProxyPdf, type CardSpacing, type PaperSize } from "@/lib/proxyPdf";
 
 export default function ProxiesPage() {
-  const { cards, addCard, updateQuantity, removeCard, totalCount } = useProxyProject();
+  const { cards, addCard, addCards, updateQuantity, removeCard, totalCount } = useProxyProject();
+  const [searchMode, setSearchMode] = useState<"cards" | "tokens">("cards");
+  const [access, setAccess] = useState<ProxyAccess | null>(null);
+  const [deckId, setDeckId] = useState("");
+  const [deckTokens, setDeckTokens] = useState(true);
+  const [deckStatus, setDeckStatus] = useState<string | null>(null);
+  const [deckBusy, setDeckBusy] = useState(false);
+  const [includeBacks, setIncludeBacks] = useState(true);
+  const premium = access?.premium === true;
+
+  useEffect(() => {
+    getProxyAccess()
+      .then(setAccess)
+      .catch(() => setAccess({ signedIn: false, premium: false, decks: [] }));
+  }, []);
+
+  async function addDeck() {
+    if (!deckId || deckBusy) return;
+    setDeckBusy(true);
+    setDeckStatus(null);
+    try {
+      const res = await getDeckProxyCards(deckId);
+      if (!res.ok) {
+        setDeckStatus(res.error);
+        return;
+      }
+      const list = deckTokens ? res.cards : res.cards.filter((c) => !c.isToken);
+      addCards(list);
+      const n = list.reduce((sum, c) => sum + c.quantity, 0);
+      setDeckStatus(`Added ${n} card${n !== 1 ? "s" : ""} from ${res.name}.`);
+    } catch {
+      setDeckStatus("Couldn't load that deck. Try again.");
+    } finally {
+      setDeckBusy(false);
+    }
+  }
   const [pickerCardName, setPickerCardName] = useState<string | null>(null);
   const [pricingMode, setPricingMode] = useState<PricingMode>("per-card");
   const [paper, setPaper] = useState<PaperSize>("a4");
@@ -35,6 +78,7 @@ export default function ProxiesPage() {
       const result = await buildProxyPdf(cards, {
         paper,
         spacing,
+        includeBacks: premium && includeBacks,
         onProgress: (done, total) => setPdfStatus(`Loading card images… ${done}/${total}`),
       });
       const blob = new Blob([result.bytes as BlobPart], { type: "application/pdf" });
@@ -63,6 +107,8 @@ export default function ProxiesPage() {
       setName: card.set_name,
       artist: cardArtist(card),
       imageUrl: cardImageForPrint(card),
+      backImageUrl: cardBackImage(card),
+      isToken: (card.type_line ?? "").includes("Token"),
     });
     setPickerCardName(null);
   }
@@ -119,12 +165,83 @@ export default function ProxiesPage() {
         {SHOP_ENABLED ? " — or order printed proxies shipped to you" : ""}.
       </p>
 
-      <div className="mt-6 max-w-md">
-        <CardSearchBox
-          placeholder="Search for a card to add..."
-          fetchSuggestions={autocompleteCardNames}
-          onSelect={(name) => setPickerCardName(name)}
-        />
+      <div className="mt-6 flex max-w-xl flex-col gap-2 sm:flex-row sm:items-center">
+        <div role="tablist" aria-label="Search for" className="flex shrink-0 rounded-md border border-border p-0.5 text-xs">
+          {(["cards", "tokens"] as const).map((m) => (
+            <button
+              key={m}
+              role="tab"
+              aria-selected={searchMode === m}
+              onClick={() => setSearchMode(m)}
+              className={`rounded px-3 py-1.5 font-semibold capitalize ${
+                searchMode === m ? "bg-gold text-black" : "text-muted hover:text-foreground"
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+        <div className="flex-1">
+          <CardSearchBox
+            key={searchMode}
+            placeholder={searchMode === "tokens" ? "Search for a token (Treasure, Zombie…)" : "Search for a card to add..."}
+            fetchSuggestions={searchMode === "tokens" ? autocompleteTokenNames : autocompleteCardNames}
+            onSelect={(name) => setPickerCardName(name)}
+          />
+        </div>
+      </div>
+
+      <div className="card-frame mt-4 max-w-xl p-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-foreground">Print a whole deck</h2>
+          <span className="rounded-full bg-surface-raised px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold-bright">
+            Premium
+          </span>
+        </div>
+        {access === null ? (
+          <p className="mt-2 text-xs text-muted">Checking your account…</p>
+        ) : premium ? (
+          access.decks.length === 0 ? (
+            <p className="mt-2 text-xs text-muted">
+              You don&apos;t have any saved decks yet. <Link href="/deck-builder" className="text-gold-bright hover:underline">Build one</Link>.
+            </p>
+          ) : (
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <select
+                value={deckId}
+                onChange={(e) => setDeckId(e.target.value)}
+                className="flex-1 rounded border border-border bg-surface px-2 py-1.5 text-xs text-foreground"
+              >
+                <option value="">Choose one of your decks…</option>
+                {access.decks.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} — {d.commanderName}
+                  </option>
+                ))}
+              </select>
+              <label className="flex items-center gap-1.5 text-xs text-foreground">
+                <input type="checkbox" checked={deckTokens} onChange={(e) => setDeckTokens(e.target.checked)} />
+                Include tokens
+              </label>
+              <button
+                onClick={addDeck}
+                disabled={!deckId || deckBusy}
+                className="rounded-md bg-gold px-3 py-1.5 text-xs font-semibold text-black hover:bg-gold-bright disabled:opacity-50"
+              >
+                {deckBusy ? "Adding…" : "Add deck"}
+              </button>
+            </div>
+          )
+        ) : (
+          <p className="mt-2 text-xs text-muted">
+            Add every card in one of your saved decks with one click, and print the back faces of
+            double-faced cards.{" "}
+            <Link href={access.signedIn ? "/premium" : "/login?callbackUrl=/proxies"} className="font-semibold text-gold-bright hover:underline">
+              {access.signedIn ? "Get Premium" : "Sign in"}
+            </Link>
+          </p>
+        )}
+        {deckStatus && <p className="mt-2 text-[11px] text-muted" aria-live="polite">{deckStatus}</p>}
       </div>
 
       {pickerCardName && (
@@ -209,6 +326,19 @@ export default function ProxiesPage() {
                     <option value="none">No gaps (fastest cutting)</option>
                     <option value="gap">2 mm gaps</option>
                   </select>
+                </label>
+                <label
+                  className={`flex items-center gap-1.5 ${premium ? "" : "opacity-50"}`}
+                  title={premium ? undefined : "Premium feature"}
+                >
+                  <input
+                    type="checkbox"
+                    checked={premium && includeBacks}
+                    disabled={!premium}
+                    onChange={(e) => setIncludeBacks(e.target.checked)}
+                  />
+                  Print back faces of double-faced cards
+                  {!premium && <span className="text-[10px] font-semibold uppercase text-gold-bright">Premium</span>}
                 </label>
               </div>
               <button

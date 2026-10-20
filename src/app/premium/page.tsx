@@ -26,6 +26,7 @@ const BENEFITS = [
   { feature: "Catch a card before it spikes", free: `${FREE_PRICE_ALERTS} cards watched`, premium: "Every card, plus weekly deck moves" },
   { feature: "See what your deck is worth", free: "—", premium: "Week, month and year, in the builder" },
   { feature: "Cheaper swaps for cards in your deck", free: "Build a budget deck in Deck Doctor", premium: "Per-card upgrade picks in the builder" },
+  { feature: "Print proxies to playtest", free: "Print-at-home PDF, card by card", premium: "Print a whole deck in one click, with double-faced backs" },
   { feature: "Never lose a good version", free: "—", premium: "Save, compare and restore any version" },
   { feature: "Back the site you use", free: "—", premium: "Supporter badge on your public decks" },
 ];

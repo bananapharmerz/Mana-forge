@@ -32,6 +32,8 @@ const FETCH_CONCURRENCY = 6;
 export interface ProxyPdfOptions {
   paper: PaperSize;
   spacing: CardSpacing;
+  /** Premium: print each double-faced card's back face right after its front. */
+  includeBacks?: boolean;
   onProgress?: (done: number, total: number) => void;
 }
 
@@ -72,13 +74,21 @@ async function blobToJpegCover(blob: Blob): Promise<Uint8Array> {
   return new Uint8Array(await out.arrayBuffer());
 }
 
-async function loadImage(doc: PDFDocument, card: ProxyCard): Promise<PDFImage> {
-  if (!card.imageUrl) throw new Error("No image");
-  const res = await fetch(printQualityUrl(card.imageUrl), { mode: "cors" });
+// One printed card slot: a front, or (Premium) the back face of a double-faced card.
+interface Slot {
+  key: string;
+  name: string;
+  url?: string;
+  custom: boolean;
+}
+
+async function loadImage(doc: PDFDocument, slot: Slot): Promise<PDFImage> {
+  if (!slot.url) throw new Error("No image");
+  const res = await fetch(printQualityUrl(slot.url), { mode: "cors" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const blob = await res.blob();
-  if (!card.isCustomArt && blob.type === "image/jpeg") return doc.embedJpg(new Uint8Array(await blob.arrayBuffer()));
-  if (!card.isCustomArt && blob.type === "image/png") return doc.embedPng(new Uint8Array(await blob.arrayBuffer()));
+  if (!slot.custom && blob.type === "image/jpeg") return doc.embedJpg(new Uint8Array(await blob.arrayBuffer()));
+  if (!slot.custom && blob.type === "image/png") return doc.embedPng(new Uint8Array(await blob.arrayBuffer()));
   return doc.embedJpg(await blobToJpegCover(blob));
 }
 
@@ -95,7 +105,12 @@ function drawCropMarks(page: PDFPage, xs: number[], ys: number[], grid: { left: 
 }
 
 export async function buildProxyPdf(cards: ProxyCard[], opts: ProxyPdfOptions): Promise<ProxyPdfResult> {
-  const flat: ProxyCard[] = cards.flatMap((c) => Array.from({ length: c.quantity }, () => c));
+  const front = (c: ProxyCard): Slot => ({ key: c.scryfallId, name: c.name, url: c.imageUrl, custom: !!c.isCustomArt });
+  const back = (c: ProxyCard): Slot => ({ key: `${c.scryfallId}:back`, name: `${c.name} (back)`, url: c.backImageUrl, custom: false });
+  const withBack = (c: ProxyCard) => !!(opts.includeBacks && c.backImageUrl && !c.isCustomArt);
+  const flat: Slot[] = cards.flatMap((c) =>
+    Array.from({ length: c.quantity }, () => (withBack(c) ? [front(c), back(c)] : [front(c)])).flat()
+  );
   const doc = await PDFDocument.create();
   doc.setTitle("Mana Forge proxy sheets");
   doc.setCreator("Mana Forge (manaforgehub.com)");
@@ -103,7 +118,9 @@ export async function buildProxyPdf(cards: ProxyCard[], opts: ProxyPdfOptions): 
   const font = await doc.embedFont(StandardFonts.Helvetica);
 
   // Load each distinct image once, a few at a time.
-  const unique = cards.filter((c) => c.quantity > 0);
+  const unique: Slot[] = cards
+    .filter((c) => c.quantity > 0)
+    .flatMap((c) => (withBack(c) ? [front(c), back(c)] : [front(c)]));
   const images = new Map<string, PDFImage | null>();
   const failed: string[] = [];
   let done = 0;
@@ -111,12 +128,12 @@ export async function buildProxyPdf(cards: ProxyCard[], opts: ProxyPdfOptions): 
   let next = 0;
   async function worker() {
     while (next < unique.length) {
-      const card = unique[next++];
+      const slot = unique[next++];
       try {
-        images.set(card.scryfallId, await loadImage(doc, card));
+        images.set(slot.key, await loadImage(doc, slot));
       } catch {
-        images.set(card.scryfallId, null);
-        failed.push(card.name);
+        images.set(slot.key, null);
+        failed.push(slot.name);
       }
       opts.onProgress?.(++done, unique.length);
     }
@@ -140,17 +157,17 @@ export async function buildProxyPdf(cards: ProxyCard[], opts: ProxyPdfOptions): 
   for (let p = 0; p < pageCount; p++) {
     const page = doc.addPage([pageW, pageH]);
     const slice = flat.slice(p * perPage, (p + 1) * perPage);
-    slice.forEach((card, i) => {
+    slice.forEach((slot, i) => {
       const col = i % COLS;
       const row = Math.floor(i / COLS);
       const x = left + col * (CARD_W + gap);
       const y = grid.top - (row + 1) * CARD_H - row * gap; // fill from the top row down
-      const img = images.get(card.scryfallId);
+      const img = images.get(slot.key);
       if (img) {
         page.drawImage(img, { x, y, width: CARD_W, height: CARD_H });
       } else {
         page.drawRectangle({ x, y, width: CARD_W, height: CARD_H, borderColor: rgb(0.6, 0.6, 0.6), borderWidth: 0.6 });
-        const label = card.name.length > 34 ? `${card.name.slice(0, 33)}...` : card.name;
+        const label = slot.name.length > 34 ? `${slot.name.slice(0, 33)}...` : slot.name;
         page.drawText(label, { x: x + 4 * MM, y: y + CARD_H / 2, size: 9, font, color: rgb(0.3, 0.3, 0.3) });
       }
     });

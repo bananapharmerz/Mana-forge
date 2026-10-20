@@ -4,8 +4,11 @@ export interface ProxyCard {
   setName?: string;
   artist?: string;
   imageUrl?: string;
+  /** Back face of a double-faced card (printed only when the Premium "back faces" option is on). */
+  backImageUrl?: string;
   quantity: number;
   isCustomArt?: boolean;
+  isToken?: boolean;
 }
 
 export const PRICE_PER_CARD_CENTS = 100;

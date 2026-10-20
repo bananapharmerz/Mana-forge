@@ -10,6 +10,7 @@ const STORAGE_KEY = "mtg-hub:proxy-project";
 interface ProxyProjectContextValue {
   cards: ProxyCard[];
   addCard: (card: Omit<ProxyCard, "quantity">) => void;
+  addCards: (cards: ProxyCard[]) => void;
   updateQuantity: (scryfallId: string, quantity: number) => void;
   removeCard: (scryfallId: string) => void;
   clear: () => void;
@@ -33,6 +34,19 @@ export default function ProxyProjectProvider({ children }: { children: React.Rea
     });
   }
 
+  // Adds a batch (a whole deck); printings already in the project just get the extra copies.
+  function addCards(list: ProxyCard[]) {
+    setCards((prev) => {
+      const next = [...prev];
+      for (const card of list) {
+        const i = next.findIndex((c) => c.scryfallId === card.scryfallId);
+        if (i >= 0) next[i] = { ...next[i], quantity: next[i].quantity + card.quantity };
+        else next.push(card);
+      }
+      return next;
+    });
+  }
+
   function updateQuantity(scryfallId: string, quantity: number) {
     setCards((prev) =>
       quantity <= 0
@@ -53,7 +67,7 @@ export default function ProxyProjectProvider({ children }: { children: React.Rea
 
   return (
     <ProxyProjectContext.Provider
-      value={{ cards, addCard, updateQuantity, removeCard, clear, totalCount }}
+      value={{ cards, addCard, addCards, updateQuantity, removeCard, clear, totalCount }}
     >
       {children}
     </ProxyProjectContext.Provider>
