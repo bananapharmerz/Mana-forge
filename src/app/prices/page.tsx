@@ -16,7 +16,9 @@ export const metadata: Metadata = {
   openGraph: { images: ["/opengraph-image"], title: "Card price tracker · Mana Forge", description: "Follow Magic: The Gathering card prices: your watchlist with target prices, and the week's biggest movers in Commander decks." },
 };
 
-function MoverList({ title, rows, up, played }: { title: string; rows: Mover[]; up: boolean; played: Record<string, PlayedWith> }) {
+function MoverList({ title, rows: allRows, up, played, empty }: { title: string; rows: Mover[]; up: boolean; played: Record<string, PlayedWith>; empty: string }) {
+  // A row without a name or a usable price would render as a blank line, so leave it out.
+  const rows = allRows.filter((m) => m.name && Number.isFinite(m.usd) && Number.isFinite(m.pct));
   return (
     <div className="card-frame p-4">
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">{title}</h2>
@@ -47,14 +49,15 @@ function MoverList({ title, rows, up, played }: { title: string; rows: Mover[]; 
               <span className="shrink-0 text-right">
                 <span className="block font-mono text-foreground">{usd(m.usd)}</span>
                 <span className={`block text-[11px] font-semibold ${up ? "text-up" : "text-down"}`}>
-                  {up ? "▲" : "▼"} {signedPct(m.pct)}
+                  {/* Say the window: a bare percentage doesn't tell you over what period it moved. */}
+                  {up ? "▲" : "▼"} {signedPct(m.pct)} in 7 days
                 </span>
               </span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted">Nothing moved much yet. Movers show up once a few days of prices have been recorded.</p>
+        <p className="text-sm text-muted">{empty}</p>
       )}
     </div>
   );
@@ -189,8 +192,8 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
         <Link href="/prices/movers" className="text-sm text-gold-bright underline hover:text-foreground">All price movers, week by week →</Link>
       </div>
       <section className="grid gap-4 md:grid-cols-3">
-        <MoverList title="Up this week" rows={movers.up} up played={played} />
-        <MoverList title="Down this week" rows={movers.down} up={false} played={played} />
+        <MoverList title="Up this week" rows={movers.up} up played={played} empty="No big rises this week." />
+        <MoverList title="Down this week" rows={movers.down} up={false} played={played} empty="No big drops this week." />
         <div className="card-frame p-4">
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Most valuable in {SITE.name} decks</h2>
           {valuable.length ? (

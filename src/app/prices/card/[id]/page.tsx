@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { cardPriceDetail } from "@/lib/prices";
+import { usd } from "@/lib/livePrice";
 import { SITE } from "@/lib/site";
 import PriceChart from "../../PriceChart";
 import WatchButton from "./WatchButton";
@@ -13,7 +14,7 @@ import BreadcrumbLd from "@/components/BreadcrumbLd";
 export const dynamic = "force-dynamic";
 
 const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const money = (v: number | null) => (v === null ? "—" : `$${v.toFixed(2)}`);
+const money = (v: number | null) => (v === null ? "—" : usd(v));
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const c = await db.cardPrice.findUnique({ where: { scryfallId: id }, select: { name: true, setName: true, usd: true } });
   if (!c) return { title: "Card not found", robots: { index: false } };
   const title = `${c.name} price${c.setName ? ` (${c.setName})` : ""}: today, chart & history`;
-  const description = `${c.name}${c.setName ? ` from ${c.setName}` : ""}: ${c.usd !== null ? `$${c.usd.toFixed(2)} today. ` : ""}Daily price chart for the last week, month and year, with alerts when it drops.`;
+  const description = `${c.name}${c.setName ? ` from ${c.setName}` : ""}: ${c.usd !== null ? `${usd(c.usd)} today. ` : ""}Daily price chart for the last week, month and year, with alerts when it drops.`;
   // Thin, auto-generated page (one price + chart): keep it usable, keep it out of the index.
   return { title, description, robots: { index: false, follow: true }, alternates: { canonical: `/prices/card/${id}` }, openGraph: { title: `${title} · ${SITE.name}`, description } };
 }

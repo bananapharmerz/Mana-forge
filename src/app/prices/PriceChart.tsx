@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { usd } from "@/lib/livePrice";
 
 // A card's price over time: Now (today's price), 1 week, 1 month and 1 year. Daily points;
 // hover or tap to read a day. Regular and foil prices can be switched when the card has both.
@@ -23,7 +24,8 @@ const W = 720;
 const H = 260;
 const PAD = { l: 56, r: 16, t: 16, b: 30 };
 
-const money = (v: number) => `$${v < 10 ? v.toFixed(2) : v < 1000 ? v.toFixed(2) : Math.round(v).toLocaleString("en-US")}`;
+// The site-wide price format, so the chart reads the same as the lists next to it.
+const money = (v: number) => usd(v);
 const dayLabel = (d: string, long = false) =>
   new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", long ? { month: "short", day: "numeric", year: "numeric" } : { month: "short", day: "numeric" });
 const pct = (a: number, b: number) => (b ? ((a - b) / b) * 100 : 0);
