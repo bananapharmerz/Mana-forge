@@ -4,6 +4,7 @@
 // doesn't fit is dropped rather than trusted.
 
 import { CARD_NOTE_MAX, type DeckCard } from "@/lib/deckTypes";
+import { screen } from "@/lib/automod";
 
 export const MAX_DECK_CARDS = 300; // distinct entries in one deck
 export const MAX_COPIES = 99;
@@ -40,7 +41,8 @@ export function uploadedImage(v: unknown, maxChars = MAX_UPLOAD_CHARS): string |
 }
 
 // Card notes are shown to everyone who opens a public deck, so anything that looks like a link
-// or a web address drops the whole note: they're for "why it's here", not for spam or phishing.
+// or a web address, or that the community filter rejects, drops the whole note: they're for
+// "why it's here", not for spam, phishing or abuse.
 const LINKISH = /(:\/\/|https?:|www\.|\b[a-z0-9-]+\.(com|net|org|gg|io|ly|me|co|xyz|ru|de|app|link|shop|site|top)\b)/i;
 
 /** A card's short plain-text note, or undefined if it's empty or looks like a link. */
@@ -48,6 +50,8 @@ export function cleanCardNote(v: unknown): string | undefined {
   if (typeof v !== "string") return undefined;
   const note = text(v.replace(/[<>]/g, ""), CARD_NOTE_MAX);
   if (!note || LINKISH.test(note)) return undefined;
+  // Same filter as the community feed: slurs, sexual content and shouting drop the note.
+  if (!screen(note).ok) return undefined;
   return note;
 }
 

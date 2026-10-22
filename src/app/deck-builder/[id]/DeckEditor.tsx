@@ -725,7 +725,7 @@ export default function DeckEditor({
                         />
                         <p className="mt-0.5 text-[11px] text-muted">
                           {c.note && !cleanCardNote(c.note)
-                            ? "Links and web addresses aren't allowed, so this note won't be saved."
+                            ? "Links, web addresses and unfriendly wording aren't allowed, so this note won't be saved."
                             : `${(c.note ?? "").length}/${CARD_NOTE_MAX} · shown under the card on your public deck`}
                         </p>
                       </div>

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { commanderNames } from "@/lib/commanderIndex";
+import { hit as rateHit } from "@/lib/rateLimit";
+import { ipFrom } from "@/lib/ipFrom";
 
 // Suggestions for the header search ("Search commanders or cards"). Everything comes from what
 // this server already has: commanders from the in-memory commander list, cards from the tracked
@@ -38,6 +40,11 @@ export async function GET(req: Request) {
   const cache = (g.__navSuggest ??= new Map());
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL) return reply(hit.data);
+  // Fresh lookups hit the database, so cap them per visitor (typing fast stays well under this;
+  // the "search" area never counts towards an IP ban).
+  if (!rateHit(`search:suggest:${ipFrom(req.headers)}`, 120, 60_000)) {
+    return NextResponse.json({ commanders: [], cards: [] }, { status: 429 });
+  }
 
   const commanders = rank(commanderNames(), key);
 
