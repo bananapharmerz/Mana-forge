@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
-import { openPack, type PackCard } from "@/lib/packs";
+import { openPack } from "@/lib/packs";
+import { addPullsToCollection } from "@/lib/packCollection";
 import { ScryfallBusyError } from "@/lib/scryfall";
 import { hit } from "@/lib/rateLimit";
 import { auth } from "@/auth";
@@ -126,47 +127,13 @@ export async function POST(req: Request) {
   }
   if (!pack) return NextResponse.json({ error: "Couldn't open that pack — try another set." }, { status: 404 });
 
-  // Aggregate the pulled cards by printing so each becomes a single collection upsert.
-  const byPrint = new Map<string, { card: PackCard; nonfoil: number; foil: number }>();
-  for (const c of pack.cards) {
-    const e = byPrint.get(c.scryfallId) ?? { card: c, nonfoil: 0, foil: 0 };
-    if (c.foil) e.foil += 1;
-    else e.nonfoil += 1;
-    byPrint.set(c.scryfallId, e);
-  }
-
   const today = todayUtc();
   const nextCount = (user.packRipsDate === today ? user.packRipsToday : 0) + 1;
 
   try {
     await db.$transaction(async (tx) => {
       await tx.user.update({ where: { id: userId }, data: { packRipsDate: today, packRipsToday: nextCount } });
-      for (const { card, nonfoil, foil } of byPrint.values()) {
-        await tx.collectionCard.upsert({
-          where: { userId_scryfallId: { userId, scryfallId: card.scryfallId } },
-          create: {
-            userId,
-            scryfallId: card.scryfallId,
-            name: card.name,
-            setCode: card.setCode,
-            setName: card.setName,
-            rarity: card.rarity,
-            colors: card.colors,
-            imageUrl: card.image ?? null,
-            collectorNumber: card.collectorNumber ?? null,
-            scryfallUri: card.scryfallUri ?? null,
-            priceUsd: card.priceUsd ?? null,
-            quantity: nonfoil,
-            foilQuantity: foil,
-          },
-          update: {
-            quantity: { increment: nonfoil },
-            foilQuantity: { increment: foil },
-            colors: card.colors,
-            priceUsd: card.priceUsd ?? undefined,
-          },
-        });
-      }
+      await addPullsToCollection(tx, userId, pack.cards);
     });
   } catch {
     // Transaction rolled back — the rip wasn't counted, so the member keeps their allowance.

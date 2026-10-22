@@ -30,6 +30,10 @@ export function deckLimitFor(tier: string): number {
 export const GUEST_PACK_RIPS = 1;
 export const FREE_PACK_RIPS = 3;
 export const PREMIUM_PACK_RIPS = 5;
+// Premium: one full booster box (36 packs) a week, on top of the daily packs. Pulls save to the
+// collection like any other rip.
+export const BOX_PACKS = 36;
+
 export function packRipLimitFor(tier: string): number {
   if (tier === "premium") return PREMIUM_PACK_RIPS;
   if (tier === "guest") return GUEST_PACK_RIPS;

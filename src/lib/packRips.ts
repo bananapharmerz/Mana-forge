@@ -39,3 +39,28 @@ export function guestRipStatus(value: string | undefined | null): { limit: numbe
 export function serializeGuestRips(count: number): string {
   return `${todayUtc()}:${count}`;
 }
+
+/** ISO-8601 week of a date in UTC, e.g. "2026-W43" (weeks start on Monday). */
+export function isoWeekUtc(d = new Date()): string {
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = t.getUTCDay() || 7; // Mon=1 … Sun=7
+  t.setUTCDate(t.getUTCDate() + 4 - day); // the Thursday of this week decides the year
+  const yearStart = Date.UTC(t.getUTCFullYear(), 0, 1);
+  const week = Math.ceil(((t.getTime() - yearStart) / 86400000 + 1) / 7);
+  return `${t.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+/** When the next ISO week starts (Monday 00:00 UTC), as an ISO string. */
+export function nextWeekStartUtc(d = new Date()): string {
+  const day = d.getUTCDay() || 7;
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + (8 - day)));
+  return t.toISOString();
+}
+
+/** Whether a member can open this week's booster box (Premium only). */
+export function boxStatus(user: { tier: string; boxRipWeek: string | null }): { premium: boolean; available: boolean; nextAt: string | null } {
+  const premium = user.tier === "premium";
+  const available = premium && user.boxRipWeek !== isoWeekUtc();
+  return { premium, available, nextAt: premium && !available ? nextWeekStartUtc() : null };
+}
+

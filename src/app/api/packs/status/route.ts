@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { cookies } from "next/headers";
-import { ripStatus, guestRipStatus, GUEST_RIP_COOKIE } from "@/lib/packRips";
+import { ripStatus, guestRipStatus, boxStatus, GUEST_RIP_COOKIE } from "@/lib/packRips";
 
 export const dynamic = "force-dynamic";
 
@@ -20,11 +20,12 @@ export async function GET() {
   }
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { tier: true, packRipsDate: true, packRipsToday: true },
+    select: { tier: true, packRipsDate: true, packRipsToday: true, boxRipWeek: true },
   });
   if (!user) {
     return guestResponse();
   }
   const s = ripStatus(user);
-  return NextResponse.json({ signedIn: true, ripsLeft: s.left, limit: s.limit, tier: user.tier });
+  const box = boxStatus(user);
+  return NextResponse.json({ signedIn: true, ripsLeft: s.left, limit: s.limit, tier: user.tier, box });
 }

@@ -52,6 +52,7 @@ model User {
   // Pack opening: daily rip allowance (3/day free, 10/day Premium), reset when the UTC day changes.
   packRipsDate         String?  // YYYY-MM-DD (UTC) that packRipsToday counts for
   packRipsToday        Int      @default(0)
+  boxRipWeek           String?  // ISO week (UTC, e.g. 2026-W43) of the member's last Premium booster-box rip
   createdAt            DateTime @default(now())
   decks                Deck[]
   orders               Order[]

@@ -49,6 +49,27 @@ interface RipInfo {
   ripsLeft: number;
   limit: number;
   tier: string;
+  box?: { premium: boolean; available: boolean; nextAt: string | null };
+}
+
+interface BoxHit {
+  id: string;
+  name: string;
+  image?: string;
+  rarity: Rarity;
+  foil: boolean;
+  priceUsd: number | null;
+  scryfallUri: string;
+}
+
+interface BoxResult {
+  setName: string;
+  packs: number;
+  cardCount: number;
+  valueUsd: number;
+  counts: { mythic: number; rare: number; uncommon: number; common: number; foil: number };
+  hits: BoxHit[];
+  nextAt: string | null;
 }
 
 const RARITY_GLOW: Record<Rarity, string> = {
@@ -93,6 +114,36 @@ export default function PackOpener() {
   const [flashKey, setFlashKey] = useState(0);
   const [muted, setMutedState] = useState<boolean>(() => isMuted());
   const [rips, setRips] = useState<RipInfo | null>(null);
+  const [boxBusy, setBoxBusy] = useState(false);
+  const [boxResult, setBoxResult] = useState<BoxResult | null>(null);
+
+  async function openBox() {
+    if (!selected || boxBusy) return;
+    setBoxBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/packs/box", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ set: selected }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) {
+        setError(data?.error ?? "Couldn't open that box — try again.");
+        if (res.status === 429 && data?.nextAt) setRips((r) => (r?.box ? { ...r, box: { ...r.box, available: false, nextAt: data.nextAt } } : r));
+        return;
+      }
+      const result = data as BoxResult;
+      setBoxResult(result);
+      setRips((r) => (r?.box ? { ...r, box: { ...r.box, available: false, nextAt: result.nextAt } } : r));
+      const top = result.hits[0];
+      if (top) playReveal(top.rarity, top.foil);
+    } catch {
+      setError("Couldn't open that box — try again.");
+    } finally {
+      setBoxBusy(false);
+    }
+  }
 
   // Sounds + big-reveal flourishes for the card at index i.
   function fireReveal(c: PackCard | undefined) {
@@ -297,6 +348,86 @@ export default function PackOpener() {
     </div>
   );
 
+  // ---------------------------------------------------------------- booster box results
+  if (boxResult) {
+    const best = boxResult.hits[0];
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Booster box opened</p>
+            <h2 className="font-display text-3xl font-semibold text-foreground">{boxResult.setName}</h2>
+            <p className="mt-1 text-sm text-muted">
+              {boxResult.packs} packs · {boxResult.cardCount} cards · worth about{" "}
+              <span className="font-semibold text-gold-bright">{money(boxResult.valueUsd)}</span>
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/packs/collection" className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright">
+              See it in your collection
+            </Link>
+            <button onClick={() => setBoxResult(null)} className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:border-gold">
+              Back to packs
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2 text-xs">
+          {(["mythic", "rare", "uncommon", "common"] as Rarity[]).map((r) => (
+            <span key={r} className={`rounded-full px-2.5 py-1 font-semibold ${RARITY_CHIP[r]}`}>
+              {boxResult.counts[r]} {RARITY_LABEL[r]}
+              {boxResult.counts[r] === 1 ? "" : "s"}
+            </span>
+          ))}
+          <span className="rounded-full bg-surface-raised px-2.5 py-1 font-semibold text-foreground">{boxResult.counts.foil} foils</span>
+        </div>
+
+        {best && (
+          <div className="card-frame mt-6 flex flex-col items-center gap-4 p-5 sm:flex-row sm:items-start">
+            <div className="w-40 shrink-0 overflow-hidden rounded-lg" style={{ boxShadow: `0 0 28px ${RARITY_GLOW[best.rarity]}` }}>
+              {best.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={best.image} alt={best.name} className="w-full" />
+              )}
+            </div>
+            <div className="text-center sm:text-left">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">Pull of the box</p>
+              <p className="mt-1 text-xl font-bold text-foreground">
+                {best.name}
+                {best.foil ? " ✦ foil" : ""}
+              </p>
+              <p className="text-lg text-gold-bright">{money(best.priceUsd)}</p>
+            </div>
+          </div>
+        )}
+
+        <h3 className="mt-8 mb-3 text-sm font-semibold text-gold-bright">Your hits ({boxResult.hits.length})</h3>
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-6">
+          {boxResult.hits.map((c, i) => (
+            <a key={`${c.id}-${i}`} href={c.scryfallUri} target="_blank" rel="noopener noreferrer" className="flex flex-col gap-1">
+              <div className="overflow-hidden rounded-md" style={{ aspectRatio: "2.5 / 3.5", boxShadow: `0 0 10px ${RARITY_GLOW[c.rarity]}` }}>
+                {c.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.image} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full items-center justify-center bg-surface-raised p-1 text-center text-[10px] text-muted">{c.name}</div>
+                )}
+              </div>
+              <p className="flex justify-between text-[10px] text-muted">
+                <span className={c.foil ? "text-gold-bright" : ""}>{c.foil ? "✦ Foil" : RARITY_LABEL[c.rarity]}</span>
+                <span>{money(c.priceUsd)}</span>
+              </p>
+            </a>
+          ))}
+        </div>
+        <p className="mt-8 text-center text-xs text-muted">
+          Every card from this box is in your collection — <Link href="/packs/collection" className="underline hover:text-gold-bright">build a deck from it</Link>.
+          {boxResult.nextAt ? ` Your next box is ready ${new Date(boxResult.nextAt).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" })}.` : ""}
+        </p>
+      </div>
+    );
+  }
+
   // ---------------------------------------------------------------- idle screen
   if (phase === "idle" || phase === "opening") {
     return (
@@ -312,6 +443,39 @@ export default function PackOpener() {
           )}
 
           <StatsStrip stats={stats} onReset={() => setStats(DEFAULT_STATS)} />
+
+          {rips?.signedIn && (
+            <div className="card-frame p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-foreground">Booster box</p>
+                <span className="rounded-full bg-surface-raised px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold-bright">Premium</span>
+              </div>
+              {rips.box?.premium ? (
+                rips.box.available ? (
+                  <>
+                    <p className="mt-1 text-xs text-muted">Rip a whole box — 36 packs of this set at once. One a week, on top of your daily packs.</p>
+                    <button
+                      onClick={openBox}
+                      disabled={!selected || boxBusy || phase === "opening"}
+                      className="mt-3 w-full rounded-lg border border-gold px-3 py-2 text-sm font-semibold text-gold-bright hover:bg-gold hover:text-black disabled:opacity-50"
+                    >
+                      {boxBusy ? "Opening 36 packs…" : selectedSet ? `Open a ${selectedSet.name} box` : "Pick a set first"}
+                    </button>
+                  </>
+                ) : (
+                  <p className="mt-1 text-xs text-muted">
+                    You&apos;ve opened this week&apos;s box.
+                    {rips.box.nextAt ? ` The next one is ready ${new Date(rips.box.nextAt).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" })}.` : ""}
+                  </p>
+                )
+              ) : (
+                <p className="mt-1 text-xs text-muted">
+                  Premium members rip a full 36-pack booster box every week, straight into their collection.{" "}
+                  <Link href="/premium" className="font-semibold text-gold-bright underline">Get Premium</Link>
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* The pack wrapper */}
@@ -582,7 +746,7 @@ export default function PackOpener() {
 
         <p className="mx-auto mt-6 max-w-md text-center text-xs text-muted">
           {rips?.signedIn
-            ? "These cards are saved to your collection. Coming soon: build decks straight from what you've pulled — and Premium box-rips."
+            ? "These cards are saved to your collection, where you can build a deck from everything you've pulled. Premium members can also rip a full booster box each week."
             : "Ripping as a guest — these pulls aren't saved. Create a free account to keep your collection and get 3 packs a day."}
         </p>
       </div>
