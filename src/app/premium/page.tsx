@@ -16,7 +16,7 @@ import {
   getTrialOffer,
   setPriceAlerts,
 } from "@/app/actions/premium";
-import { FREE_PRICE_ALERTS, FREE_TIER_DECK_LIMIT, PREMIUM_PLANS, PREMIUM_VAT_NOTE, TRIAL_DAYS, planPrice, type PremiumPlan } from "@/lib/tier";
+import { BOX_PACKS, FREE_PACK_RIPS, FREE_PRICE_ALERTS, FREE_TIER_DECK_LIMIT, PREMIUM_PACK_RIPS, PREMIUM_PLANS, PREMIUM_VAT_NOTE, TRIAL_DAYS, planPrice, type PremiumPlan } from "@/lib/tier";
 import { SITE } from "@/lib/site";
 
 const BENEFITS = [
@@ -27,6 +27,7 @@ const BENEFITS = [
   { feature: "See what your deck is worth", free: "—", premium: "Week, month and year, in the builder" },
   { feature: "Cheaper swaps for cards in your deck", free: "Build a budget deck in Deck Doctor", premium: "Per-card upgrade picks in the builder" },
   { feature: "Print proxies to playtest", free: "Print-at-home PDF, card by card", premium: "Print a whole deck in one click, with double-faced backs" },
+  { feature: "Rip more packs", free: `${FREE_PACK_RIPS} packs a day`, premium: `${PREMIUM_PACK_RIPS} a day, plus a ${BOX_PACKS}-pack booster box every week` },
   { feature: "Never lose a good version", free: "—", premium: "Save, compare and restore any version" },
   { feature: "Back the site you use", free: "—", premium: "Supporter badge on your public decks" },
 ];
