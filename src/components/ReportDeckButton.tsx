@@ -5,7 +5,7 @@ import { reportDeck, type ReportReason } from "@/app/actions/reports";
 
 const OPTIONS: { value: ReportReason; label: string }[] = [
   { value: "spam", label: "Spam or junk" },
-  { value: "offensive", label: "Offensive name or content" },
+  { value: "offensive", label: "Offensive name, card notes or content" },
   { value: "copyright", label: "Uses someone else's art" },
   { value: "other", label: "Something else" },
 ];

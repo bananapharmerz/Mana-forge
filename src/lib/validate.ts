@@ -3,7 +3,7 @@
 // images (or a small uploaded picture for custom art), and lists are capped. Anything that
 // doesn't fit is dropped rather than trusted.
 
-import type { DeckCard } from "@/lib/deckTypes";
+import { CARD_NOTE_MAX, type DeckCard } from "@/lib/deckTypes";
 
 export const MAX_DECK_CARDS = 300; // distinct entries in one deck
 export const MAX_COPIES = 99;
@@ -39,6 +39,18 @@ export function uploadedImage(v: unknown, maxChars = MAX_UPLOAD_CHARS): string |
   return /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v) ? v : undefined;
 }
 
+// Card notes are shown to everyone who opens a public deck, so anything that looks like a link
+// or a web address drops the whole note: they're for "why it's here", not for spam or phishing.
+const LINKISH = /(:\/\/|https?:|www\.|\b[a-z0-9-]+\.(com|net|org|gg|io|ly|me|co|xyz|ru|de|app|link|shop|site|top)\b)/i;
+
+/** A card's short plain-text note, or undefined if it's empty or looks like a link. */
+export function cleanCardNote(v: unknown): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const note = text(v.replace(/[<>]/g, ""), CARD_NOTE_MAX);
+  if (!note || LINKISH.test(note)) return undefined;
+  return note;
+}
+
 const SCRYFALL_ID = /^[0-9a-f-]{8,40}$/i;
 const COLORS = new Set(["W", "U", "B", "R", "G", "C"]);
 
@@ -61,6 +73,7 @@ export function cleanDeckCard(v: unknown): DeckCard | null {
     quantity: int(c.quantity, 1, MAX_COPIES, 1),
     category: text(c.category, 40) || "Other",
     priceUsd: Number.isFinite(price) && price >= 0 && price < 1_000_000 ? price : null,
+    note: cleanCardNote(c.note),
   };
 }
 
