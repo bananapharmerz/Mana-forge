@@ -45,6 +45,16 @@ export default function PremiumPage() {
   const [needTick, setNeedTick] = useState(false);
   const [plan, setPlan] = useState<PremiumPlan>("year");
 
+  // One slow change after a pause catches the eye without shouting: about 6 seconds in, Ember's
+  // flame brightens over 2 seconds and stays that way. Once per page view, no shake or pulse, and
+  // nothing at all for people who asked for reduced motion. Nothing is stored for it.
+  const [emberGlow, setEmberGlow] = useState(false);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setTimeout(() => setEmberGlow(true), 6000);
+    return () => clearTimeout(t);
+  }, []);
+
   const [alerts, setAlerts] = useState<boolean | null>(null);
   const [fetchedTrial, setTrial] = useState(false);
   const [friend, setFriend] = useState<{ percent: number; months: number } | null>(null);
@@ -99,7 +109,13 @@ export default function PremiumPage() {
         description={`Build without the 10-deck cap, play with no ads and no waiting, and see what every card in your deck is worth — and when it moves. Free for ${TRIAL_DAYS} days.`}
         width="max-w-5xl"
       >
-        <Ember mood="hyped" size={130} className="hidden sm:block" title="Ember, excited about Premium" />
+        <span
+          className={`hidden transition-[filter] duration-[2000ms] ease-out motion-reduce:transition-none sm:block ${
+            emberGlow ? "brightness-125 drop-shadow-[0_0_18px_rgba(255,138,61,0.55)]" : ""
+          }`}
+        >
+          <Ember mood="hyped" size={130} className="block" title="Ember, excited about Premium" />
+        </span>
       </PageHeader>
       <PremiumThanks trialDays={TRIAL_DAYS} />
       {/* On phones the comparison table comes first and pushes the plan picker a long way down,
