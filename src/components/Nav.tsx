@@ -8,6 +8,7 @@ import { useCart } from "./CartProvider";
 import { useProxyProject } from "./ProxyProjectProvider";
 import Ember from "./Ember";
 import ThemeToggle from "./ThemeToggle";
+import NavSearch from "./NavSearch";
 import { SITE } from "@/lib/site";
 import { SHOP_ENABLED } from "@/lib/features";
 
@@ -99,9 +100,12 @@ export default function Nav() {
   const [open, setOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const close = () => setOpen(false);
-  // The search field opens in its own row under the header instead of sitting inside the link
-  // row: a field there would crowd the menu row on mid-width desktops.
+  // Desktop (xl and up) shows the search field right in the link row, because an icon-only search
+  // gets missed. Below xl it opens in its own row under the header, where it has room.
   const [searchOpen, setSearchOpen] = useState(false);
+  // No search on a game table (/play/<room>): the header is the only space above the board, and a
+  // suggestion list must never cover the game.
+  const showSearch = !pathname.startsWith("/play/");
 
   // Click-to-open menus: a tab opens its menu and it stays open until you pick an item, click the
   // tab again, click outside the nav, or press Escape — no hover race.
@@ -241,7 +245,7 @@ export default function Nav() {
             Premium
           </Link>
 
-          <SearchToggle open={searchOpen} onToggle={() => setSearchOpen((s) => !s)} />
+          {showSearch && <NavSearch id="nav-search-desktop" className="ml-1 w-48 2xl:w-64" />}
           <ThemeToggle />
 
           {status === "authenticated" ? (
@@ -278,13 +282,15 @@ export default function Nav() {
 
         {/* Phones and tablets: a menu button instead of the full row of links. */}
         <div className="flex items-center gap-2 xl:hidden">
-          <SearchToggle
-            open={searchOpen}
-            onToggle={() => {
-              setSearchOpen((s) => !s);
-              close();
-            }}
-          />
+          {showSearch && (
+            <SearchToggle
+              open={searchOpen}
+              onToggle={() => {
+                setSearchOpen((s) => !s);
+                close();
+              }}
+            />
+          )}
           <ThemeToggle />
           {SHOP_ENABLED && count > 0 && (
             <Link href="/store/cart" className="rounded-md bg-surface-raised px-2.5 py-1.5 text-xs font-semibold text-foreground" onClick={close}>
@@ -308,29 +314,17 @@ export default function Nav() {
         </div>
       </div>
 
-      {searchOpen && (
-        // A plain GET form to the commander browser (the same target as the site's SearchAction
-        // JSON-LD), so it works without JavaScript and adds no new API calls.
-        <div id="nav-search" className="border-t border-border bg-background px-4 py-3 sm:px-6">
-          <form action="/commanders" method="GET" role="search" className="mx-auto flex max-w-7xl gap-2">
-            <label htmlFor="nav-search-q" className="sr-only">
-              Search commanders
-            </label>
-            <input
-              id="nav-search-q"
-              type="search"
-              name="q"
-              placeholder="Find a commander, e.g. Yuriko"
-              autoComplete="off"
-              enterKeyHint="search"
-              autoFocus
-              maxLength={80}
-              className="w-full max-w-md rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground placeholder:text-muted focus:border-gold focus:outline-none sm:text-sm"
-            />
-            <button type="submit" className="shrink-0 rounded-md bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright">
-              Search
-            </button>
-          </form>
+      {searchOpen && showSearch && (
+        // Phones and tablets: a full-width row under the logo, inside the sticky header. The form
+        // still submits to the commander browser (the same target as the site's SearchAction
+        // JSON-LD), so it works without JavaScript.
+        <div id="nav-search" className="border-t border-border bg-background px-4 py-3 sm:px-6 xl:hidden">
+          <NavSearch
+            id="nav-search-q"
+            autoFocus
+            className="mx-auto max-w-7xl"
+            onNavigate={() => setSearchOpen(false)}
+          />
         </div>
       )}
 
@@ -454,8 +448,8 @@ export default function Nav() {
   );
 }
 
-// A small magnifier button; it only shows or hides the search row, so it costs the nav row one
-// icon's width rather than a whole text field.
+// Phones and tablets: shows or hides the search row. It carries a visible "Search" word, since a
+// bare magnifier is easy to miss.
 function SearchToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
     <button
@@ -463,14 +457,14 @@ function SearchToggle({ open, onToggle }: { open: boolean; onToggle: () => void 
       onClick={onToggle}
       aria-expanded={open}
       aria-controls="nav-search"
-      aria-label={open ? "Close commander search" : "Search commanders"}
-      title="Search commanders"
-      className={`flex h-9 w-9 items-center justify-center rounded-md border text-foreground hover:border-gold ${open ? "border-gold" : "border-border"}`}
+      aria-label={open ? "Close search" : "Search commanders or cards"}
+      className={`flex h-9 items-center gap-1 rounded-md border px-2 text-xs font-medium sm:gap-1.5 sm:px-2.5 sm:text-sm text-foreground hover:border-gold ${open ? "border-gold" : "border-border"}`}
     >
       <svg aria-hidden viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
         <circle cx="8.5" cy="8.5" r="5.5" />
         <path d="m13 13 4.5 4.5" />
       </svg>
+      Search
     </button>
   );
 }
