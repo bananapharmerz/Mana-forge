@@ -37,6 +37,7 @@ import { authorName } from "@/lib/author";
 import CommanderGuide from "@/components/CommanderGuide";
 import CommanderFaq from "@/components/CommanderFaq";
 import RisingFalling from "@/components/RisingFalling";
+import SimilarCommanders from "@/components/SimilarCommanders";
 import { cardTrends } from "@/lib/trending";
 
 export async function generateMetadata({ params }: { params: Promise<{ commander: string }> }): Promise<Metadata> {
@@ -159,9 +160,12 @@ export default async function CommanderDecksPage({
   );
   const topCards = mostPlayed.filter((c) => !rockNames.has(c.name)).slice(0, 10);
   const newCards = edhrec ? getNewCards(edhrec).slice(0, 10) : [];
+  // EDHREC's similar commanders, fetched in the same batched card lookup as everything else.
+  const similarNames = (edhrec?.overview.similar ?? []).filter((n) => n !== card.name).slice(0, 6);
 
   const allNames = Array.from(
     new Set([
+      ...similarNames,
       ...mostPlayed.map((c) => c.name),
       ...topCards.map((c) => c.name),
       ...newCards.map((c) => c.name),
@@ -206,6 +210,7 @@ export default async function CommanderDecksPage({
     { id: "public-decks", label: "Public Decks", show: !!edhrecDecks && edhrecDecks.length > 0 },
     { id: "trending", label: "Rising & Falling", show: !!trends && (trends.rising.length > 0 || trends.falling.length > 0) },
     { id: "site-decks", label: "Site Decks", show: true },
+    { id: "similar-commanders", label: "Similar", show: similarNames.some((n) => byName.has(n)) },
   ].filter((t) => t.show);
 
   return (
@@ -429,6 +434,8 @@ export default async function CommanderDecksPage({
           </div>
         )}
       </div>
+
+      <SimilarCommanders names={similarNames} byName={byName} />
 
       {edhrec && (
         <CommanderFaq
