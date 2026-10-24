@@ -76,10 +76,12 @@ const features = [
 export default async function Home() {
   const session = await auth();
   const userId = session?.user?.id ?? null;
-  const [decks, members, mine] = await Promise.all([
+  // All home-page queries run together, so the hero isn't held back by one query waiting on another.
+  const [decks, members, mine, challengeRows] = await Promise.all([
     db.deck.count({ where: { isPublic: true } }).catch(() => 0),
     db.user.count().catch(() => 0),
     userId ? db.deck.count({ where: { ownerId: userId } }).catch(() => 0) : Promise.resolve(0),
+    db.challenge.findMany({ orderBy: { submitUntil: "desc" }, take: 6 }).catch(() => []),
   ]);
   const stats = [
     // Counts appear only once they're big enough to reassure; a tiny number puts people off.
@@ -88,9 +90,6 @@ export default async function Home() {
   ];
 
   // Live Forge Challenges, surfaced as a home-page notification instead of a top-nav tab.
-  const challengeRows = await db.challenge
-    .findMany({ orderBy: { submitUntil: "desc" }, take: 6 })
-    .catch(() => []);
   const PHASE_LABEL: Record<string, string> = { submitting: "Entries open", judging: "Picking finalists", voting: "Voting now" };
   const liveChallenges: LiveChallenge[] = challengeRows
     .map((c) => ({ c, phase: challengePhase(c) }))

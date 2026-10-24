@@ -44,23 +44,25 @@ export default function ForgeHero({ stats }: { stats: { label: string; value: st
             "radial-gradient(60% 55% at 72% 45%, rgba(193,65,12,0.35), transparent 60%), radial-gradient(50% 60% at 20% 20%, rgba(91,42,134,0.45), transparent 65%), radial-gradient(80% 60% at 50% 110%, rgba(224,178,82,0.18), transparent 60%)",
         }}
       />
-      {/* Ember at the anvil: above the headline on phones, beside it on bigger screens. */}
-      <ForgeEmberScene className="absolute left-1/2 top-2 -z-10 aspect-[4/5] w-[min(52vw,240px)] -translate-x-1/2 md:left-auto md:right-[6%] md:top-1/2 md:w-[clamp(320px,34vw,470px)] md:translate-x-0 md:-translate-y-1/2" />
+      {/* Ember at the anvil: above the headline on phones, beside it on bigger screens. On phones he's
+          kept small so the headline and the "Start building" button both fit on the first screen
+          (half of phone visitors left Home within 10 seconds when the button sat below the fold). */}
+      <ForgeEmberScene className="absolute left-1/2 top-2 -z-10 aspect-[4/5] w-[min(38vw,150px)] -translate-x-1/2 sm:w-[min(52vw,240px)] md:left-auto md:right-[6%] md:top-1/2 md:w-[clamp(320px,34vw,470px)] md:translate-x-0 md:-translate-y-1/2" />
       {/* On phones Ember sits above the headline; keep the text readable below it. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[62%] bg-gradient-to-b from-transparent via-[#09060f]/80 to-[#09060f] md:hidden" />
 
-      <div className="mx-auto flex min-h-[min(86vh,800px)] max-w-7xl flex-col justify-start px-4 pb-28 pt-[min(66vw,310px)] sm:px-6 md:justify-center md:pb-36 md:pt-20">
+      <div className="mx-auto flex min-h-[min(86vh,800px)] max-w-7xl flex-col justify-start px-4 pb-28 pt-[min(46vw,180px)] sm:px-6 sm:pt-[min(66vw,310px)] md:justify-center md:pb-36 md:pt-20">
         <div ref={copy} className="relative z-[2] max-w-xl will-change-transform">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.32em] text-[#e0b252]">Free Commander deck builder</p>
-          <h1 className="font-display text-5xl font-semibold leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.32em] text-[#e0b252] sm:mb-4">Free Commander deck builder</p>
+          <h1 className="font-display text-4xl font-semibold leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
             Forge your next{" "}
             <span className="bg-gradient-to-br from-[#fff1c9] via-[#e0b252] to-[#b5652a] bg-clip-text italic text-transparent">Commander</span>
             {" "}deck.
           </h1>
-          <p className="mt-6 max-w-md text-base leading-relaxed text-[#d8ccb0]/85">
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-[#d8ccb0]/85 sm:mt-6 sm:text-base">
             Pick a commander and see the cards other players run with it. Build your 100 cards, see what the deck costs, then play it with friends online.
           </p>
-          <div className="mt-9 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap gap-3 sm:mt-9">
             <Link
               href="/deck-builder"
               className="rounded-lg bg-gradient-to-b from-[#f0c76a] to-[#b5872a] px-6 py-3 font-semibold text-[#1a1206] shadow-[0_0_40px_-8px_rgba(240,199,106,0.8)] transition-transform hover:scale-[1.03]"
