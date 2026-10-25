@@ -15,6 +15,8 @@ import ReportDeckButton from "@/components/ReportDeckButton";
 import ShareDeckButton from "@/components/ShareDeckButton";
 import BuyDeckPanel from "@/components/BuyDeckPanel";
 import GameChangersPanel from "@/components/GameChangersPanel";
+import DeckCombos from "@/components/DeckCombos";
+import { Suspense } from "react";
 import PriceChart from "@/app/prices/PriceChart";
 import { deckValueHistory } from "@/lib/prices";
 import PartnerCardStack from "@/components/PartnerCardStack";
@@ -208,6 +210,13 @@ export default async function ViewDeckPage({
           </div>
 
           <GameChangersPanel cards={[deck.commander, deck.partner, ...deck.cards].flatMap((c) => (c ? [c.name] : []))} />
+          {/* Streams in after the rest of the page, so Spellbook never holds the deck up. */}
+          <Suspense fallback={null}>
+            <DeckCombos
+              commanders={[deck.commander, deck.partner].flatMap((c) => (c ? [c.name] : []))}
+              cards={deck.cards.map((c) => c.name)}
+            />
+          </Suspense>
 
           <div className="mt-4 flex items-center gap-2">
             {isOwnDeck ? (
