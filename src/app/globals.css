@@ -7,6 +7,9 @@
   --surface: #19140d;
   --surface-raised: #241d13;
   --border: #3b3123;
+  /* Edge of search fields: --border is only 1.5:1, too faint to read as a field. This is 3:1 or
+     more on the background and every surface (WCAG 1.4.11). */
+  --input-border: #7a6747;
   --foreground: #f1e7d3;
   --muted: #a1947a;
   --gold: #d2a142;
@@ -33,6 +36,8 @@
   --surface: #fffdf8;
   --surface-raised: #f0e9d6;
   --border: #ddd0ac;
+  /* 3.8:1 on the background, 4.1:1 on cards, 3.5:1 on raised surfaces. */
+  --input-border: #8c7a53;
   --foreground: #2b2416;
   --muted: #766c53;
   --gold: #b5872a;
@@ -49,6 +54,7 @@
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
   --color-border: var(--border);
+  --color-input-border: var(--input-border);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-gold: var(--gold);
@@ -85,6 +91,12 @@ body {
 .mana-pip.mana-r { background: var(--mana-r); color: #ffffff; }
 .mana-pip.mana-g { background: var(--mana-g); color: #ffffff; }
 .mana-pip.mana-c { background: var(--mana-c); color: #33343a; }
+
+/* Search fields draw their own clear (X) button; hide the browser's so there aren't two. */
+.search-field::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
 
 .card-frame {
   background: var(--surface);

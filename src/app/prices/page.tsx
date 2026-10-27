@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { livePrices, mostPlayedWith, mostValuable, priceHistory, searchCardPrices, trackerStats, weeklyMovers, type Mover, type PlayedWith, type PriceHit } from "@/lib/prices";
 import { signedPct, usd } from "@/lib/livePrice";
 import Watchlist, { type WatchRow } from "./Watchlist";
+import SearchField from "@/components/SearchField";
 import { SITE } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -146,7 +147,7 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
       <PageHeader title="Know what your cards are worth" description={`Daily Scryfall prices for ${stats.cards.toLocaleString("en-US")} printings in ${SITE.name} decks and watchlists. Watch a card, set the price you'd pay, and see it flagged when it drops there.`} width="max-w-6xl" />
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
       <form action="/prices" method="GET" role="search" className="mb-6 flex gap-2">
-        <input
+        <SearchField
           type="search"
           name="q"
           defaultValue={q}
@@ -154,7 +155,8 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
           aria-label="Card name"
           autoComplete="off"
           enterKeyHint="search"
-          className="w-full max-w-md rounded-md border border-border bg-surface px-3 py-2 text-base text-foreground placeholder:text-muted focus:border-gold focus:outline-none sm:text-sm"
+          wrapperClassName="w-full max-w-md"
+          className="text-base sm:text-sm"
         />
         <button type="submit" className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright">
           Search

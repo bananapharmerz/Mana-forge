@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ClearButton, SearchIcon, searchFieldClass } from "./SearchField";
 
 export default function CardSearchBox({
   placeholder,
@@ -43,7 +44,10 @@ export default function CardSearchBox({
 
   return (
     <div className="relative">
+      <SearchIcon />
       <input
+        type="search"
+        aria-label={placeholder}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
@@ -55,8 +59,17 @@ export default function CardSearchBox({
           if (e.key === "Escape") setOpen(false);
         }}
         placeholder={placeholder}
-        className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+        className={`${searchFieldClass} text-sm`}
       />
+      {value && (
+        <ClearButton
+          onClear={() => {
+            setValue("");
+            setSuggestions([]);
+            setOpen(false);
+          }}
+        />
+      )}
       {open && suggestions.length > 0 && (
         <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-border bg-surface-raised shadow-lg">
           {suggestions.map((name) => (

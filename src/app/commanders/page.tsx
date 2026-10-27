@@ -2,6 +2,7 @@ import PageHeader from "@/components/PageHeader";
 import Link from "next/link";
 import CommandersFeed from "@/components/CommandersFeed";
 import CategoryFilterGroup from "@/components/CategoryFilterGroup";
+import SearchField from "@/components/SearchField";
 import {
   colorIdentityCategories,
   typalCategories,
@@ -75,12 +76,15 @@ export default async function CommandersPage({
         {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
         {setCode && <input type="hidden" name="set" value={setCode} />}
         {setName && <input type="hidden" name="setName" value={setName} />}
-        <input
-          type="text"
+        <SearchField
+          type="search"
           name="q"
           defaultValue={q}
           placeholder="Search commanders by name or text..."
-          className="w-full max-w-md rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
+          aria-label="Search commanders"
+          enterKeyHint="search"
+          wrapperClassName="w-full max-w-md"
+          className="text-sm"
         />
         <button
           type="submit"
