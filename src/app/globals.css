@@ -35,13 +35,22 @@
   --border: #ddd0ac;
   --foreground: #2b2416;
   --muted: #766c53;
-  --gold: #b5872a;
+  /* Darker gold for light pages so gold text (prices, links) is readable: 5.2:1 on the background,
+     5.6:1 on cards, 4.7:1 on raised surfaces. The old #b5872a was only 3:1 as text. Gold
+     backgrounds keep #b5872a (see the rule below), because black text on it is 6.5:1. */
+  --gold: #84611a;
   --gold-bright: #7c5814;
   /* Darker ember for light pages: 5:1 on the background (4.6:1 on raised surfaces), white text on it 5.5:1. */
   --premium: #b2470e;
   --premium-fg: #ffffff;
   --up: #0a6e2e;
   --down: #c01616;
+}
+/* Gold buttons and badges carry black text, which needs the lighter gold to stay readable.
+   Only the variable is reset here (not the colour itself), so hover and other utilities keep working. */
+:root[data-theme="light"] .bg-gold,
+:root[data-theme="light"] .hover\:bg-gold:hover {
+  --gold: #b5872a;
 }
 
 @theme inline {

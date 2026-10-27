@@ -183,7 +183,7 @@ export default function ProfileEditor({
           type="button"
           onClick={save}
           disabled={busy}
-          className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-background hover:bg-gold-bright disabled:opacity-50"
+          className="rounded-lg bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright disabled:opacity-50"
         >
           {busy ? "Saving…" : "Save profile"}
         </button>
