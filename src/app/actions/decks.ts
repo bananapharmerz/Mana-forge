@@ -537,6 +537,32 @@ export interface MixedDecksFilter {
   q?: string;
 }
 
+// Only calls slower than this get logged, so the server log stays quiet on a normal day.
+const SLOW_FEED_MS = 1500;
+
+// Times each step of the deck feed. Server log only: nothing reaches the visitor, and no names,
+// ids or search text are logged, just step timings and which kind of page it was.
+function feedTimer() {
+  const start = performance.now();
+  let last = start;
+  const steps: string[] = [];
+  return {
+    lap(step: string) {
+      const now = performance.now();
+      steps.push(`${step}=${Math.round(now - last)}ms`);
+      last = now;
+    },
+    report(info: { firstPage: boolean; category?: string; q: boolean }) {
+      const total = Math.round(performance.now() - start);
+      if (total < SLOW_FEED_MS) return;
+      const kind = [info.firstPage ? "first page" : "more", info.category ? `category=${info.category}` : "", info.q ? "search" : ""]
+        .filter(Boolean)
+        .join(", ");
+      console.warn(`[decks feed] slow: ${total}ms (${kind}) ${steps.join(" ")}`);
+    },
+  };
+}
+
 // Every public deck on the site (real, cursor-paginated, newest first) plus a fresh random
 // sample of real EDHREC decks, mixed into one feed. "hasMore" is true whenever there are more
 // real site decks OR this batch found any EDHREC decks (which is effectively always, since
@@ -559,6 +585,10 @@ export async function getMixedDecksPage(
   const q = filters?.q?.trim() || undefined;
   const category = filters?.category ? findCategory(filters.category) : undefined;
 
+  // /decks sometimes takes ~20s and the code alone doesn't say which step is slow, so each step is
+  // timed and slow calls are written to the server log. Measure first, then fix the slow step.
+  const timer = feedTimer();
+
   let edhrecPool = POPULAR_COMMANDERS;
   if (q) {
     const qLower = q.toLowerCase();
@@ -567,6 +597,7 @@ export async function getMixedDecksPage(
   if (category) {
     const matched = await commandersMatchingCategory(edhrecPool, category);
     edhrecPool = edhrecPool.filter((n) => matched.has(n));
+    timer.lap("categoryPool");
   }
   // The first page picks from this hour's set of commanders (the same for every visitor), so their
   // EDHREC data is usually already in memory; later pages roam the whole pool. Commanders that are
@@ -589,6 +620,7 @@ export async function getMixedDecksPage(
     const distinctNames = distinctRows.map((r) => r.commanderName);
     const matched = await commandersMatchingCategory(distinctNames, category);
     siteCommanderNames = distinctNames.filter((n) => matched.has(n));
+    timer.lap("categorySiteDecks");
   }
 
   const sitePage = siteExhausted
@@ -598,6 +630,7 @@ export async function getMixedDecksPage(
         q,
       });
   const nextSiteExhausted = siteExhausted || !sitePage.hasMore;
+  timer.lap("siteDecks");
 
   // EDHREC gets about a second; whatever isn't ready keeps loading for the next visitor.
   const edhrecResults = await Promise.all(
@@ -606,8 +639,10 @@ export async function getMixedDecksPage(
       decks: (await getEdhrecPublicDecks(name, EDHREC_DECKS_PER_COMMANDER, 1200)) ?? [],
     }))
   );
+  timer.lap("edhrecDecks");
   const withDecks = edhrecResults.filter((r) => r.decks.length);
   const sources = await Promise.all(withDecks.flatMap((r) => r.decks.map((d) => getEdhrecDeckSource(d.urlhash, 700))));
+  timer.lap("edhrecSources");
   const edhrecItems: MixedDeckItem[] = [];
   let si = 0;
   for (const r of withDecks) for (const d of r.decks) edhrecItems.push({ kind: "edhrec", deck: d, commanderName: r.name, source: sources[si++] });
@@ -618,6 +653,8 @@ export async function getMixedDecksPage(
   const extraCommanderCards = shownCommanders.length > 0 ? await getCardsByNames(shownCommanders) : [];
   const commanderImages: Record<string, string | undefined> = { ...sitePage.commanderImages };
   for (const c of extraCommanderCards) commanderImages[c.name] = cardImage(c);
+  timer.lap("commanderImages");
+  timer.report({ firstPage, category: category?.slug, q: !!q });
 
   return {
     items: shuffled([...siteItems, ...edhrecItems]),
