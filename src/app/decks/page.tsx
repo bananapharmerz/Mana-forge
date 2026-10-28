@@ -56,7 +56,7 @@ export default async function DecksIndexPage({
   return (
     <>
       <PageHeader title={category ? `${category.label} decks` : "Public decks"} description={`Decks people are playing: ${SITE.name} players' decks first, then fresh lists from EDHREC. Publish yours and it shows up at the top.`} width="max-w-[1600px]" />
-      <div className="mx-auto max-w-[1600px] px-4 py-10 sm:px-6">
+      <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 sm:py-10">
       <FavoritesSection currentUserId={session?.user?.id} />
 
       <form action="/decks" method="GET" className="mb-6 flex gap-2">
@@ -84,7 +84,17 @@ export default async function DecksIndexPage({
         )}
       </form>
 
-      <div className="mb-8 flex flex-col gap-4">
+      {/* Most visitors never scroll past the first screen, so the filters fold away and the decks
+          come first. Folded links are still in the HTML, so search engines keep finding the
+          category pages. Opens by itself when a category is picked, so you can see what's active. */}
+      <details className="group mb-6 rounded-md border border-border/60 px-3 py-2" open={!!category}>
+        <summary className="cursor-pointer select-none text-xs font-semibold uppercase tracking-wide text-muted hover:text-foreground">
+          Filters{" "}
+          <span className="normal-case tracking-normal">
+            {category ? `(showing ${category.label})` : "(colors, tribe, theme, partners, product)"}
+          </span>
+        </summary>
+      <div className="mt-3 flex flex-col gap-4">
         <CategoryFilterGroup
           title="Color Identity"
           basePath="/decks"
@@ -125,6 +135,7 @@ export default async function DecksIndexPage({
           q={q}
         />
       </div>
+      </details>
 
       <DecksFeed
         key={`${categorySlug ?? ""}|${q ?? ""}`}
