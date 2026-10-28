@@ -36,7 +36,7 @@ Last reviewed: 9 October 2026.
 - Server actions in `src/app/actions/*.ts` start with `requireUserId()` (or `auth()`) and then load the record and compare `ownerId`.
 - Pages: the editor at `src/app/deck-builder/[id]/page.tsx` redirects strangers to login and 404s non-owners. Deck view at `src/app/decks/view/[deckId]/page.tsx` 404s private decks.
 - Tier: `deckLimitFor(tier)`, and Premium features re-read `User.tier` from the database on every call.
-- Admin: `src/app/api/admin/bans/route.ts` needs the `x-admin-key` header equal to `ADMIN_API_KEY` (SHA-256 then `timingSafeEqual`). Otherwise it answers 404.
+- Admin: `src/app/api/admin/bans/route.ts` needs the `x-admin-key` header equal to `ADMIN_API_KEY` (SHA-256 then `timingSafeEqual`). Otherwise it answers 404. During a key rotation `ADMIN_API_KEY_NEXT` is accepted too. A wrong non-empty key is counted as `admin_denied` (route name only, never the key) for Nexus's Police Station.
 
 ## API and actions
 
