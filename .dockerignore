@@ -14,3 +14,4 @@ backups
 .windsurf
 src/generated
 tsconfig.tsbuildinfo
+scryfall-cache

@@ -1,6 +1,8 @@
 import path from "node:path";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@/generated/prisma/client";
+// Server-only and loaded by nearly every page: makes sure the Scryfall cache is registered.
+import "@/lib/scryfallCache";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 

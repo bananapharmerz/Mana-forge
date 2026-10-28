@@ -42,7 +42,7 @@ async function build() {
   let url: string | null =
     "https://api.scryfall.com/cards/search?q=" + encodeURIComponent("is:commander legal:commander game:paper") + "&order=edhrec&unique=cards";
   for (let page = 0; url && page < 40; page++) {
-    const res: Response = await sfetch(url, { headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" }, cache: "no-store" });
+    const res: Response = await sfetch(url, { headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" }, cache: "no-store", priority: "low" });
     if (!res.ok) break;
     const body = (await res.json()) as { data?: { name?: string }[]; has_more?: boolean; next_page?: string };
     for (const c of body.data ?? [])

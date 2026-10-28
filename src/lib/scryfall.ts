@@ -108,27 +108,72 @@ export interface ScryfallSearchResponse {
 const SCRYFALL_API = process.env.SCRYFALL_API_URL || "https://api.scryfall.com"; // server-side override only for testing
 
 // Scryfall allows about 10 requests a second and answers 429 ("too many requests") beyond that,
-// sometimes for a while. Every request goes through this queue: at least 110ms apart, and on a
-// 429 it waits (Retry-After, or 1s, 2s, 3s) and tries again without reusing a cached answer.
+// sometimes for a while. Every request that reaches Scryfall goes through one queue: at least
+// 110ms apart, visitors' requests ahead of background jobs (price refresh, commander index), and
+// on a 429 it waits (Retry-After, or 1s, 2s, 3s) and tries again.
 // A 429 must never turn into "this card doesn't exist" (that would 404 a real commander page).
+//
+// Answers asked for with `next: { revalidate }` are kept (see scryfallCache.ts) for that long and
+// then served stale, instantly, while one background request refreshes them. Cached answers never
+// wait in the queue, and identical requests in flight share one call.
 export class ScryfallBusyError extends Error {}
-const sq = globalThis as unknown as { __scryfallNext?: number };
+// The cache uses the server's disk, and this file also runs in the browser (the art picker), so it
+// isn't imported here: scryfallCache.ts registers itself on the server (instrumentation.ts, db.ts).
+// Without it (the browser, scripts) requests simply aren't cached.
+type SfStore = {
+  cacheGet: (bucket: string, key: string) => Promise<{ body: string; at: number } | null>;
+  cachePut: (bucket: string, key: string, body: string, at?: number) => void;
+};
+const STALE_LIMIT_MS = 30 * 86400_000; // same as scryfallCache.ts
+const store = () => (globalThis as unknown as { __mfSfStore?: SfStore }).__mfSfStore;
+const cacheGet = async (bucket: string, key: string) => (await store()?.cacheGet(bucket, key)) ?? null;
+const cachePut = (bucket: string, key: string, body: string, at?: number) => store()?.cachePut(bucket, key, body, at);
+type SfInit = RequestInit & { next?: { revalidate?: number | false }; priority?: "high" | "low" };
+const sq = globalThis as unknown as {
+  __scryfallNext?: number;
+  __sfLanes?: { high: (() => void)[]; low: (() => void)[]; timer: ReturnType<typeof setTimeout> | null };
+  __sfInflight?: Map<string, Promise<CachedAnswer>>;
+};
+const lanes = (sq.__sfLanes ??= { high: [], low: [], timer: null });
+const inflight = (sq.__sfInflight ??= new Map());
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
-export async function sfetch(url: string, init: RequestInit = {}): Promise<Response> {
+
+function pump() {
+  if (lanes.timer) return;
+  const wait = Math.max(0, (sq.__scryfallNext ?? 0) - Date.now());
+  lanes.timer = setTimeout(() => {
+    lanes.timer = null;
+    const go = lanes.high.shift() ?? lanes.low.shift();
+    if (go) {
+      sq.__scryfallNext = Date.now() + 110;
+      go();
+    }
+    if (lanes.high.length || lanes.low.length) pump();
+  }, wait);
+}
+function slot(priority: "high" | "low"): Promise<void> {
+  return new Promise((resolve) => {
+    lanes[priority].push(resolve);
+    pump();
+  });
+}
+
+async function sfetchLive(url: string, init: SfInit): Promise<Response> {
+  const priority = init.priority ?? "high";
+  const { priority: _p, ...base } = init;
+  void _p;
+  let req: RequestInit = base;
   for (let attempt = 0; ; attempt++) {
-    const now = Date.now();
-    const at = Math.max(now, sq.__scryfallNext ?? 0);
-    sq.__scryfallNext = at + 110;
-    if (at > now) await pause(at - now);
+    await slot(priority);
     // Every Scryfall call gives up after 20s unless the caller set its own limit, so a slow
     // Scryfall can't leave a page hanging.
     // A timeout comes back as a 504 (not retried), so callers' "Scryfall is busy" handling and
     // cached fallbacks apply instead of an unexpected crash.
     let res: Response;
     try {
-      res = await fetch(url, init.signal ? init : { ...init, signal: AbortSignal.timeout(20000) });
+      res = await fetch(url, req.signal ? req : { ...req, signal: AbortSignal.timeout(20000) });
     } catch (e) {
-      if (!init.signal && e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) return new Response(null, { status: 504 });
+      if (!req.signal && e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) return new Response(null, { status: 504 });
       throw e;
     }
     if (res.status !== 429 && res.status < 500) return res;
@@ -137,10 +182,60 @@ export async function sfetch(url: string, init: RequestInit = {}): Promise<Respo
     const wait = Number.isFinite(ra) && ra > 0 ? Math.min(ra * 1000, 10000) : 1000 * (attempt + 1);
     sq.__scryfallNext = Math.max(sq.__scryfallNext ?? 0, Date.now() + wait);
     await pause(wait);
-    const { next: _skip, ...rest } = init as RequestInit & { next?: unknown };
+    const { next: _skip, ...rest } = req as SfInit;
     void _skip;
-    init = { ...rest, cache: "no-store" };
+    req = { ...rest, cache: "no-store" };
   }
+}
+
+interface CachedAnswer {
+  status: number;
+  body: string;
+}
+
+const answer = (a: CachedAnswer) =>
+  new Response(a.status === 504 ? null : a.body, { status: a.status, headers: { "content-type": "application/json" } });
+
+// One live call per key at a time; 200s are stored.
+function refresh(key: string, url: string, init: SfInit): Promise<CachedAnswer> {
+  let p = inflight.get(key);
+  if (!p) {
+    // The cache replaces Next's fetch cache here: no `next`/`cache` options on the real fetch, so
+    // the call never marks an ISR page as dynamic.
+    const { next: _n, cache: _c, ...req } = init;
+    void _n;
+    void _c;
+    p = sfetchLive(url, req)
+      .then(async (res) => {
+        const body = res.status === 504 ? "" : await res.text();
+        if (res.status === 200) cachePut("res", key, body);
+        return { status: res.status, body };
+      })
+      .finally(() => inflight.delete(key));
+    inflight.set(key, p);
+  }
+  return p;
+}
+
+export async function sfetch(url: string, init: SfInit = {}): Promise<Response> {
+  const ttl = init.next?.revalidate;
+  const cacheable = typeof ttl === "number" && ttl > 0 && init.cache !== "no-store" && !init.signal && !!store();
+  if (!cacheable) return sfetchLive(url, init);
+
+  const method = (init.method ?? "GET").toUpperCase();
+  const key = `${method} ${url}${typeof init.body === "string" ? ` ${init.body}` : ""}`;
+  const hit = await cacheGet("res", key);
+  const age = hit ? Date.now() - hit.at : Infinity;
+  if (hit && age < ttl * 1000) return answer({ status: 200, body: hit.body });
+  if (hit && age < STALE_LIMIT_MS) {
+    // Stale: answer now, refresh behind the visitor's back.
+    void refresh(key, url, { ...init, priority: "low" }).catch(() => {});
+    return answer({ status: 200, body: hit.body });
+  }
+  const live = await refresh(key, url, init);
+  // Scryfall busy and only a very old copy: the old copy beats an error page.
+  if (hit && (live.status === 429 || live.status >= 500)) return answer({ status: 200, body: hit.body });
+  return answer(live);
 }
 
 export function cardImage(card: ScryfallCard): string | undefined {
@@ -232,34 +327,85 @@ export async function autocompleteTokenNames(query: string): Promise<string[]> {
   return result.data.map((c) => c.name).slice(0, 20);
 }
 
+// Card lookups (/cards/collection, 75 per request) are cached card by card rather than per
+// request: the same staples appear on thousands of pages, so a commander page usually only has to
+// ask Scryfall for the handful of cards no page has needed yet. Fresh for 6 hours (Scryfall moves
+// prices once a day), then shown as-is while a background request updates them.
+const CARD_FRESH_MS = 6 * 3600_000;
+type CardKind = "name" | "id";
+const cardKey = (kind: CardKind, v: string) => `${kind}:${kind === "name" ? v.toLowerCase().trim() : v}`;
+
+async function fetchCollection(kind: CardKind, batch: string[], priority: "high" | "low"): Promise<void> {
+  const res = await sfetchLive(`${SCRYFALL_API}/cards/collection`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "mtg-hub/1.0" },
+    body: JSON.stringify({ identifiers: batch.map((v) => (kind === "name" ? { name: v } : { id: v })) }),
+    priority,
+  });
+  if (!res.ok) return;
+  const json = (await res.json()) as { data?: ScryfallCard[]; not_found?: { name?: string; id?: string }[] };
+  const found = json.data ?? [];
+  const lookup = new Map<string, ScryfallCard>();
+  for (const c of found) {
+    if (kind === "id") lookup.set(c.id, c);
+    else {
+      lookup.set(c.name.toLowerCase(), c);
+      for (const f of c.card_faces ?? []) if (!lookup.has(f.name.toLowerCase())) lookup.set(f.name.toLowerCase(), c);
+    }
+  }
+  const missing = new Set((json.not_found ?? []).map((n) => (kind === "id" ? n.id : n.name?.toLowerCase().trim())).filter(Boolean));
+  const at = Date.now();
+  for (const v of batch) {
+    const k = kind === "id" ? v : v.toLowerCase().trim();
+    const card = lookup.get(k) ?? (kind === "name" ? lookup.get(k.split(" // ")[0]) : undefined);
+    if (card) cachePut("card", cardKey(kind, v), JSON.stringify(card), at);
+    else if (missing.has(k)) cachePut("card", cardKey(kind, v), "null", at); // a real "no such card"
+  }
+}
+
+const staleCardRefresh = new Set<string>();
+
+async function getCardsCached(kind: CardKind, values: string[]): Promise<ScryfallCard[]> {
+  const wanted = [...new Map(values.filter(Boolean).map((v) => [cardKey(kind, v), v])).entries()];
+  const read = async () => Promise.all(wanted.map(async ([k]) => [k, await cacheGet("card", k)] as const));
+  let entries = await read();
+  const now = Date.now();
+  const miss = wanted.filter((_, i) => !entries[i][1] || now - entries[i][1]!.at >= STALE_LIMIT_MS).map(([, v]) => v);
+  const stale = wanted
+    .filter((w, i) => entries[i][1] && now - entries[i][1]!.at >= CARD_FRESH_MS && !miss.includes(w[1]) && !staleCardRefresh.has(w[0]))
+    .map(([, v]) => v);
+
+  const chunks = (list: string[]) => Array.from({ length: Math.ceil(list.length / 75) }, (_, i) => list.slice(i * 75, i * 75 + 75));
+  if (miss.length) {
+    await Promise.all(chunks(miss).map((c) => fetchCollection(kind, c, "high").catch(() => {})));
+    entries = await read();
+  }
+  if (stale.length) {
+    for (const v of stale) staleCardRefresh.add(cardKey(kind, v));
+    void Promise.all(chunks(stale).map((c) => fetchCollection(kind, c, "low").catch(() => {}))).finally(() => {
+      for (const v of stale) staleCardRefresh.delete(cardKey(kind, v));
+    });
+  }
+
+  const seen = new Set<string>();
+  const out: ScryfallCard[] = [];
+  for (const [, e] of entries) {
+    if (!e || e.body === "null") continue;
+    try {
+      const card = JSON.parse(e.body) as ScryfallCard;
+      if (seen.has(card.id)) continue;
+      seen.add(card.id);
+      out.push(card);
+    } catch {
+      /* corrupt entry: skipped, refetched next time it expires */
+    }
+  }
+  return out;
+}
+
 export async function getCardsByNames(names: string[]): Promise<ScryfallCard[]> {
   if (names.length === 0) return [];
-  // Scryfall takes 75 names per request; the batches go out together (a page of 250 cards is 4
-  // requests, well inside Scryfall's ~10 requests a second) instead of one after another.
-  const batches: string[][] = [];
-  for (let i = 0; i < names.length; i += 75) batches.push(names.slice(i, i + 75));
-  const parts = await Promise.all(
-    batches.map(async (batch) => {
-      try {
-        const res = await sfetch(`${SCRYFALL_API}/cards/collection`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "User-Agent": "mtg-hub/1.0",
-          },
-          body: JSON.stringify({ identifiers: batch.map((name) => ({ name })) }),
-          next: { revalidate: 3600 },
-        });
-        if (!res.ok) return [];
-        const json = await res.json();
-        return (json.data ?? []) as ScryfallCard[];
-      } catch {
-        return [];
-      }
-    })
-  );
-  return parts.flat();
+  return getCardsCached("name", names);
 }
 
 // Same as getCardsByNames but keyed by Scryfall printing id — used to backfill stored cards
@@ -267,30 +413,7 @@ export async function getCardsByNames(names: string[]): Promise<ScryfallCard[]> 
 // callers map results back by card.id.
 export async function getCardsByIds(ids: string[]): Promise<ScryfallCard[]> {
   if (ids.length === 0) return [];
-  const batches: string[][] = [];
-  for (let i = 0; i < ids.length; i += 75) batches.push(ids.slice(i, i + 75));
-  const parts = await Promise.all(
-    batches.map(async (batch) => {
-      try {
-        const res = await sfetch(`${SCRYFALL_API}/cards/collection`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "User-Agent": "mtg-hub/1.0",
-          },
-          body: JSON.stringify({ identifiers: batch.map((id) => ({ id })) }),
-          next: { revalidate: 3600 },
-        });
-        if (!res.ok) return [];
-        const json = await res.json();
-        return (json.data ?? []) as ScryfallCard[];
-      } catch {
-        return [];
-      }
-    })
-  );
-  return parts.flat();
+  return getCardsCached("id", ids);
 }
 
 export async function getAllPrintings(name: string): Promise<ScryfallCard[]> {

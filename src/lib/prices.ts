@@ -78,6 +78,7 @@ async function fetchBatch(ids: string[]): Promise<{ found: ScryfallPriced[]; mis
       body: JSON.stringify({ identifiers: ids.map((id) => ({ id })) }),
       cache: "no-store",
       signal: AbortSignal.timeout(20000),
+      priority: "low", // visitors first
     });
     if (res.status === 429) {
       await sleep(2000);

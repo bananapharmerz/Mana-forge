@@ -1,3 +1,5 @@
+import { cachePeek, swr } from "@/lib/scryfallCache";
+
 export interface EdhrecCardView {
   name: string;
   synergy: number;
@@ -45,12 +47,19 @@ export function edhrecSlug(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+// Kept on disk (see scryfallCache.ts) so a deploy doesn't send every commander page back to EDHREC.
 export async function getEdhrecCommanderData(name: string): Promise<EdhrecCommanderData | null> {
   const slug = edhrecSlug(name);
+  return swr("edhrec-cmd", slug, 86400_000, async () => {
+    const v = await loadEdhrecCommanderData(slug);
+    return v ? { value: v } : null;
+  });
+}
+
+async function loadEdhrecCommanderData(slug: string): Promise<EdhrecCommanderData | null> {
   try {
     const res = await fetch(`https://json.edhrec.com/pages/commanders/${slug}.json`, {
       headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" },
-      next: { revalidate: 86400 },
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return null;
@@ -212,7 +221,6 @@ const SITE_LABELS: Record<string, string> = {
   "mtggoldfish.com": "MTGGoldfish",
 };
 
-const deckSourceCache = new Map<string, { at: number; source: EdhrecDeckSource | null }>();
 const DECK_SOURCE_TTL_MS = 24 * 60 * 60 * 1000;
 
 // The original deck this was submitted from (Moxfield, Archidekt, etc), scraped from the
@@ -220,22 +228,12 @@ const DECK_SOURCE_TTL_MS = 24 * 60 * 60 * 1000;
 // thing to creator credit EDHREC's bulk data exposes; the linked page shows the real builder.
 // Pages pass `waitMs` so a slow EDHREC never holds up the page: if the answer isn't ready in time
 // they get null now, the fetch carries on in the background, and the next visitor gets it cached.
-const sourceInflight = new Map<string, Promise<EdhrecDeckSource | null>>();
-const within = <T,>(p: Promise<T>, waitMs: number | undefined, fallback: T): Promise<T> =>
-  waitMs === undefined ? p : Promise.race([p, new Promise<T>((r) => setTimeout(() => r(fallback), waitMs))]);
 
 export async function getEdhrecDeckSource(urlhash: string, waitMs?: number): Promise<EdhrecDeckSource | null> {
-  const cached = deckSourceCache.get(urlhash);
-  if (cached && Date.now() - cached.at < DECK_SOURCE_TTL_MS) return cached.source;
-  let p = sourceInflight.get(urlhash);
-  if (!p) {
-    p = fetchDeckSource(urlhash).finally(() => sourceInflight.delete(urlhash));
-    sourceInflight.set(urlhash, p);
-  }
-  return within(p, waitMs, null);
+  return swr("edhrec-src", urlhash, DECK_SOURCE_TTL_MS, () => fetchDeckSource(urlhash), { waitMs });
 }
 
-async function fetchDeckSource(urlhash: string): Promise<EdhrecDeckSource | null> {
+async function fetchDeckSource(urlhash: string): Promise<{ value: EdhrecDeckSource | null } | null> {
   try {
     const res = await fetch(edhrecDeckUrl(urlhash), {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; mtg-hub/1.0)" },
@@ -243,14 +241,12 @@ async function fetchDeckSource(urlhash: string): Promise<EdhrecDeckSource | null
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) {
-      deckSourceCache.set(urlhash, { at: Date.now(), source: null });
-      return null;
+      return { value: null };
     }
     const html = await res.text();
     const match = html.match(/Source:\s*<a href="([^"]+)"/);
     if (!match) {
-      deckSourceCache.set(urlhash, { at: Date.now(), source: null });
-      return null;
+      return { value: null };
     }
     const url = match[1].replace(/&amp;/g, "&");
     let siteName = "the original source";
@@ -261,8 +257,7 @@ async function fetchDeckSource(urlhash: string): Promise<EdhrecDeckSource | null
       // keep fallback label
     }
     const source = { siteName, url };
-    deckSourceCache.set(urlhash, { at: Date.now(), source });
-    return source;
+    return { value: source };
   } catch {
     return null;
   }
@@ -282,26 +277,13 @@ export interface EdhrecDeckList {
   priceUsd: number | null;
 }
 
-const deckListCache = new Map<string, { at: number; list: EdhrecDeckList | null }>();
-const deckListInflight = new Map<string, Promise<EdhrecDeckList | null>>();
-
 export async function getEdhrecDeckList(urlhash: string, waitMs?: number): Promise<EdhrecDeckList | null> {
   if (!/^[\w-]{6,64}$/.test(urlhash)) return null;
-  const cached = deckListCache.get(urlhash);
-  if (cached && Date.now() - cached.at < DECK_SOURCE_TTL_MS) return cached.list;
-  let p = deckListInflight.get(urlhash);
-  if (!p) {
-    p = fetchDeckList(urlhash).finally(() => deckListInflight.delete(urlhash));
-    deckListInflight.set(urlhash, p);
-  }
-  return within(p, waitMs, cached?.list ?? null);
+  return swr("edhrec-list", urlhash, DECK_SOURCE_TTL_MS, () => fetchDeckList(urlhash), { waitMs });
 }
 
-async function fetchDeckList(urlhash: string): Promise<EdhrecDeckList | null> {
-  const miss = (): null => {
-    deckListCache.set(urlhash, { at: Date.now(), list: null });
-    return null;
-  };
+async function fetchDeckList(urlhash: string): Promise<{ value: EdhrecDeckList | null } | null> {
+  const miss = () => ({ value: null });
   try {
     const res = await fetch(edhrecDeckUrl(urlhash), {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; mtg-hub/1.0)" },
@@ -348,8 +330,7 @@ async function fetchDeckList(urlhash: string): Promise<EdhrecDeckList | null> {
       savedate: typeof data?.savedate === "string" ? (data!.savedate as string) : null,
       priceUsd: Number(data?.price) || null,
     };
-    deckListCache.set(urlhash, { at: Date.now(), list });
-    return list;
+    return { value: list };
   } catch {
     return null;
   }
@@ -416,10 +397,24 @@ export function shuffled<T>(items: T[]): T[] {
 // Next's 2MB fetch-cache limit, so `next: { revalidate }` can't cache it and would silently
 // re-download the whole thing on every request. We keep our own small in-memory cache of just
 // the derived sample instead, since that's the only part worth remembering.
-const publicDecksCache = new Map<string, { at: number; decks: EdhrecPublicDeck[] }>();
 const PUBLIC_DECKS_TTL_MS = 6 * 60 * 60 * 1000;
 const PUBLIC_DECKS_SAMPLE = 24; // always cache this many, so every caller gets the size it asks for
-const publicDecksInflight = new Map<string, Promise<EdhrecPublicDeck[] | null>>();
+
+// These feeds are downloaded and parsed one at a time: a category page asks for 12 commanders at
+// once, and a dozen 10MB+ files parsed together ran the server out of memory (it froze for 20s at
+// a time and restarted). Only the 24-deck sample is kept, on disk, so this happens about once per
+// commander every 6 hours. A long backlog (a crawler) is skipped rather than queued forever.
+const feeds = ((globalThis as unknown as { __mfEdhFeeds?: { chain: Promise<unknown>; pending: number } }).__mfEdhFeeds ??= {
+  chain: Promise.resolve(),
+  pending: 0,
+});
+function oneFeedAtATime<T>(fn: () => Promise<T | null>): Promise<T | null> {
+  if (feeds.pending >= 40) return Promise.resolve(null);
+  feeds.pending++;
+  const p = feeds.chain.then(fn, fn).finally(() => feeds.pending--);
+  feeds.chain = p.catch(() => {});
+  return p;
+}
 
 // Real decks submitted to EDHREC for this commander (each sourced from Moxfield, Archidekt,
 // etc.) — we only keep a recent sample rather than holding the whole feed in memory.
@@ -429,25 +424,17 @@ export async function getEdhrecPublicDecks(
   waitMs?: number
 ): Promise<EdhrecPublicDeck[] | null> {
   const slug = edhrecSlug(name);
-
-  const cached = publicDecksCache.get(slug);
-  if (cached && Date.now() - cached.at < PUBLIC_DECKS_TTL_MS) return cached.decks.slice(0, sampleSize);
-  let p = publicDecksInflight.get(slug);
-  if (!p) {
-    p = fetchPublicDecks(slug).finally(() => publicDecksInflight.delete(slug));
-    publicDecksInflight.set(slug, p);
-  }
-  const decks = await within(p, waitMs, null);
+  const decks = await swr("edhrec-decks", slug, PUBLIC_DECKS_TTL_MS, () => oneFeedAtATime(() => fetchPublicDecks(slug)), { waitMs });
   return decks ? decks.slice(0, sampleSize) : null;
 }
 
 /** True when this commander's EDHREC decks are already in memory (no waiting). */
 export function edhrecDecksCached(name: string): boolean {
-  const c = publicDecksCache.get(edhrecSlug(name));
+  const c = cachePeek("edhrec-decks", edhrecSlug(name));
   return !!c && Date.now() - c.at < PUBLIC_DECKS_TTL_MS;
 }
 
-async function fetchPublicDecks(slug: string): Promise<EdhrecPublicDeck[] | null> {
+async function fetchPublicDecks(slug: string): Promise<{ value: EdhrecPublicDeck[] } | null> {
   try {
     const res = await fetch(`https://json.edhrec.com/pages/decks/${slug}.json`, {
       headers: { "User-Agent": "mtg-hub/1.0", Accept: "application/json" },
@@ -476,8 +463,7 @@ async function fetchPublicDecks(slug: string): Promise<EdhrecPublicDeck[] | null
       }))
       .filter((d) => d.urlhash);
 
-    publicDecksCache.set(slug, { at: Date.now(), decks });
-    return decks;
+    return { value: decks };
   } catch {
     return null;
   }

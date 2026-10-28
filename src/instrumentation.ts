@@ -3,6 +3,9 @@ import type { Instrumentation } from "next";
 // Runs once when Mana Forge's server starts: keeps card prices fresh (src/lib/prices.ts).
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("./lib/scryfallCache"); // registers the Scryfall cache for src/lib/scryfall.ts
+    const { startRuntimeStats } = await import("./lib/runtimeStats");
+    startRuntimeStats();
     const { startPriceTracker } = await import("./lib/prices");
     startPriceTracker();
     const { startBanSync } = await import("./lib/bans");
