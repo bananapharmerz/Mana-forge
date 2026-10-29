@@ -5,6 +5,7 @@ import { animate, stagger } from "animejs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { listMyDecksForPlay, type DeckForPlay } from "@/app/actions/decks";
+import BracketHint from "./BracketHint";
 import type {
   CardInstance,
   PileZone,
@@ -1047,6 +1048,11 @@ export default function PlayRoomPage({
             Sign in and build a deck to bring cards into the game.
           </p>
         )}
+        {(() => {
+          const deck = decks.find((d) => d.id === selectedDeckId);
+          const cards = deck ? [...deck.cards, deck.commanderCard, deck.partnerCommanderCard].flatMap((c) => (c ? [c.name] : [])) : [];
+          return <BracketHint cards={cards} table={room?.bracket} />;
+        })()}
         <p className="mt-2 text-xs text-muted">You&apos;ll start with a fresh 7-card hand.</p>
 
         {joinError && <p className="mt-3 text-xs text-down">{joinError}</p>}

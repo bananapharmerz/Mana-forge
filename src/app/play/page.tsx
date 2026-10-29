@@ -6,6 +6,7 @@ import { getMyTier } from "@/app/actions/premium";
 import TrialNudge from "@/components/TrialNudge";
 import AdSlot from "@/components/AdSlot";
 import PageHeader from "@/components/PageHeader";
+import { ROOM_BRACKETS, roomBracketLabel, type RoomBracket } from "@/lib/bracketEstimate";
 
 const FREE_QUEUE_SECONDS = 30;
 
@@ -14,6 +15,7 @@ interface OpenRoom {
   name: string;
   playerCount: number;
   maxPlayers: number;
+  bracket?: RoomBracket;
 }
 
 export default function PlayLandingPage() {
@@ -27,6 +29,7 @@ export default function PlayLandingPage() {
   const [roomName, setRoomName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [isOpen, setIsOpen] = useState(false);
+  const [bracket, setBracket] = useState<RoomBracket>("any");
 
   const [createdCode, setCreatedCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -65,7 +68,7 @@ export default function PlayLandingPage() {
     const res = await fetch("/api/play/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ maxPlayers, isOpen, name: roomName }),
+      body: JSON.stringify({ maxPlayers, isOpen, name: roomName, bracket }),
     });
     const data = await res.json();
     setCreatedCode(data.code);
@@ -75,6 +78,7 @@ export default function PlayLandingPage() {
     setRoomName("");
     setMaxPlayers(4);
     setIsOpen(false);
+    setBracket("any");
     setShowOptions(true);
   }
 
@@ -230,7 +234,10 @@ export default function PlayLandingPage() {
                   <p className="font-semibold text-foreground">{r.name}</p>
                   <p className="text-[10px] tracking-widest text-muted">{r.code}</p>
                 </div>
-                <span className="text-xs text-muted">
+                <span className="text-right text-xs text-muted">
+                  {r.bracket && r.bracket !== "any" && (
+                    <span className="mb-0.5 block font-semibold text-gold-bright">{roomBracketLabel(r.bracket)}</span>
+                  )}
                   {r.playerCount}/{r.maxPlayers} players — tap to join
                 </span>
               </button>
@@ -333,6 +340,24 @@ export default function PlayLandingPage() {
                 </p>
               </button>
             </div>
+
+            {/* Optional: tells strangers what power level to bring. A hint, never a rule we enforce. */}
+            <label htmlFor="room-bracket" className="mt-5 mb-2 block text-xs font-semibold uppercase tracking-wide text-muted">
+              Bracket
+            </label>
+            <select
+              id="room-bracket"
+              value={bracket}
+              onChange={(e) => setBracket(e.target.value as RoomBracket)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-gold focus:outline-none"
+            >
+              {ROOM_BRACKETS.map((b) => (
+                <option key={b} value={b}>
+                  {roomBracketLabel(b)}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-muted">Shown on the open games list so players can bring a deck that fits.</p>
 
             <button
               onClick={confirmCreateRoom}

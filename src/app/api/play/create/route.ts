@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRoom } from "@/lib/gameRooms";
+import { isRoomBracket } from "@/lib/bracketEstimate";
 import { hit, ipFrom } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
@@ -11,7 +12,9 @@ export async function POST(req: Request) {
   const maxPlayers = Number(body.maxPlayers) || 4;
   const isOpen = body.isOpen === true;
   const name = typeof body.name === "string" ? body.name : undefined;
-  const code = createRoom(maxPlayers, isOpen, name);
+  // Only the known bracket values get through; anything else means "any".
+  const bracket = isRoomBracket(body.bracket) ? body.bracket : "any";
+  const code = createRoom(maxPlayers, isOpen, name, bracket);
   if (!code) return NextResponse.json({ error: "The play servers are full right now. Try again in a few minutes." }, { status: 503 });
   return NextResponse.json({ code });
 }

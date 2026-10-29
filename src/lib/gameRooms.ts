@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import { isRoomBracket, type RoomBracket } from "@/lib/bracketEstimate";
 
 export interface CardInstance {
   instanceId: string;
@@ -78,6 +79,8 @@ export interface RoomState {
   createdAt: number;
   maxPlayers: number;
   isOpen: boolean;
+  // The bracket the host asked for, so strangers can tell if their deck fits. Missing = any.
+  bracket?: RoomBracket;
   hostId: string | null;
   players: Record<string, PlayerState>;
   joinOrder: string[];
@@ -211,7 +214,7 @@ export function getRoom(code: string): RoomState | undefined {
   return store.rooms.get(code);
 }
 
-export function createRoom(maxPlayers = 4, isOpen = false, name?: string): string | null {
+export function createRoom(maxPlayers = 4, isOpen = false, name?: string, bracket: RoomBracket = "any"): string | null {
   if (store.rooms.size >= MAX_ROOMS) return null;
   name = typeof name === "string" ? name.replace(/\s+/g, " ").trim().slice(0, 40) : undefined;
   let code: string;
@@ -226,6 +229,7 @@ export function createRoom(maxPlayers = 4, isOpen = false, name?: string): strin
     createdAt: Date.now(),
     maxPlayers: clampedMax,
     isOpen,
+    bracket: isRoomBracket(bracket) ? bracket : "any",
     hostId: null,
     players: {},
     joinOrder: [],
@@ -237,7 +241,7 @@ export function createRoom(maxPlayers = 4, isOpen = false, name?: string): strin
   return code;
 }
 
-export function listOpenRooms(): { code: string; name: string; playerCount: number; maxPlayers: number }[] {
+export function listOpenRooms(): { code: string; name: string; playerCount: number; maxPlayers: number; bracket: RoomBracket }[] {
   return Array.from(store.rooms.values())
     .filter((r) => r.isOpen && Object.keys(r.players).length < r.maxPlayers)
     .sort((a, b) => b.createdAt - a.createdAt)
@@ -246,6 +250,7 @@ export function listOpenRooms(): { code: string; name: string; playerCount: numb
       name: r.name,
       playerCount: Object.keys(r.players).length,
       maxPlayers: r.maxPlayers,
+      bracket: r.bracket ?? "any",
     }));
 }
 
