@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import SaveDeckButton from "./SaveDeckButton";
 import TypeBreakdownBar from "./TypeBreakdownBar";
 import CardFan from "./fx/CardFan";
@@ -11,6 +12,8 @@ import type { SiteDeckRow } from "@/app/actions/decks";
 import { SITE } from "@/lib/site";
 import { authorName } from "@/lib/author";
 import Avatar from "@/components/Avatar";
+import BracketBadge from "@/components/BracketBadge";
+import { bracketBadge, loadGameChangerSet } from "@/lib/bracket";
 
 export default function SiteDeckCard({
   deck,
@@ -18,18 +21,32 @@ export default function SiteDeckCard({
   isOwnDeck,
   isFavorited,
   signedIn,
+  showBracket,
 }: {
   deck: SiteDeckRow;
   commanderImageUrl?: string;
   isOwnDeck?: boolean;
   isFavorited?: boolean;
   signedIn?: boolean;
+  // The estimated-bracket badge: on in the public decks feed, off in Favorites (your own picks).
+  showBracket?: boolean;
 }) {
   const cards: DeckCard[] = JSON.parse(deck.cards);
   const commander: DeckCard = JSON.parse(deck.commanderData);
   const size = cards.reduce((s, c) => s + c.quantity, 0) + 1;
   const author = authorName(deck.owner.name);
   const counts = typeBreakdown({ commander, cards });
+  // The Game Changers list is fetched once per page view and shared by every card on it.
+  const [gameChangers, setGameChangers] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    if (!showBracket) return;
+    let live = true;
+    loadGameChangerSet().then((l) => live && setGameChangers(l));
+    return () => {
+      live = false;
+    };
+  }, [showBracket]);
+  const bracket = gameChangers ? bracketBadge([commander.name, ...cards.map((c) => c.name)], gameChangers) : null;
   const price = deckPrice({ commander, cards });
   // The deck's priciest non-land cards peek out from behind the commander.
   const showcase = cards
@@ -53,7 +70,10 @@ export default function SiteDeckCard({
           <h3 className="line-clamp-1 font-semibold text-foreground">{deck.name}</h3>
           <TypeBreakdownBar counts={counts} />
           <div className="mt-auto flex items-end justify-between gap-2">
-            <span className="text-xs text-muted">{size}/100 cards</span>
+            <span className="text-xs text-muted">
+              {size}/100 cards
+              <BracketBadge badge={bracket} />
+            </span>
             <span className="shrink-0 text-sm font-semibold text-foreground">
               {formatCents(price.totalUsd * 100)}
             </span>

@@ -1,6 +1,9 @@
 import ArtBand from "@/components/ArtBand";
 import { ManaCost, ManaText } from "@/components/ManaText";
 import SupporterBadge from "@/components/SupporterBadge";
+import BracketBadge from "@/components/BracketBadge";
+import { bracketBadge, gameChangerSet } from "@/lib/bracket";
+import { getGameChangers } from "@/lib/gameChangers";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -122,7 +125,7 @@ export default async function CommanderDecksPage({
   const partnerCard = partnerName ? await getCardByName(partnerName) : null;
   const partnerImg = partnerCard ? cardImage(partnerCard) : undefined;
 
-  const [siteDecks, edhrec, edhrecDecks] = await Promise.all([
+  const [siteDecks, edhrec, edhrecDecks, gameChangerList] = await Promise.all([
     db.deck.findMany({
       where: { commanderName: card.name, isPublic: true },
       include: { owner: { select: { name: true, tier: true } } },
@@ -132,7 +135,10 @@ export default async function CommanderDecksPage({
     // EDHREC's deck file for a commander can be 10MB+; on a cold start the page waits at most 0.4s for it
     // (the section appears for the next visitor once it's loaded).
     getEdhrecPublicDecks(card.name, 24, 400),
+    // Cached a day and capped at 2.5s; an empty list just means no bracket badges this time.
+    getGameChangers(),
   ]);
+  const gameChangers = gameChangerSet(gameChangerList.names);
 
   // Credit links that aren't ready within a second fill in for the next visitor. They load while
   // the card details below are fetched, not before.
@@ -413,6 +419,8 @@ export default async function CommanderDecksPage({
               const cards: DeckCard[] = JSON.parse(deck.cards);
               const size = cards.reduce((s, c) => s + c.quantity, 0) + 1;
               const author = authorName(deck.owner.name);
+              const commanderCard = JSON.parse(deck.commanderData) as DeckCard;
+              const bracket = bracketBadge([commanderCard.name, ...cards.map((c) => c.name)], gameChangers);
               return (
                 <Link
                   key={deck.id}
@@ -422,6 +430,7 @@ export default async function CommanderDecksPage({
                   <h3 className="font-semibold text-foreground">{deck.name}</h3>
                   <p className="text-xs text-muted">
                     by {author}<SupporterBadge tier={deck.owner.tier} /> · {size}/100 cards
+                    <BracketBadge badge={bracket} />
                   </p>
                 </Link>
               );

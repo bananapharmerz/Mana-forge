@@ -179,6 +179,7 @@ export default function DecksFeed({
                 isOwnDeck={item.deck.ownerId === currentUserId}
                 isFavorited={favoritedSet.has(itemKey(item))}
                 signedIn={Boolean(currentUserId)}
+                showBracket
               />
             ) : (
               <PublicDeckCard

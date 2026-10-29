@@ -6,6 +6,9 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import PageHeader from "@/components/PageHeader";
 import SupporterBadge from "@/components/SupporterBadge";
+import BracketBadge from "@/components/BracketBadge";
+import { bracketBadge, gameChangerSet } from "@/lib/bracket";
+import { getGameChangers } from "@/lib/gameChangers";
 import ChallengeEnterForm from "@/components/ChallengeEnterForm";
 import ChallengeVoteButton from "@/components/ChallengeVoteButton";
 import { authorName } from "@/lib/author";
@@ -51,7 +54,7 @@ export default async function ChallengePage({ params }: { params: Promise<{ slug
     (
       await db.deck.findMany({
         where: { id: { in: ch.entries.map((e) => e.deckId) }, isPublic: true },
-        select: { id: true, name: true, commanderName: true, commanderData: true, owner: { select: { name: true, tier: true } } },
+        select: { id: true, name: true, commanderName: true, commanderData: true, cards: true, owner: { select: { name: true, tier: true } } },
       })
     ).map((d) => [d.id, d])
   );
@@ -65,6 +68,16 @@ export default async function ChallengePage({ params }: { params: Promise<{ slug
     uid && phase === "submitting" ? db.deck.findMany({ where: { ownerId: uid }, select: { id: true, name: true, commanderName: true, isPublic: true }, orderBy: { updatedAt: "desc" } }) : Promise.resolve([]),
   ]);
   const stepIndex = STEPS.findIndex((s) => s.phase === phase);
+  // Only ask for the Game Changers list when there's a deck to badge.
+  const gameChangers = gameChangerSet(entries.length ? (await getGameChangers()).names : []);
+  const bracketOf = (d: { commanderName: string; cards: string }): string | null => {
+    try {
+      const names = (JSON.parse(d.cards) as { name: string }[]).map((c) => c.name);
+      return bracketBadge([d.commanderName, ...names], gameChangers);
+    } catch {
+      return null;
+    }
+  };
 
   const DeckTile = ({ e, children, rank }: { e: (typeof entries)[number]; children?: React.ReactNode; rank?: number }) => {
     const d = decks.get(e.deckId)!;
@@ -84,6 +97,7 @@ export default async function ChallengePage({ params }: { params: Promise<{ slug
             <p className="text-xs text-muted">
               {d.commanderName} · by {authorName(d.owner.name)}
               <SupporterBadge tier={d.owner.tier} />
+              <BracketBadge badge={bracketOf(d)} />
             </p>
             {e.note && <p className="mt-2 line-clamp-3 text-sm text-foreground/90">{e.note}</p>}
           </div>

@@ -1,43 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BRACKET_LISTS_UPDATED, EXTRA_TURNS, MASS_LAND_DENIAL } from "@/lib/bracketLists";
+import { BRACKET_LISTS_UPDATED } from "@/lib/bracketLists";
+import { estimate, inList, loadGameChangerSet, MLD, TURNS } from "@/lib/bracket";
 
 // Wizards' article on the Commander Brackets and the Game Changers list.
 const BRACKETS_ARTICLE = "https://magic.wizards.com/en/news/announcements/commander-brackets-beta-update-february-9-2026";
-
-// One request per page view at most, shared by every panel on the page.
-let listPromise: Promise<Set<string>> | null = null;
-function loadList(): Promise<Set<string>> {
-  listPromise ??= fetch("/api/game-changers")
-    .then((r) => (r.ok ? r.json() : { names: [] }))
-    .then((j: { names?: string[] }) => new Set((j.names ?? []).map((n) => n.toLowerCase())))
-    .catch(() => {
-      listPromise = null; // let the next panel try again
-      return new Set<string>();
-    });
-  return listPromise;
-}
-
-const MLD = new Set(MASS_LAND_DENIAL.map((n) => n.toLowerCase()));
-const TURNS = new Set(EXTRA_TURNS.map((n) => n.toLowerCase()));
-
-// Double-faced cards can be saved as "Front // Back" or just "Front"; match either.
-function inList(name: string, list: Set<string>): boolean {
-  const n = name.toLowerCase();
-  return list.has(n) || list.has(n.split(" // ")[0]) || [...list].some((g) => g.split(" // ")[0] === n);
-}
-
-// The lowest bracket the deck can sit in by Wizards' rules, from the three things we check:
-// extra turns rule out Bracket 1, 1-3 Game Changers mean Bracket 3, more than 3 or any mass
-// land denial mean Bracket 4. Combos and tutors can still push it higher.
-function estimate(gc: number, mld: number, turns: number): { badge: string; text: string } {
-  if (mld > 0) return { badge: "4+", text: "Mass land denial isn't allowed below Bracket 4." };
-  if (gc > 3) return { badge: "4+", text: `${gc} Game Changers: Bracket 3 allows up to 3.` };
-  if (gc > 0) return { badge: "3", text: `${gc} Game Changer${gc === 1 ? "" : "s"}: that's Bracket 3 territory.` };
-  if (turns > 0) return { badge: "2", text: "Extra turns rule out Bracket 1. Chaining them pushes the deck to Bracket 4." };
-  return { badge: "1-2", text: "Nothing restricted found: Bracket 1 or 2, if the rest of the deck is that casual too." };
-}
 
 function CardList({ label, names }: { label: string; names: string[] }) {
   if (names.length === 0) return null;
@@ -64,7 +32,7 @@ export default function GameChangersPanel({ cards }: { cards: string[] }) {
   const [list, setList] = useState<Set<string> | null>(null);
   useEffect(() => {
     let live = true;
-    loadList().then((l) => live && setList(l));
+    loadGameChangerSet().then((l) => live && setList(l));
     return () => {
       live = false;
     };
