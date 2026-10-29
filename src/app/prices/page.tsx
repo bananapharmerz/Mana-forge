@@ -5,7 +5,9 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { livePrices, mostPlayedWith, mostValuable, priceHistory, searchCardPrices, trackerStats, weeklyMovers, type Mover, type PlayedWith, type PriceHit } from "@/lib/prices";
 import { signedPct, usd } from "@/lib/livePrice";
+import { Suspense } from "react";
 import Watchlist, { type WatchRow } from "./Watchlist";
+import ComboWatch from "./ComboWatch";
 import { SITE } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -211,6 +213,11 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
           )}
         </div>
       </section>
+
+      {/* Streams in after the rest of the page: it can wait on Commander Spellbook once a day. */}
+      <Suspense fallback={null}>
+        <ComboWatch signedIn={!!uid} watching={ids} />
+      </Suspense>
 
       {!uid && (
         <section className="mt-10">
