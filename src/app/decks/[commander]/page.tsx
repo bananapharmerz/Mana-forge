@@ -38,6 +38,7 @@ import CommanderGuide from "@/components/CommanderGuide";
 import CommanderFaq from "@/components/CommanderFaq";
 import RisingFalling from "@/components/RisingFalling";
 import { cardTrends } from "@/lib/trending";
+import { pageTimer } from "@/lib/pageTimer";
 
 export async function generateMetadata({ params }: { params: Promise<{ commander: string }> }): Promise<Metadata> {
   const { commander } = await params;
@@ -110,7 +111,11 @@ export default async function CommanderDecksPage({
 }) {
   const { commander } = await params;
   const commanderName = decodeURIComponent(commander);
+  // This page typically takes ~8s and the code alone doesn't say which step is slow, so each step
+  // is timed and slow renders leave one line in the server log. Measure first, then fix that step.
+  const timer = pageTimer("commander page");
   const card = await getCardByName(commanderName, { commanderOnly: true });
+  timer.lap("card");
 
   if (!card) notFound();
 
@@ -121,18 +126,23 @@ export default async function CommanderDecksPage({
   const partnerName = extractPartnerWithName(card);
   const partnerCard = partnerName ? await getCardByName(partnerName) : null;
   const partnerImg = partnerCard ? cardImage(partnerCard) : undefined;
+  if (partnerName) timer.lap("partner");
 
   const [siteDecks, edhrec, edhrecDecks] = await Promise.all([
-    db.deck.findMany({
-      where: { commanderName: card.name, isPublic: true },
-      include: { owner: { select: { name: true, tier: true } } },
-      orderBy: { updatedAt: "desc" },
-    }),
-    getEdhrecCommanderData(card.name),
+    timer.time(
+      "siteDecks",
+      db.deck.findMany({
+        where: { commanderName: card.name, isPublic: true },
+        include: { owner: { select: { name: true, tier: true } } },
+        orderBy: { updatedAt: "desc" },
+      })
+    ),
+    timer.time("edhrec", getEdhrecCommanderData(card.name)),
     // EDHREC's deck file for a commander can be 10MB+; on a cold start the page waits at most 0.4s for it
     // (the section appears for the next visitor once it's loaded).
-    getEdhrecPublicDecks(card.name, 24, 400),
+    timer.time("edhrecDecks", getEdhrecPublicDecks(card.name, 24, 400)),
   ]);
+  timer.lap("dataTotal");
 
   // Credit links that aren't ready within a second fill in for the next visitor. They load while
   // the card details below are fetched, not before.
@@ -168,7 +178,12 @@ export default async function CommanderDecksPage({
       ...typeSections.flatMap((s) => s.cardviews.map((c) => c.name)),
     ])
   );
-  const [scryfallCards, deckSourceEntries] = await Promise.all([allNames.length > 0 ? getCardsByNames(allNames) : Promise.resolve([]), deckSourcesP]);
+  const [scryfallCards, deckSourceEntries] = await Promise.all([
+    timer.time("scryfallCards", allNames.length > 0 ? getCardsByNames(allNames) : Promise.resolve([])),
+    timer.time("deckSources", deckSourcesP),
+  ]);
+  timer.lap("cardsTotal");
+  timer.report(`${allNames.length} card names`);
   const deckSources = new Map(deckSourceEntries);
   // Key by the full Scryfall name AND the front face, so EDHREC's front-face-only names for
   // double-faced cards (MDFCs, transform, adventures, split, battles — "Malakir Rebirth" for

@@ -15,6 +15,7 @@ import { searchCommandersPage } from "@/app/actions/commanders";
 import { getNewestReleasedSetCodes } from "@/lib/scryfall";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { pageTimer } from "@/lib/pageTimer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -56,16 +57,25 @@ export default async function CommandersPage({
   const moreOpen = Boolean(setCode) || [...typalCategories, ...themeCategories, ...multiCommanderCategories, ...companionCategories, ...productCategories].some((c) => c.slug === categorySlug);
   const activeLabel = category?.label ?? (setCode ? setName ?? setCode.toUpperCase() : undefined);
 
+  // /commanders typically takes ~10s even after the page was slimmed down, and the outside calls
+  // alone don't explain it, so each step is timed and slow renders leave one line in the server
+  // log. Measure first, then fix that step.
+  const timer = pageTimer("commanders");
+
   // A page filtered to one set gets no 'New' badges: they'd be on every card and mean nothing.
   const [firstPage, session, newestSetCodes] = await Promise.all([
-    searchCommandersPage(query, 1, sort),
-    auth(),
-    setCode ? Promise.resolve<string[]>([]) : getNewestReleasedSetCodes(2),
+    timer.time("search", searchCommandersPage(query, 1, sort)),
+    timer.time("auth", auth()),
+    timer.time("newestSets", setCode ? Promise.resolve<string[]>([]) : getNewestReleasedSetCodes(2)),
   ]);
+  timer.lap("dataTotal");
 
   const user = session?.user?.id
     ? await db.user.findUnique({ where: { id: session.user.id } })
     : null;
+  if (user) timer.lap("user");
+  // Only which kind of view it was (no search text, filter values or user details).
+  timer.report([q ? "search" : "", categorySlug || setCode ? "filtered" : "", sort ? "color sort" : "", user ? "signed in" : "guest"].filter(Boolean).join(", "));
 
   return (
     <>
