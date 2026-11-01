@@ -215,10 +215,10 @@ export default function DeckBuilderIndexClient({
   return (
     <>
       <PageHeader
-        title={guest ? "Deck builder" : profileName || "Your profile"}
+        title={guest ? "Build a Commander deck" : profileName || "Your profile"}
         description={
           guest
-            ? "Pick a commander and start adding cards. Sign up any time to keep the deck."
+            ? "No account needed for your first deck. Pick a commander, add cards, and sign up when you want to keep it."
             : deckLimit !== null
             ? `${decks.length} of ${deckLimit} decks used on your ${tier} account.`
             : `${decks.length} decks on your ${tier} account.`
@@ -227,19 +227,35 @@ export default function DeckBuilderIndexClient({
       >
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setShowNew((s) => !s)}
+            onClick={() => {
+              setShowNew((s) => !s);
+              // On a phone the form opens below the fold for guests; bring it into view so the tap
+              // visibly does something.
+              if (guest && !showNew) requestAnimationFrame(() => document.getElementById("new-deck")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+            }}
             disabled={atLimit}
             className="rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-[#d4a23e] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            New deck
+            {guest ? "Start a deck" : "New deck"}
           </button>
-          <Link
-            href="/deck-doctor"
-            className="rounded-lg border border-gold/60 px-5 py-2.5 text-sm font-semibold text-[#f5ecd6] hover:border-gold hover:bg-gold/10"
-          >
-            Brew a deck
-          </Link>
-          {!atLimit && (
+          {/* Guests get one clear button above the fold (most guest visits ended within 10 seconds);
+              the other ways in stay as quieter links. */}
+          {guest && (
+            <p className="flex basis-full flex-wrap gap-x-3 text-xs text-muted">
+              <span>Or</span>
+              <Link href="/deck-doctor" className="text-gold-bright underline hover:text-foreground">brew a deck</Link>
+              <Link href="/import" className="text-gold-bright underline hover:text-foreground">import a deck</Link>
+            </p>
+          )}
+          {!guest && (
+            <Link
+              href="/deck-doctor"
+              className="rounded-lg border border-gold/60 px-5 py-2.5 text-sm font-semibold text-[#f5ecd6] hover:border-gold hover:bg-gold/10"
+            >
+              Brew a deck
+            </Link>
+          )}
+          {!guest && !atLimit && (
             <Link
               href="/import"
               className="rounded-lg border border-gold/60 px-5 py-2.5 text-sm font-semibold text-[#f5ecd6] hover:border-gold hover:bg-gold/10"
@@ -284,7 +300,7 @@ export default function DeckBuilderIndexClient({
       )}
 
       {showNew && !atLimit && (
-        <div className="card-frame mb-8 flex flex-col gap-3 p-5">
+        <div id="new-deck" className="card-frame mb-8 flex scroll-mt-20 flex-col gap-3 p-5">
           <label className="text-xs font-semibold uppercase tracking-wide text-muted">
             Deck name (optional)
           </label>

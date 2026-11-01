@@ -11,7 +11,15 @@ import { computeNeeds } from "@/lib/ownedList";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Your profile", robots: { index: false, follow: false } };
+// Guests land here from "Build a deck" links, so their tab should say what the page is for;
+// "Your profile" only makes sense once there's an account behind it.
+export async function generateMetadata(): Promise<Metadata> {
+  const session = await auth();
+  return {
+    title: session?.user?.id ? "Your profile" : "Commander deck builder",
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function DeckBuilderIndexPage() {
   const session = await auth();
