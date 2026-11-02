@@ -267,33 +267,42 @@ async function allCommandersMatchingCategory(category: CommanderCategory): Promi
   if (hot && hot.expires > Date.now()) return hot.names;
 
   const rows = await db.categoryMatch.findMany({ where: { categorySlug: category.slug } });
-  const freshEnough =
-    rows.length > 0 && Date.now() - rows[0].updatedAt.getTime() < DB_CACHE_TTL_MS;
-
-  if (freshEnough) {
+  if (rows.length > 0) {
     const names = new Set(rows.map((r) => r.commanderName));
     hotCache.set(category.slug, { names, expires: Date.now() + HOT_CACHE_TTL_MS });
+    // Older than 6 hours: the saved list is still shown at once, and refreshed behind the visitor's
+    // back. Refreshing first made the page wait for several Scryfall searches (20-60s after a deploy).
+    if (Date.now() - rows[0].updatedAt.getTime() >= DB_CACHE_TTL_MS) void refreshCategory(category);
     return names;
   }
+  // Never fetched yet: this one visitor has to wait for the first list.
+  return (await refreshCategory(category)) ?? new Set();
+}
 
-  const fresh = await refreshCategoryMatchesFromScryfall(category);
+const categoryRefreshes = new Map<string, Promise<Set<string> | null>>();
 
-  if (fresh.size > 0) {
-    await db.$transaction([
-      db.categoryMatch.deleteMany({ where: { categorySlug: category.slug } }),
-      db.categoryMatch.createMany({
-        data: Array.from(fresh).map((commanderName) => ({ categorySlug: category.slug, commanderName })),
-      }),
-    ]);
-    hotCache.set(category.slug, { names: fresh, expires: Date.now() + HOT_CACHE_TTL_MS });
-    return fresh;
+// One refresh per category at a time. Saves the new list; null when Scryfall failed (the old list,
+// if any, stays in place).
+function refreshCategory(category: CommanderCategory): Promise<Set<string> | null> {
+  let p = categoryRefreshes.get(category.slug);
+  if (!p) {
+    p = (async () => {
+      const fresh = await refreshCategoryMatchesFromScryfall(category);
+      if (fresh.size === 0) return null;
+      await db.$transaction([
+        db.categoryMatch.deleteMany({ where: { categorySlug: category.slug } }),
+        db.categoryMatch.createMany({
+          data: Array.from(fresh).map((commanderName) => ({ categorySlug: category.slug, commanderName })),
+        }),
+      ]);
+      hotCache.set(category.slug, { names: fresh, expires: Date.now() + HOT_CACHE_TTL_MS });
+      return fresh;
+    })()
+      .catch(() => null)
+      .finally(() => categoryRefreshes.delete(category.slug));
+    categoryRefreshes.set(category.slug, p);
   }
-
-  // Scryfall failed or returned nothing this time — prefer stale DB data over showing zero
-  // results, if we have any.
-  const fallback = new Set(rows.map((r) => r.commanderName));
-  hotCache.set(category.slug, { names: fallback, expires: Date.now() + HOT_CACHE_TTL_MS });
-  return fallback;
+  return p;
 }
 
 // Checks a list of commander names against a category's Scryfall query, so deck-feed filtering
