@@ -35,6 +35,7 @@ import { SITE } from "@/lib/site";
 import type { Metadata } from "next";
 import { authorName } from "@/lib/author";
 import CommanderGuide from "@/components/CommanderGuide";
+import CommanderAtAGlance from "@/components/CommanderAtAGlance";
 import CommanderFaq from "@/components/CommanderFaq";
 import RisingFalling from "@/components/RisingFalling";
 import { cardTrends } from "@/lib/trending";
@@ -292,6 +293,14 @@ export default async function CommanderDecksPage({
               Build a deck with {card.name}
             </Link>
           </div>
+
+          <CommanderAtAGlance
+            identity={card.color_identity}
+            siteDecks={siteDecks.length}
+            siteName={SITE.name}
+            edhrec={edhrec}
+            edhrecDecks={edhrecDecks}
+          />
         </div>
       </div>
     </div>
