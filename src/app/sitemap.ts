@@ -2,7 +2,6 @@ import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { SITE } from "@/lib/site";
 import { SHOP_ENABLED } from "@/lib/features";
-import { commanderNames } from "@/lib/commanderIndex";
 import { getSpoilerSets } from "@/lib/scryfall";
 import { colorIdentityCategories, typalCategories, themeCategories } from "@/lib/categories";
 import { addDays, lastWeekEnd } from "@/lib/prices";
@@ -51,11 +50,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // "Best <X> commanders" landing pages, one per colour / tribe / theme.
     ...[...colorIdentityCategories, ...typalCategories, ...themeCategories].map((c) => ({ url: u(`/commanders/best/${c.slug}`), changeFrequency: "weekly" as const, priority: 0.6 })),
   ];
-  const categories = [...colorIdentityCategories, ...typalCategories, ...themeCategories]
-    .map((c) => (c as { slug?: string }).slug)
-    .filter((s): s is string => !!s)
-    .map((slug) => ({ url: u(`/decks?category=${encodeURIComponent(slug)}`), changeFrequency: "daily" as const, priority: 0.5 }));
-
   // Upcoming & recently-released sets each get a /spoilers/<code> gallery (from Scryfall; [] if busy).
   const spoilerSets = await getSpoilerSets().catch(() => []);
   const [polls, challenges] = await Promise.all([
@@ -68,19 +62,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     db.deck.groupBy({ by: ["commanderName"], where: { isPublic: true }, _max: { updatedAt: true } }).catch(() => []),
     SHOP_ENABLED ? db.product.findMany({ select: { id: true, createdAt: true } }).catch(() => []) : Promise.resolve([]),
   ]);
-  // Every legal commander has a page (play data, top cards, decklists), not just those with decks here.
-  const withDecks = new Set(commanders.map((c) => c.commanderName));
-  const otherCommanders = commanderNames().filter((n) => !withDecks.has(n));
+  // Only commanders with decks published here are listed: the rest are noindexed (EDHREC and
+  // Scryfall data alone counts as thin content). Category views of /decks are noindexed too.
   return [
     ...main,
-    ...categories,
     ...spoilerSets.map((s) => ({ url: u(`/spoilers/${s.code.toLowerCase()}`), changeFrequency: "daily" as const, priority: 0.7 })),
     ...polls.map((p) => ({ url: u(`/vote/${p.slug}`), changeFrequency: p.closesAt > now ? ("daily" as const) : ("yearly" as const), priority: 0.4 })),
     ...challenges.map((c) => ({ url: u(`/challenge/${c.slug}`), changeFrequency: c.voteUntil > now ? ("daily" as const) : ("yearly" as const), priority: 0.5 })),
     ...commanders
       .filter((c) => c.commanderName)
       .map((c) => ({ url: u(`/decks/${encodeURIComponent(c.commanderName)}`), lastModified: c._max.updatedAt ?? undefined, changeFrequency: "daily" as const, priority: 0.7 })),
-    ...otherCommanders.map((n) => ({ url: u(`/decks/${encodeURIComponent(n)}`), changeFrequency: "weekly" as const, priority: 0.6 })),
     ...products.map((p) => ({ url: u(`/store/${p.id}`), lastModified: p.createdAt, changeFrequency: "weekly" as const, priority: 0.6 })),
   ];
 }

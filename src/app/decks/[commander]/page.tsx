@@ -65,6 +65,10 @@ export async function generateMetadata({ params }: { params: Promise<{ commander
   const art = card?.image_uris?.art_crop ?? card?.card_faces?.[0]?.image_uris?.art_crop;
   const url = `/decks/${encodeURIComponent(name)}`;
   return {
+    // A commander page with no Mana Forge decks is only EDHREC/Scryfall data, which Google (and
+    // AdSense) count as thin, copied content. It stays useful for visitors but is offered to
+    // search engines only once players here have published a deck for it.
+    ...(count === 0 ? { robots: { index: false, follow: true } } : {}),
     title: `${name} Commander Deck: Top Cards & Decklists`,
     description: description.slice(0, 300),
     alternates: { canonical: url },

@@ -421,14 +421,12 @@ export async function setDeckPublic(deckId: string, isPublic: boolean) {
   revalidatePath(`/decks/${encodeURIComponent(deck.commanderName)}`);
   revalidatePath("/decks");
 
-  // Tell IndexNow (Bing/Yandex/…) the moment a deck goes public, so the new deck page and its
-  // commander page get crawled fast instead of waiting for the next sitemap pass. Fire-and-forget
+  // Tell IndexNow (Bing/Yandex/…) the moment a deck goes public, so its commander page gets
+  // crawled fast instead of waiting for the next sitemap pass. Fire-and-forget
   // and a no-op in dev (indexNowEnabled() is false off a public https host).
   if (isPublic) {
-    void pingIndexNow([
-      `${SITE.url}/decks/view/${deck.id}`,
-      `${SITE.url}/decks/${encodeURIComponent(deck.commanderName)}`,
-    ]);
+    // The commander page becomes indexable once it has a deck here; the deck view itself is noindexed.
+    void pingIndexNow([`${SITE.url}/decks/${encodeURIComponent(deck.commanderName)}`]);
   }
 }
 

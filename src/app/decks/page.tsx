@@ -19,7 +19,7 @@ import { SITE } from "@/lib/site";
 import type { Metadata } from "next";
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ category?: string; q?: string }> }): Promise<Metadata> {
-  const { category: slug } = await searchParams;
+  const { category: slug, q } = await searchParams;
   const category = slug ? findCategory(slug) : undefined;
   const title = category ? `${category.label} Commander decks` : "Commander decks";
   const description = `${category ? `${category.label} decks` : "Public Commander (EDH) decks"} built by ${SITE.name} players and the community. Copy one, tweak it, make it yours.`;
@@ -28,6 +28,9 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     description,
     openGraph: { images: ["/opengraph-image"], title: `${title} · ${SITE.name}`, description },
     alternates: { canonical: slug ? `/decks?category=${encodeURIComponent(slug)}` : "/decks" },
+    // Category and search views are re-shuffles of the same decks (and mostly EDHREC's lists), so
+    // only the main /decks page is offered to search engines; the links on them are still followed.
+    ...(slug || q ? { robots: { index: false, follow: true } } : {}),
   };
 }
 

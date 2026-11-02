@@ -30,8 +30,8 @@ export async function buildSiteUrls(): Promise<string[]> {
     ...[...colorIdentityCategories, ...typalCategories, ...themeCategories].map((c) => `/commanders/best/${c.slug}`),
   ].map(u);
 
-  const [decks, commanders, spoilerSets] = await Promise.all([
-    db.deck.findMany({ where: { isPublic: true }, select: { id: true }, orderBy: { updatedAt: "desc" }, take: 500 }).catch(() => []),
+  // Single deck views are noindexed (thin), so they aren't submitted either.
+  const [commanders, spoilerSets] = await Promise.all([
     db.deck.groupBy({ by: ["commanderName"], where: { isPublic: true }, _max: { updatedAt: true }, orderBy: { _max: { updatedAt: "desc" } }, take: 500 }).catch(() => []),
     getSpoilerSets().catch(() => []),
   ]);
@@ -40,7 +40,6 @@ export async function buildSiteUrls(): Promise<string[]> {
     ...evergreen,
     ...spoilerSets.map((s) => u(`/spoilers/${s.code.toLowerCase()}`)),
     ...commanders.filter((c) => c.commanderName).map((c) => u(`/decks/${encodeURIComponent(c.commanderName)}`)),
-    ...decks.map((d) => u(`/decks/view/${d.id}`)),
   ];
 }
 
