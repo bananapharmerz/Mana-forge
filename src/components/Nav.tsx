@@ -291,7 +291,21 @@ export default function Nav() {
               }}
             />
           )}
-          <ThemeToggle />
+          {/* The theme switch makes room for "Sign up" on phones; it's in the menu's reach on tablets. */}
+          <span className={status === "unauthenticated" ? "hidden sm:inline-flex" : "inline-flex"}>
+            <ThemeToggle />
+          </span>
+          {/* Signed-out visitors on phones and tablets never saw a sign-up button (it was inside the
+              menu), so it sits in the bar itself. */}
+          {status === "unauthenticated" && pathname !== "/signup" && (
+            <Link
+              href="/signup"
+              onClick={close}
+              className="flex h-9 items-center rounded-md bg-gold px-3 text-xs font-semibold text-black hover:bg-gold-bright sm:text-sm"
+            >
+              Sign up
+            </Link>
+          )}
           {SHOP_ENABLED && count > 0 && (
             <Link href="/store/cart" className="rounded-md bg-surface-raised px-2.5 py-1.5 text-xs font-semibold text-foreground" onClick={close}>
               Cart <span className="text-gold-bright">{count}</span>
@@ -464,7 +478,7 @@ function SearchToggle({ open, onToggle }: { open: boolean; onToggle: () => void 
         <circle cx="8.5" cy="8.5" r="5.5" />
         <path d="m13 13 4.5 4.5" />
       </svg>
-      Search
+      <span className="hidden min-[400px]:inline">Search</span>
     </button>
   );
 }

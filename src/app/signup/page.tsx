@@ -17,7 +17,6 @@ const noSubscribe = () => () => {};
 
 export default function SignupPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,7 +53,7 @@ export default function SignupPage() {
     setLoading(true);
     setError(null);
 
-    const result = await signup(email, password, name, ofAge, human, weekly, username);
+    const result = await signup(email, password, "", ofAge, human, weekly, username);
     if (!result.ok) {
       setHumanReset((n) => n + 1); // a Turnstile token works once
       setError(result.error);
@@ -111,17 +110,22 @@ export default function SignupPage() {
       <p className="mt-1 text-sm text-muted">
         Free accounts save up to 10 decks and can play online. Premium adds unlimited decks, no ads and price alerts.
       </p>
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-        <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
-            Name (optional)
-          </label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-gold focus:outline-none"
-          />
-        </div>
+      {/* One tap with Google comes first; the age box sits above it because both ways need it. */}
+      <label className="mt-6 flex items-start gap-2 text-sm text-foreground">
+        <input
+          type="checkbox"
+          required
+          form="signup-form"
+          checked={ofAge}
+          onChange={(e) => setOfAge(e.target.checked)}
+          className="mt-1 accent-[var(--color-gold)]"
+        />
+        <span>I&apos;m 16 or older.</span>
+      </label>
+      <div className="mt-4">
+        <GoogleButton callbackUrl={nextPage} before={beforeGoogle} first />
+      </div>
+      <form id="signup-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
           <label htmlFor="signup-username" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
             Username
@@ -173,16 +177,6 @@ export default function SignupPage() {
           <p className="mt-1 text-xs text-muted">At least 8 characters, with a letter and a number. Passwords found in data breaches are refused.</p>
         </div>
         <label className="flex items-start gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            required
-            checked={ofAge}
-            onChange={(e) => setOfAge(e.target.checked)}
-            className="mt-1 accent-[var(--color-gold)]"
-          />
-          <span>I&apos;m 16 or older.</span>
-        </label>
-        <label className="flex items-start gap-2 text-sm text-foreground">
           <input type="checkbox" checked={weekly} onChange={(e) => setWeekly(e.target.checked)} className="mt-1 accent-[var(--color-gold)]" />
           <span>
             Send me the weekly roundup (Mondays: price movers, commander of the week, challenges). Optional; starts once you confirm your email, unsubscribe in one
@@ -204,7 +198,6 @@ export default function SignupPage() {
           <Link href="/legal/privacy" className="underline hover:text-gold-bright">Privacy policy</Link>.
         </p>
       </form>
-      <GoogleButton callbackUrl={nextPage} before={beforeGoogle} />
       <p className="mt-6 text-sm text-muted">
         Already have an account?{" "}
         <Link href="/login" className="text-gold-bright underline">

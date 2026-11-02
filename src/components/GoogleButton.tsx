@@ -5,7 +5,16 @@ import { signIn } from "next-auth/react";
 
 // "Continue with Google". Shows only when Google sign-in is switched on (it asks Auth.js which
 // providers exist). `before` runs first and can stop it (the sign-up page checks the age box).
-export default function GoogleButton({ callbackUrl, before }: { callbackUrl: string | (() => string); before?: () => Promise<boolean> }) {
+// `first`: the button leads the page (sign-up), so the "or" line goes under it instead of above.
+export default function GoogleButton({
+  callbackUrl,
+  before,
+  first = false,
+}: {
+  callbackUrl: string | (() => string);
+  before?: () => Promise<boolean>;
+  first?: boolean;
+}) {
   const [on, setOn] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -29,13 +38,16 @@ export default function GoogleButton({ callbackUrl, before }: { callbackUrl: str
     await signIn("google", { redirectTo: typeof callbackUrl === "function" ? callbackUrl() : callbackUrl });
   }
 
+  const divider = (
+    <div className="my-5 flex items-center gap-3 text-xs text-muted">
+      <span className="h-px flex-1 bg-border" />
+      {first ? "or with email" : "or"}
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  );
   return (
     <>
-      <div className="my-5 flex items-center gap-3 text-xs text-muted">
-        <span className="h-px flex-1 bg-border" />
-        or
-        <span className="h-px flex-1 bg-border" />
-      </div>
+      {!first && divider}
       <button
         type="button"
         onClick={go}
@@ -50,6 +62,7 @@ export default function GoogleButton({ callbackUrl, before }: { callbackUrl: str
         </svg>
         Continue with Google
       </button>
+      {first && divider}
     </>
   );
 }
