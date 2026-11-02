@@ -13,6 +13,7 @@ import MakeItMineButton from "@/components/MakeItMineButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import ReportDeckButton from "@/components/ReportDeckButton";
 import ShareDeckButton from "@/components/ShareDeckButton";
+import Rule0Button from "@/components/Rule0Button";
 import BuyDeckPanel from "@/components/BuyDeckPanel";
 import GameChangersPanel from "@/components/GameChangersPanel";
 import PriceChart from "@/app/prices/PriceChart";
@@ -231,6 +232,7 @@ export default async function ViewDeckPage({
           </div>
 
           <ShareDeckButton deckId={row.id} name={deck.name} />
+          <Rule0Button deckId={row.id} />
           <BuyDeckPanel deck={deck} />
           {!isOwnDeck && <ReportDeckButton deckId={row.id} />}
         </div>

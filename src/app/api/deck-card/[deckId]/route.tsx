@@ -7,10 +7,48 @@ import { deckValue } from "@/lib/livePrice";
 import { authorName } from "@/lib/author";
 import { hit, ipFrom } from "@/lib/rateLimit";
 import { SITE } from "@/lib/site";
+import { getGameChangers } from "@/lib/gameChangers";
+import { bracketCheck } from "@/lib/bracketEstimate";
+import { findDeckCombos } from "@/lib/commanderSpellbook";
 
 // A shareable picture of a public deck (1200×630): commander art, deck name, author, card count,
 // value, colours and mana curve. Used as the deck page's link preview and by the Share button.
 //   /api/deck-card/<deckId>
+// The same deck as a short plain-text "Rule 0" summary to paste into a playgroup chat:
+//   /api/deck-card/<deckId>?view=rule0
+// Only fetched when a player presses "Copy for group chat", so the Spellbook call never runs on
+// an ordinary deck view.
+
+const list = (names: string[], max: number) =>
+  names.length > max ? `${names.slice(0, max).join(", ")} +${names.length - max} more` : names.join(", ");
+
+async function rule0Text(deck: ReturnType<typeof rowToDeck>, deckId: string, fallbackCommander: string, value: number): Promise<string> {
+  const commanders = [deck.commander?.name, deck.partner?.name].filter((n): n is string => !!n);
+  const main = [deck.companion, ...deck.cards].flatMap((c) => (c ? [c.name] : []));
+  const [gcList, combos] = await Promise.all([getGameChangers(), findDeckCombos(commanders, main)]);
+
+  const lines = [`Rule 0: ${deck.name}`, `Commander: ${commanders.join(" & ") || fallbackCommander}`];
+  if (gcList.names.length > 0) {
+    // Same check as the deck page's panel. Without Wizards' list we'd guess too low, so we skip it.
+    const { gc, mld, turns, est } = bracketCheck([...commanders, ...main], new Set(gcList.names.map((n) => n.toLowerCase())));
+    lines.push(`Estimated bracket (unofficial): ${est.badge}`);
+    lines.push(`Game Changers: ${gc.length}${gc.length ? ` (${list(gc, 5)})` : ""}`);
+    if (mld.length) lines.push(`Mass land denial: ${list(mld, 3)}`);
+    if (turns.length) lines.push(`Extra turns: ${list(turns, 3)}`);
+  }
+  // null means Spellbook didn't answer: leave the line out rather than claim there are none.
+  if (combos?.length === 0) {
+    lines.push("Combos: none found by Commander Spellbook");
+  } else if (combos) {
+    const shown = combos.slice(0, 3).map((c) => `${c.cards.join(" + ")}${c.produces[0] ? ` (${c.produces[0]})` : ""}`);
+    lines.push(`Combos: ${combos.length}, via Commander Spellbook`);
+    for (const s of shown) lines.push(`- ${s}`);
+    if (combos.length > 3) lines.push(`- +${combos.length - 3} more`);
+  }
+  if (value > 0) lines.push(`Deck value: about $${value.toFixed(0)} (TCGplayer, USD)`);
+  lines.push(`${SITE.url}/decks/view/${deckId}`);
+  return lines.join("\n");
+}
 
 const MANA: Record<string, string> = { W: "#f4ecd2", U: "#3d8fd6", B: "#6b5a8a", R: "#e0533a", G: "#3c9a5a", C: "#b8b0a0" };
 
@@ -44,6 +82,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ deckId: 
   const maxCurve = Math.max(1, ...curve.map((c) => c.count));
   const ids = [deck.commander, deck.partner, deck.companion, ...deck.cards].filter((c): c is NonNullable<typeof c> => !!c?.scryfallId).map((c) => c.scryfallId);
   const value = deckValue(deck, await livePrices(ids).catch(() => ({}))).totalUsd;
+  if (new URL(req.url).searchParams.get("view") === "rule0") {
+    return new Response(await rule0Text(deck, row.id, row.commanderName, value), {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=600, s-maxage=600" },
+    });
+  }
   const colors = deck.commander?.colorIdentity?.length ? [...new Set([...(deck.commander.colorIdentity ?? []), ...(deck.partner?.colorIdentity ?? [])])] : ["C"];
   const art = await artData(deck.commander?.imageUrl);
   const commanders = [deck.commander?.name, deck.partner?.name].filter(Boolean).join(" & ") || row.commanderName;
