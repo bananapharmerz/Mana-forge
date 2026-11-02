@@ -298,7 +298,7 @@ export default function DeckBuilderIndexClient({
             Commander
           </label>
           <CardSearchBox
-            placeholder="Search for a commander..."
+            placeholder="Commander name, e.g. Atraxa"
             fetchSuggestions={autocompleteCommanderNames}
             onSelect={(name) => setCommanderName(name)}
             clearOnSelect={false}

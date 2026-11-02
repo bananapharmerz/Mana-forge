@@ -68,7 +68,7 @@ export default async function DecksIndexPage({
           type="text"
           name="q"
           defaultValue={q}
-          placeholder="Search decks by commander name..."
+          placeholder="Search by commander name"
           className="w-full max-w-md rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
         />
         <button

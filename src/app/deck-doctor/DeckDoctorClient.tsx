@@ -155,7 +155,7 @@ export default function DeckDoctorClient({
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Commander</label>
             <CardSearchBox
-              placeholder="Search for a commander..."
+              placeholder="Commander name, e.g. Atraxa"
               fetchSuggestions={autocompleteCommanderNames}
               onSelect={(name) => setCommander(name)}
               clearOnSelect={false}

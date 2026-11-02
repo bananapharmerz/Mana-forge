@@ -73,7 +73,7 @@ export default function Watchlist({ rows, premium = false }: { rows: WatchRow[];
     <div className="card-frame overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 border-b border-border p-3">
         <div className="min-w-[240px] flex-1">
-          <CardSearchBox placeholder="Add a card to watch…" fetchSuggestions={autocompleteCardNames} onSelect={add} />
+          <CardSearchBox placeholder="Card name, e.g. Sol Ring" fetchSuggestions={autocompleteCardNames} onSelect={add} />
         </div>
         {pending && <span className="text-xs text-muted">Working…</span>}
         {msg && !pending && <span className={`text-xs ${msg.ok ? "text-up" : "text-down"}`}>{msg.text}</span>}

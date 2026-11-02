@@ -79,7 +79,9 @@ export default async function CommandersPage({
           type="text"
           name="q"
           defaultValue={q}
-          placeholder="Search commanders by name or text..."
+          // The box passes straight through to Scryfall, so its search terms work too: say so
+          // briefly (short enough not to clip next to the button on a 375px phone).
+          placeholder="Name, or try id:g o:draw"
           className="w-full max-w-md rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
         />
         <button

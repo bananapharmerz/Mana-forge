@@ -595,7 +595,7 @@ export default function DeckEditor({
             <div className="flex-1">
               <CardSearchBox
                 key={tokensOnly ? "tokens" : "all"}
-                placeholder={tokensOnly ? "Search for a token to add..." : "Search for a card to add..."}
+                placeholder={tokensOnly ? "Token name, e.g. Treasure" : "Card name, e.g. Sol Ring"}
                 fetchSuggestions={tokensOnly ? autocompleteTokenNames : autocompleteCardNames}
                 onSelect={searchSelectCard}
               />

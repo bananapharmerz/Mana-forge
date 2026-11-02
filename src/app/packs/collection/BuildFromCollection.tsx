@@ -36,7 +36,7 @@ export default function BuildFromCollection() {
       </p>
       <div className="mt-3">
         <CardSearchBox
-          placeholder="Search for a commander..."
+          placeholder="Commander name, e.g. Atraxa"
           fetchSuggestions={autocompleteCommanderNames}
           onSelect={(name) => { setCommander(name); setError(null); }}
           clearOnSelect={false}
