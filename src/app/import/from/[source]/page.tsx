@@ -88,6 +88,30 @@ export default async function MigrationPage({ params }: { params: Promise<{ sour
               </p>
             )}
             <p className="mt-4 text-xs text-muted">{m.note}</p>
+
+            {m.pasteTip && (
+              <section className="mt-8 rounded-lg border border-border p-5">
+                <h2 className="mb-2 font-display text-lg font-semibold text-foreground">{m.pasteTip.title}</h2>
+                <p className="mb-4 text-sm leading-relaxed text-muted">{m.pasteTip.intro}</p>
+                <ol className="mb-4 flex flex-col gap-2">
+                  {m.pasteTip.steps.map((step, i) => (
+                    <li key={i} className="flex gap-3 text-sm text-foreground">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-gold text-[11px] font-bold text-gold-bright">
+                        {i + 1}
+                      </span>
+                      <span className="leading-relaxed">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="mb-1 text-xs text-muted">A list like this imports as-is:</p>
+                <pre className="overflow-x-auto rounded-md border border-border bg-surface px-3 py-2 font-mono text-xs text-foreground">{m.pasteTip.example}</pre>
+              </section>
+            )}
+
+            {/* We name other tools so people can find their way over; say plainly we're not part of them. */}
+            <p className="mt-6 text-[11px] text-muted">
+              {SITE.name} isn&apos;t affiliated with or endorsed by {m.name}. {m.name} is a trademark of its owner.
+            </p>
           </div>
 
           <aside className="flex flex-col gap-5">

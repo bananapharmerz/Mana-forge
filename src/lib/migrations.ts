@@ -20,6 +20,9 @@ export type Migration = {
   steps: string[];
   // A short, honest note on who it's for / what it's like, so the page reads as fair.
   note: string;
+  // Optional "paste the text instead" help, for tools whose deck links we don't read. The steps and
+  // example must match what decklistParse.ts actually understands.
+  pasteTip?: { title: string; intro: string; steps: string[]; example: string };
   // SEO
   title: string;
   description: string;
@@ -104,6 +107,25 @@ export const MIGRATIONS: Record<string, Migration> = {
       "Paste it in the box below — pick your commander if we ask.",
     ],
     note: "No need to take anything down on TappedOut. Pull a deck in here and keep the original.",
+    // Mana Forge only reads Archidekt links, so a pasted TappedOut link goes nowhere. Say plainly
+    // that the text is all we need, and show a list the parser reads as-is.
+    pasteTip: {
+      title: "Got a TappedOut link? Paste the list instead",
+      intro:
+        "Mana Forge reads the decklist text, not TappedOut deck links. Any copy of the list works: an export, a list you saved earlier, or one you typed out.",
+      steps: [
+        "Copy the cards as plain text, one per line, like “1x Sol Ring” or “1 Sol Ring”.",
+        "Show us your commander: put it under a “Commander” line, or add *CMDR* after its name.",
+        "Paste it in the box above and hit Import deck. If we can't tell which card leads the deck, we'll ask.",
+      ],
+      example: `Commander
+1x Krenko, Mob Boss
+
+Deck
+1x Sol Ring
+1x Goblin Matron
+30x Mountain`,
+    },
     title: "Free TappedOut alternative — import your Commander decks",
     description:
       "Looking for a free TappedOut alternative? Mana Forge is a commander-first deck builder with live card prices and deck-value tracking. Bring your TappedOut decks over in seconds — paste a text or MTGO export.",
