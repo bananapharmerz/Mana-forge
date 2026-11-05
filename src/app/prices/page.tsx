@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { livePrices, mostPlayedWith, mostValuable, priceHistory, searchCardPrices, trackerStats, weeklyMovers, type Mover, type PlayedWith, type PriceHit } from "@/lib/prices";
+import { livePrices, mostPlayedWith, mostValuable, ownDeckScryfallIds, priceHistory, searchCardPrices, trackerStats, weeklyMovers, type Mover, type PlayedWith, type PriceHit } from "@/lib/prices";
 import { signedPct, usd } from "@/lib/livePrice";
 import Watchlist, { type WatchRow } from "./Watchlist";
 import { SITE } from "@/lib/site";
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: { images: ["/opengraph-image"], title: "Card price tracker · Mana Forge", description: "Follow Magic: The Gathering card prices: your watchlist with target prices, and the week's biggest movers in Commander decks." },
 };
 
-function MoverList({ title, rows: allRows, up, played, empty }: { title: string; rows: Mover[]; up: boolean; played: Record<string, PlayedWith>; empty: string }) {
+function MoverList({ title, rows: allRows, up, played, mine, empty }: { title: string; rows: Mover[]; up: boolean; played: Record<string, PlayedWith>; mine: Set<string>; empty: string }) {
   // A row without a name or a usable price would render as a blank line, so leave it out.
   const rows = allRows.filter((m) => m.name && Number.isFinite(m.usd) && Number.isFinite(m.pct));
   return (
@@ -35,6 +35,13 @@ function MoverList({ title, rows: allRows, up, played, empty }: { title: string;
               <span className="min-w-0 flex-1">
                 <Link href={`/prices/card/${m.scryfallId}`} className="block truncate text-foreground hover:text-gold-bright hover:underline">{m.name}</Link>
                 <span className="block truncate text-[11px] text-muted">{m.setName}</span>
+                {/* The only badge on this list, and only for this exact printing in the viewer's own
+                    decks: it means "this is your money moving". Keep it rare or people stop seeing it. */}
+                {mine.has(m.scryfallId) && (
+                  <span className="mt-0.5 inline-block rounded-full bg-gold px-1.5 py-px text-[10px] font-semibold leading-4 text-black">
+                    In your deck
+                  </span>
+                )}
                 {/* Where the card is played, from our own public decks: a fact, not a reason for the move. */}
                 {played[m.name] && (
                   <Link
@@ -112,12 +119,14 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
   const q = ((await searchParams).q ?? "").trim().slice(0, 80);
   const session = await auth();
   const uid = session?.user?.id;
-  const [found, movers, valuable, stats, watches] = await Promise.all([
+  // Worked out per request for the signed-in viewer only (the page is force-dynamic, never cached).
+  const [found, movers, valuable, stats, watches, mine] = await Promise.all([
     q ? searchCardPrices(q) : Promise.resolve([] as PriceHit[]),
     weeklyMovers(6),
     mostValuable(8),
     trackerStats(),
     uid ? db.priceWatch.findMany({ where: { userId: uid }, orderBy: { createdAt: "desc" } }) : Promise.resolve([]),
+    uid ? ownDeckScryfallIds(uid) : Promise.resolve(new Set<string>()),
   ]);
   const me = uid ? await db.user.findUnique({ where: { id: uid }, select: { tier: true } }) : null;
   const ids = watches.map((w) => w.scryfallId);
@@ -192,8 +201,8 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
         <Link href="/prices/movers" className="text-sm text-gold-bright underline hover:text-foreground">All price movers, week by week →</Link>
       </div>
       <section className="grid gap-4 md:grid-cols-3">
-        <MoverList title="Up this week" rows={movers.up} up played={played} empty="No big rises this week." />
-        <MoverList title="Down this week" rows={movers.down} up={false} played={played} empty="No big drops this week." />
+        <MoverList title="Up this week" rows={movers.up} up played={played} mine={mine} empty="No big rises this week." />
+        <MoverList title="Down this week" rows={movers.down} up={false} played={played} mine={mine} empty="No big drops this week." />
         <div className="card-frame p-4">
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Most valuable in {SITE.name} decks</h2>
           {valuable.length ? (

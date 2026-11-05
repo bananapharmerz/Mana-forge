@@ -571,12 +571,18 @@ function deckScryfallIds(raws: (string | null)[]): Set<string> {
   return ids;
 }
 
-export async function deckPriceMovers(userId: string, max = 8): Promise<{ up: DeckMove[]; down: DeckMove[] }> {
+// Every printing (scryfallId) in one member's own decks. Shared by deckPriceMovers and the
+// "In your deck" chip on /prices, so both agree on what counts as "your card".
+export async function ownDeckScryfallIds(userId: string): Promise<Set<string>> {
   const decks = await db.deck.findMany({
     where: { ownerId: userId },
     select: { commanderData: true, partnerCommanderData: true, companionData: true, cards: true },
   });
-  const ids = [...deckScryfallIds(decks.flatMap((d) => [d.commanderData, d.partnerCommanderData, d.companionData, d.cards]))];
+  return deckScryfallIds(decks.flatMap((d) => [d.commanderData, d.partnerCommanderData, d.companionData, d.cards]));
+}
+
+export async function deckPriceMovers(userId: string, max = 8): Promise<{ up: DeckMove[]; down: DeckMove[] }> {
+  const ids = [...(await ownDeckScryfallIds(userId))];
   if (!ids.length) return { up: [], down: [] };
   const weekAgo = today(Date.now() - 7 * DAY_MS);
   const [cur, old] = await Promise.all([
