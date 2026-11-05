@@ -9,8 +9,10 @@ import {
   multiCommanderCategories,
   companionCategories,
   productCategories,
+  allCategories,
   findCategory,
 } from "@/lib/categories";
+import CommanderSearchBox from "@/components/CommanderSearchBox";
 import { searchCommandersPage } from "@/app/actions/commanders";
 import { getNewestReleasedSetCodes } from "@/lib/scryfall";
 import { auth } from "@/auth";
@@ -75,13 +77,8 @@ export default async function CommandersPage({
         {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
         {setCode && <input type="hidden" name="set" value={setCode} />}
         {setName && <input type="hidden" name="setName" value={setName} />}
-        <input
-          type="text"
-          name="q"
-          defaultValue={q}
-          placeholder="Search commanders by name or text..."
-          className="w-full max-w-md rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-gold focus:outline-none"
-        />
+        {/* Only label and slug go to the browser; the Scryfall queries stay on the server. */}
+        <CommanderSearchBox key={q ?? ""} defaultValue={q} categories={allCategories.map((c) => ({ slug: c.slug, label: c.label }))} />
         <button
           type="submit"
           className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold-bright"
