@@ -46,7 +46,8 @@ function ResetForm() {
         else setError(r.error);
       }}
     >
-      <p className="text-sm text-muted">At least 8 characters, with a letter and a number.</p>
+      {/* Same rules as the signup hint, so a breached password isn't a surprise refusal. */}
+      <p className="text-sm text-muted">At least 8 characters, with a letter and a number. Passwords found in data breaches are refused.</p>
       <div>
         <label htmlFor="rp-pass" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">New password</label>
         <PasswordInput id="rp-pass" required minLength={8} maxLength={128} autoComplete="new-password" value={pass} onChange={(e) => setPass(e.target.value)} className={field} />
