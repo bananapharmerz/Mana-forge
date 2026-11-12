@@ -57,6 +57,37 @@ function CardList({ label, names }: { label: string; names: string[] }) {
   );
 }
 
+// "Is this estimate right?" Each button carries a data-track label, so the site's anonymous
+// tracker (no cookies, no IDs, skipped under Do Not Track) counts the answer like any other click.
+// Only the estimated bracket and the answer go out, never the deck. One answer per page view,
+// kept in memory, so nothing new is stored on the visitor's device.
+const ANSWERS = [
+  { key: "right", label: "Looks right" },
+  { key: "low", label: "Too low" },
+  { key: "high", label: "Too high" },
+] as const;
+
+function BracketFeedback({ badge }: { badge: string }) {
+  const [answered, setAnswered] = useState(false);
+  if (answered) return <p className="mt-3 text-xs text-muted">Thanks! That helps us tune the estimate.</p>;
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <span className="text-xs text-muted">Is this right?</span>
+      {ANSWERS.map((a) => (
+        <button
+          key={a.key}
+          type="button"
+          data-track={`bracket ${badge}: ${a.key}`}
+          onClick={() => setAnswered(true)}
+          className="rounded border border-border px-2 py-0.5 text-xs text-foreground hover:border-gold-bright hover:text-gold-bright"
+        >
+          {a.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // A free "Estimated bracket" badge, worked out in the browser from the deck already on the page.
 // It lists exactly which cards set the bracket so players can argue about the right thing.
 // It's a conversation starter for "what bracket is your deck?", not a rating.
@@ -89,6 +120,7 @@ export default function GameChangersPanel({ cards }: { cards: string[] }) {
       <CardList label="Game Changers" names={gc} />
       <CardList label="Mass land denial" names={mld} />
       <CardList label="Extra turns" names={turns} />
+      <BracketFeedback badge={est.badge} />
       <p className="mt-3 text-[10px] leading-snug text-muted">
         Unofficial estimate, not made or endorsed by Wizards of the Coast. Checks Game Changers, mass land denial and
         extra turns only, not combos or tutors. Lists updated {BRACKET_LISTS_UPDATED}.{" "}
