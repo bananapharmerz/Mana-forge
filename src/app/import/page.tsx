@@ -19,6 +19,9 @@ const HOW = [
   ["Moxfield", "Open the deck → More → Export → Copy for MTGA (or Copy plain text), then paste it here."],
   ["Archidekt", "Paste the deck's link (it has to be public), or Export → copy the text."],
   ["MTG Arena", "In the deck, click Export. The list is now copied; paste it here."],
+  // ManaBox links aren't parsed yet (that waits on a check of their share pages and terms),
+  // so for now we point its many scanner users at the text export, which the importer already reads.
+  ["ManaBox", "In the app, open the deck → Share → export as text, then paste it here. (Just a tip; we're not affiliated with ManaBox.)"],
   ["MTGO / anything else", "One card per line, like \"1 Sol Ring\". Put your commander under a line that says Commander."],
 ] as const;
 
