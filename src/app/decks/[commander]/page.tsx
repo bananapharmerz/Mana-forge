@@ -15,6 +15,7 @@ import ManaPips from "@/components/ManaPips";
 import CardTypeChart from "@/components/CardTypeChart";
 import ManaCurveChart from "@/components/ManaCurveChart";
 import EdhrecCardTile from "@/components/EdhrecCardTile";
+import BudgetChips from "@/components/BudgetChips";
 import SectionJumpDrawer from "@/components/SectionJumpDrawer";
 import PublicDeckCard from "@/components/PublicDeckCard";
 import CardSelectButton from "@/components/CardSelectButton";
@@ -345,6 +346,9 @@ export default async function CommanderDecksPage({
 
           <SectionJumpDrawer tabs={jumpTabs} />
 
+          <BudgetChips targetId="commander-card-lists" />
+
+          <div id="commander-card-lists" data-budget="any">
           {topCards.length > 0 && (
             <div id="most-played" className="mt-8 scroll-mt-28">
               <h2 className="mb-4 text-xl font-bold text-foreground">
@@ -373,6 +377,7 @@ export default async function CommanderDecksPage({
               <CardGrid cards={section.cardviews} byName={byName} />
             </div>
           ))}
+          </div>
 
           <p className="mt-6 text-[10px] text-muted">
             Play-rate data via EDHREC. Card images and prices via Scryfall.

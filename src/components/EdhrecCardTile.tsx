@@ -26,9 +26,11 @@ export default function EdhrecCardTile({
   // browser for every tile — just what the popup renders.
   const detail: CardDetail | null = scryfall ? cardDetailFromScryfall(scryfall) : null;
   const stats: CardStats = { pctDecks, synergy, numDecks };
+  // Price band for the commander page's budget chips (BudgetChips + globals.css hide by band).
+  const band = price === null ? "none" : price < 2 ? "2" : price < 5 ? "5" : "any";
 
   return (
-    <div className="card-frame overflow-hidden">
+    <div className="card-frame overflow-hidden" data-band={band}>
       <div className="relative aspect-[5/7] w-full bg-surface-raised">
         {deckCard && <CardSelectButton card={deckCard} />}
         {detail && deckCard ? (

@@ -508,3 +508,11 @@ body {
   .arena-hand-card { transition: none; animation: none; }
   .arena-hand-card:hover { transform: rotate(var(--rot, 0deg)) translateY(var(--ty, 0px)); box-shadow: 0 0 18px rgba(224, 178, 82, 0.55); }
 }
+
+/* Commander page budget chips (BudgetChips.tsx): the wrapper's data-budget hides tiles whose
+   data-band is over the limit. Cards with no price only show under "Any price". */
+[data-budget="2"] [data-band]:not([data-band="2"]),
+[data-budget="5"] [data-band="any"],
+[data-budget="5"] [data-band="none"] {
+  display: none;
+}
