@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/PageHeader";
 import { getSet, searchCards, cardImage, type ScryfallCard, type ScryfallSet } from "@/lib/scryfall";
+import { commanderNames } from "@/lib/commanderIndex";
 
 // Set data + card list are cached in the Scryfall lib; revalidate the page on the same 6h cadence
 // so a freshly-spoiled card shows up without a redeploy.
@@ -58,32 +59,86 @@ export async function generateMetadata({ params }: { params: Promise<{ set: stri
   };
 }
 
-function SpoilerCard({ card }: { card: ScryfallCard }) {
+// A freshly spoiled card that can lead a deck: a legendary creature (front face for double-faced
+// cards) or one whose text says it can be your commander. Those get a "Brew it" link into the
+// site's commander page instead of sending the visitor off to Scryfall.
+function canBeCommander(card: ScryfallCard): boolean {
+  const front = card.card_faces?.[0];
+  const typeLine = (front?.type_line ?? card.type_line ?? "").split(" // ")[0];
+  const text = front?.oracle_text ?? card.oracle_text ?? "";
+  return (/\bLegendary\b/.test(typeLine) && /\bCreature\b/.test(typeLine)) || /can be your commander/i.test(text);
+}
+
+// The commander page only answers for cards in the commander index (Scryfall's legal:commander
+// list, refreshed daily), so a card spoiled but not yet released would land on a 404 there. Only
+// link the ones the index knows; the rest keep going to Scryfall until they're legal. An empty index
+// (fresh start) is fine: the commander page then asks Scryfall directly.
+function knownCommanders(): Set<string> | null {
+  const names = commanderNames();
+  if (names.length === 0) return null;
+  const set = new Set<string>();
+  for (const n of names) {
+    set.add(n.toLowerCase());
+    set.add(n.split(" // ")[0].toLowerCase());
+  }
+  return set;
+}
+
+function SpoilerCard({ card, known }: { card: ScryfallCard; known: Set<string> | null }) {
   const img = cardImage(card);
+  const brew = canBeCommander(card) && (!known || known.has(card.name.toLowerCase()));
+  const commanderName = card.name.split(" // ")[0];
+  const art = (
+    <div className="relative aspect-[488/680] overflow-hidden rounded-xl bg-surface-raised ring-1 ring-border transition group-hover:ring-gold group-hover:shadow-lg group-hover:shadow-black/30">
+      {img ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={img}
+          alt={card.name}
+          loading="lazy"
+          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center p-3 text-center text-xs text-muted">
+          {card.name}
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <a
-      href={card.scryfall_uri}
-      target="_blank"
-      rel="noopener nofollow"
-      className="group block"
-      title={card.name}
-    >
-      <div className="relative aspect-[488/680] overflow-hidden rounded-xl bg-surface-raised ring-1 ring-border transition group-hover:ring-gold group-hover:shadow-lg group-hover:shadow-black/30">
-        {img ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={img}
-            alt={card.name}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
-          />
+    <div>
+      {brew ? (
+        <Link href={`/decks/${encodeURIComponent(commanderName)}`} className="group block" title={`Brew a ${commanderName} deck`}>
+          {art}
+        </Link>
+      ) : (
+        <a href={card.scryfall_uri} target="_blank" rel="noopener nofollow" className="group block" title={card.name}>
+          {art}
+        </a>
+      )}
+      <div className="mt-1.5 flex items-center justify-between gap-2 px-0.5 text-[11px]">
+        {brew ? (
+          <Link
+            href={`/decks/${encodeURIComponent(commanderName)}`}
+            className="font-semibold text-gold transition-colors hover:text-gold-bright"
+          >
+            Brew it →
+          </Link>
         ) : (
-          <div className="flex h-full w-full items-center justify-center p-3 text-center text-xs text-muted">
-            {card.name}
-          </div>
+          <span />
         )}
+        {/* Scryfall stays one tap away on every card: it's where the images and card data come from. */}
+        <a
+          href={card.scryfall_uri}
+          target="_blank"
+          rel="noopener nofollow"
+          className="text-muted underline-offset-2 transition-colors hover:text-foreground hover:underline"
+        >
+          Scryfall
+        </a>
       </div>
-    </a>
+    </div>
   );
 }
 
@@ -93,6 +148,7 @@ export default async function SetSpoilerPage({ params }: { params: Promise<{ set
   if (!set) notFound();
 
   const cards = await getSetCards(set.code);
+  const known = knownCommanders();
   const setParam = encodeURIComponent(set.code.toUpperCase());
   const nameParam = encodeURIComponent(set.name);
   // Precon/Commander sets are literally named "… Commander", so appending "Commander deck" would
@@ -137,7 +193,7 @@ export default async function SetSpoilerPage({ params }: { params: Promise<{ set
           <>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {cards.map((card) => (
-                <SpoilerCard key={card.id} card={card} />
+                <SpoilerCard key={card.id} card={card} known={known} />
               ))}
             </div>
 
