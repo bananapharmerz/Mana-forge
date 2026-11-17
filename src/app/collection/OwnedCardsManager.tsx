@@ -81,7 +81,8 @@ export default function OwnedCardsManager({
           One card per line — e.g. <code className="rounded bg-surface-raised px-1">1 Sol Ring</code>,{" "}
           <code className="rounded bg-surface-raised px-1">2x Lightning Bolt</code>, or just{" "}
           <code className="rounded bg-surface-raised px-1">Rhystic Study</code>. Paste straight from
-          Moxfield, Archidekt or a deck list — set codes and collector numbers are ignored.
+          Moxfield, Archidekt or a deck list — set codes and collector numbers are ignored. Scanned
+          your cards? A ManaBox CSV export works too: paste the whole file, header row and all.
         </p>
         <textarea
           value={text}
