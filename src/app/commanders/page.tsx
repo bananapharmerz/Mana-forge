@@ -13,6 +13,7 @@ import {
 } from "@/lib/categories";
 import { searchCommandersPage } from "@/app/actions/commanders";
 import { getNewestReleasedSetCodes } from "@/lib/scryfall";
+import { searchRecovery } from "@/lib/searchRecovery";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import type { Metadata } from "next";
@@ -66,6 +67,9 @@ export default async function CommandersPage({
   const user = session?.user?.id
     ? await db.user.findUnique({ where: { id: session.user.id } })
     : null;
+
+  // Only an empty search pays for this, so a normal search is never slower.
+  const recovery = q && firstPage.cards.length === 0 ? await searchRecovery(q) : undefined;
 
   return (
     <>
@@ -198,6 +202,7 @@ export default async function CommandersPage({
         initialPartnerCards={firstPage.partnerCards}
         tier={user?.tier}
         newestSetCodes={newestSetCodes}
+        recovery={recovery}
       />
 
       {/* Internal links into the "best of" landing pages: crawlable entry points for search and
