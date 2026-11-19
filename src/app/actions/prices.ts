@@ -4,8 +4,19 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getCardByName, getAllPrintings } from "@/lib/scryfall";
-import { livePrices, priceHistory, refreshPrices, type LivePrice } from "@/lib/prices";
+import { livePrices, priceHistory, refreshPrices, trackerStats, type LivePrice } from "@/lib/prices";
 import { clientIp, hit } from "@/lib/rateLimit";
+
+// How many printings the price tracker covers (the same count /prices shows), for the honest
+// one-liner on the Premium page. Counted at most every 6 hours per server, never per visit, so
+// the figure is real and at most a few hours old without a database count on every page view.
+let trackedCache: { n: number; at: number } | null = null;
+export async function getTrackedPrintings(): Promise<number> {
+  if (trackedCache && Date.now() - trackedCache.at < 6 * 3600 * 1000) return trackedCache.n;
+  const n = await trackerStats().then((s) => s.cards).catch(() => 0);
+  trackedCache = { n, at: Date.now() };
+  return n;
+}
 
 // Prices for the cards on screen. Cards with no price yet (or more than a day old) are fetched
 // from Scryfall first, a couple of hundred at most per call so a page never waits long.

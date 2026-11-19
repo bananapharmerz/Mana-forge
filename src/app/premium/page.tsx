@@ -18,6 +18,7 @@ import {
 } from "@/app/actions/premium";
 import { BOX_PACKS, FREE_PACK_RIPS, FREE_PRICE_ALERTS, FREE_TIER_DECK_LIMIT, PREMIUM_PACK_RIPS, PREMIUM_PLANS, PREMIUM_VAT_NOTE, TRIAL_DAYS, planPrice, type PremiumPlan } from "@/lib/tier";
 import { SITE } from "@/lib/site";
+import { getTrackedPrintings } from "@/app/actions/prices";
 
 const BENEFITS = [
   { feature: "Build without a deck limit", free: "Up to 10 decks", premium: "Unlimited decks" },
@@ -54,6 +55,13 @@ export default function PremiumPage() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const t = setTimeout(() => setEmberGlow(true), 6000);
     return () => clearTimeout(t);
+  }, []);
+
+  // A real, already-large number instead of member counts or quotes: small counts put people off,
+  // and invented ones aren't honest. Hidden until it loads, and if it can't be counted at all.
+  const [tracked, setTracked] = useState(0);
+  useEffect(() => {
+    getTrackedPrintings().then(setTracked).catch(() => {});
   }, []);
 
   const [alerts, setAlerts] = useState<boolean | null>(null);
@@ -181,6 +189,11 @@ export default function PremiumPage() {
               </tbody>
             </table>
           </div>
+          {tracked > 0 && (
+            <p className="mt-4 text-sm text-foreground">
+              Daily Scryfall prices for {tracked.toLocaleString("en-US")} printings in {SITE.name} decks and watchlists.
+            </p>
+          )}
           <p className="mt-4 text-xs text-muted">{PREMIUM_VAT_NOTE} Card names and images stay free for everyone.</p>
         </section>
 
