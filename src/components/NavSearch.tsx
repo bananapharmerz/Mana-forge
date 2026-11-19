@@ -5,7 +5,37 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Suggestions = { commanders: string[]; cards: { name: string; id: string }[] };
-type Item = { label: string; href: string; kind: "Commander" | "Card" };
+type Item = { label: string; href: string; kind: "Commander" | "Card" | "Page" };
+
+// The site's own pages, so someone typing "budget", "movers" or "play" finds the page instead of
+// only card names. Static on purpose: every href is a route in src/app (checked when this list was
+// written), and nothing here calls the server. Words match from their start, so "bud" finds the
+// budget pages but "get" doesn't.
+const PAGE_HINTS: { label: string; href: string; words: string[] }[] = [
+  { label: "Price movers this week", href: "/prices/movers", words: ["price", "movers", "spikes", "rising", "falling"] },
+  { label: "Budget staples", href: "/prices/budget-staples", words: ["budget", "cheap", "staples"] },
+  { label: "Best budget commanders", href: "/commanders/budget", words: ["budget", "cheap", "commanders"] },
+  { label: "Most popular commanders", href: "/commanders/popular", words: ["popular", "commanders"] },
+  { label: "Play with friends online", href: "/play", words: ["play", "online", "friends"] },
+  { label: "Forge Challenge (monthly contest)", href: "/challenge", words: ["challenge", "contest", "monthly"] },
+  { label: "New sets and spoilers", href: "/spoilers", words: ["spoilers", "previews"] },
+  { label: "Deck Doctor: instant brews", href: "/deck-doctor", words: ["doctor", "brew", "generate"] },
+  { label: "Import a deck", href: "/import", words: ["import", "moxfield", "archidekt", "manabox", "tappedout"] },
+  { label: "Pack opening simulator", href: "/packs", words: ["packs", "booster", "opening", "simulator"] },
+  { label: "Premium", href: "/premium", words: ["premium", "subscription"] },
+  { label: "Deck-building guide", href: "/commander-deck-building-guide", words: ["guide", "beginner", "learn"] },
+];
+
+// At most two page hints, and only once 3+ letters are typed and every typed word starts one of the
+// hint's words, so card and commander results (the main point of the box) still fill the list.
+// Short everyday words ("top", "new", "pro") are left out because they start real card names.
+function pageHints(q: string): Item[] {
+  const typed = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (q.length < 3 || typed.length === 0) return [];
+  return PAGE_HINTS.filter((h) => typed.every((t) => h.words.some((w) => w.startsWith(t))))
+    .slice(0, 2)
+    .map((h) => ({ label: h.label, href: h.href, kind: "Page" as const }));
+}
 
 // The header search: a plain GET form to the commander browser (so Enter, and the page without
 // JavaScript, still land on /commanders?q=), plus suggestions as you type. Same timing as
@@ -33,6 +63,7 @@ export default function NavSearch({
   const items: Item[] =
     q.length >= 2 && data
       ? [
+          ...pageHints(q),
           ...data.commanders.map((name) => ({ label: name, href: `/decks/${encodeURIComponent(name)}`, kind: "Commander" as const })),
           ...data.cards.map((c) => ({ label: c.name, href: `/prices/card/${c.id}`, kind: "Card" as const })),
         ]
