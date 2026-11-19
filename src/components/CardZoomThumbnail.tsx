@@ -15,7 +15,8 @@ export default function CardZoomThumbnail({ src, alt }: { src: string; alt: stri
         </svg>
       </div>
 
-      <div className="pointer-events-none absolute left-1/2 top-0 z-[100] hidden w-48 -translate-x-1/2 -translate-y-3 group-hover/zoom:block">
+      {/* Wait ~0.2s before zooming so a pointer passing by while scrolling shows nothing; hide instantly. */}
+      <div className="pointer-events-none invisible absolute left-1/2 top-0 z-[100] w-48 -translate-x-1/2 -translate-y-3 opacity-0 transition-[opacity,visibility] duration-0 group-hover/zoom:visible group-hover/zoom:opacity-100 group-hover/zoom:delay-200 group-hover/zoom:duration-150 motion-reduce:group-hover/zoom:duration-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={src} alt={alt} className="w-full rounded-lg shadow-2xl ring-1 ring-border" />
       </div>
