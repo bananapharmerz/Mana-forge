@@ -399,7 +399,19 @@ function PremiumFaq() {
           <details key={q} className="group px-4 py-3">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-foreground">
               {q}
-              <span aria-hidden className="text-gold transition-transform group-open:rotate-45">+</span>
+              {/* A chevron, not a '+': '+' reads as "add" and its rotated '×' as "close" (NN/g's accordion tests). */}
+              <svg
+                aria-hidden
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4 shrink-0 text-gold transition-transform group-open:rotate-180"
+              >
+                <path d="M5 7.5l5 5 5-5" />
+              </svg>
             </summary>
             <p className="mt-2 text-sm leading-relaxed text-muted">{a}</p>
           </details>
