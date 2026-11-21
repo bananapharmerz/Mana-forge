@@ -36,6 +36,7 @@ import type { Metadata } from "next";
 import { authorName } from "@/lib/author";
 import CommanderGuide from "@/components/CommanderGuide";
 import CommanderFaq from "@/components/CommanderFaq";
+import SignupToSaveLink from "@/components/SignupToSaveLink";
 import RisingFalling from "@/components/RisingFalling";
 import { cardTrends } from "@/lib/trending";
 
@@ -119,6 +120,8 @@ export default async function CommanderDecksPage({
   if (!card) notFound();
 
   const img = cardImage(card);
+  // Every "build one" link on this page goes to the same place: the builder with this commander set.
+  const builderHref = `/deck-builder?commander=${encodeURIComponent(card.name)}`;
 
   // A specific "Partner with X" pairing is shown as both cards together, same stacked tile the
   // commanders grid uses (hover or swap to bring either one to the front).
@@ -286,7 +289,7 @@ export default async function CommanderDecksPage({
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href={`/deck-builder?commander=${encodeURIComponent(card.name)}`}
+              href={builderHref}
               className="rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-[#d4a23e]"
             >
               Build a deck with {card.name}
@@ -409,7 +412,11 @@ export default async function CommanderDecksPage({
         </h2>
         {siteDecks.length === 0 ? (
           <p className="text-sm text-muted">
-            No {SITE.name} decks yet — be the first to build and publish one.
+            No {SITE.name} decks yet —{" "}
+            <Link href={builderHref} className="text-gold underline hover:text-gold-bright">
+              be the first to build and publish one
+            </Link>
+            .
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -442,6 +449,18 @@ export default async function CommanderDecksPage({
           mostPlayed={mostPlayed}
         />
       )}
+
+      {/* Most visits ended on this page with nowhere obvious to go next, so the page closes on the
+          same step the hero offers. Plain links only: no pop-ups, nothing tracked. */}
+      <div className="mt-12 flex flex-wrap items-center gap-4 border-t border-white/10 pt-8">
+        <Link
+          href={builderHref}
+          className="rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-[#d4a23e]"
+        >
+          Build a deck with {card.name}
+        </Link>
+        <SignupToSaveLink next={builderHref} />
+      </div>
     </div>
     </>
   );
