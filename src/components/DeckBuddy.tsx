@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Ember from "@/components/Ember";
 import CardDetailModal from "@/components/CardDetailModal";
 
@@ -100,6 +101,9 @@ export default function DeckBuddy({
         <span className="text-xs font-semibold uppercase tracking-wide text-gold-bright">Ember&apos;s picks</span>
         {loading && <span className="ml-auto text-[10px] text-muted">thinking…</span>}
       </summary>
+      {/* Say where the picks come from: a helper that hides its sources reads as one that knows
+          nothing, especially when it comes back empty. Attribution only, not a partnership. */}
+      <p className="mt-1 text-[10px] text-muted">From Commander Spellbook combos and EDHREC play rates for {commander}</p>
 
       <div className="mt-3 flex items-center gap-1.5">
         <span className="text-[10px] uppercase tracking-wide text-muted">Budget</span>
@@ -172,7 +176,20 @@ export default function DeckBuddy({
       )}
 
       {advice && !hasPicks && !loading && (
-        <p className="mt-3 text-[11px] text-muted">Nothing new to suggest right now — add a few cards and Ember will chime in.</p>
+        // Explain the empty result instead of just saying "nothing": give the likely reasons (we
+        // can't tell which one it is) and a way forward, using only links and data we already have.
+        <div className="mt-3 text-[11px] text-muted">
+          <p>
+            Nothing new to suggest right now. Newer commanders have fewer decks to learn from, or your list may already have
+            the usual picks.
+          </p>
+          <p className="mt-1">
+            Try the budget chips above (≤$5 or ≤$1 changes the picks), or{" "}
+            <Link href={`/decks/${encodeURIComponent(commander)}`} className="font-semibold text-gold-bright hover:underline">
+              see other {commander.split(",")[0]} decks →
+            </Link>
+          </p>
+        </div>
       )}
 
       {openName && (
