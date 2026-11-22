@@ -69,7 +69,12 @@ export default async function CommandersPage({
 
   return (
     <>
-      <PageHeader title={activeLabel ?? "Commanders"} description="Every legendary commander ever printed, most played first. Pick one to see its best cards and the decks built around it." width="max-w-[1600px]" />
+      {/* Most visits to this page end here (Watch Tower), so give browsers one obvious next step. */}
+      <PageHeader title={activeLabel ?? "Commanders"} description="Every legendary commander ever printed, most played first. Pick one to see its best cards and the decks built around it." width="max-w-[1600px]">
+        <Link href="/deck-builder" className="inline-flex rounded-lg bg-gold px-5 py-2.5 text-sm font-semibold text-black hover:bg-gold-bright">
+          Start a deck
+        </Link>
+      </PageHeader>
       <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 sm:py-10">
       <form action="/commanders" method="GET" className="mb-6 flex gap-2">
         {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
