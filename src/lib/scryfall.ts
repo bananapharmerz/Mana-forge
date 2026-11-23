@@ -193,6 +193,9 @@ interface CachedAnswer {
   body: string;
 }
 
+const NOT_FOUND = "__404__";
+const fromCache = (body: string) => (body === NOT_FOUND ? { status: 404, body: "{}" } : { status: 200, body });
+
 const answer = (a: CachedAnswer) =>
   new Response(a.status === 504 ? null : a.body, { status: a.status, headers: { "content-type": "application/json" } });
 
@@ -209,6 +212,8 @@ function refresh(key: string, url: string, init: SfInit): Promise<CachedAnswer> 
       .then(async (res) => {
         const body = res.status === 504 ? "" : await res.text();
         if (res.status === 200) cachePut("res", key, body);
+        // "No cards found" is a real answer too: remembered, so an empty search isn't re-asked.
+        else if (res.status === 404) cachePut("res", key, NOT_FOUND);
         return { status: res.status, body };
       })
       .finally(() => inflight.delete(key));
@@ -226,15 +231,15 @@ export async function sfetch(url: string, init: SfInit = {}): Promise<Response> 
   const key = `${method} ${url}${typeof init.body === "string" ? ` ${init.body}` : ""}`;
   const hit = await cacheGet("res", key);
   const age = hit ? Date.now() - hit.at : Infinity;
-  if (hit && age < ttl * 1000) return answer({ status: 200, body: hit.body });
+  if (hit && age < ttl * 1000) return answer(fromCache(hit.body));
   if (hit && age < STALE_LIMIT_MS) {
     // Stale: answer now, refresh behind the visitor's back.
     void refresh(key, url, { ...init, priority: "low" }).catch(() => {});
-    return answer({ status: 200, body: hit.body });
+    return answer(fromCache(hit.body));
   }
   const live = await refresh(key, url, init);
   // Scryfall busy and only a very old copy: the old copy beats an error page.
-  if (hit && (live.status === 429 || live.status >= 500)) return answer({ status: 200, body: hit.body });
+  if (hit && (live.status === 429 || live.status >= 500)) return answer(fromCache(hit.body));
   return answer(live);
 }
 

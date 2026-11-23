@@ -23,6 +23,13 @@ function headline(slug: string, label: string): string {
   return isColor(slug) ? `Best ${short} Commanders` : `Best Commanders for ${short}`;
 }
 
+// Only a real Scryfall failure throws: during a background refresh Next then keeps serving the
+// last good page instead of caching an error message for a day. "No such commanders" is an answer.
+async function bestList(query: string) {
+  const res = await searchCards(query, { order: "edhrec", dir: "asc", unique: "cards", page: 1 });
+  return (res.data ?? []).slice(0, 40);
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const cat = findCategory(slug);
@@ -30,7 +37,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const h = headline(slug, cat.label);
   const path = `/commanders/best/${slug}`;
   const description = `The most-played ${cat.label} commanders in Magic: The Gathering Commander (EDH), ranked by deck count. See each one's top cards, a sample decklist and live prices, then build it free.`;
+  // A list with no commanders (a mechanic no legendary creature has) is kept out of search results.
+  const empty = (await bestList(cat.query).catch(() => [1])).length === 0;
   return {
+    ...(empty ? { robots: { index: false, follow: true } } : {}),
     title: `${h} (EDH)`,
     description,
     alternates: { canonical: path },
@@ -46,8 +56,7 @@ export default async function BestCommandersPage({ params }: { params: Promise<{
   const h = headline(slug, cat.label);
 
   // Scryfall's edhrec order is most-played first — exactly the "best / most popular" ranking.
-  const res = await searchCards(cat.query, { order: "edhrec", dir: "asc", unique: "cards", page: 1 }).catch(() => null);
-  const cards = (res?.data ?? []).slice(0, 40);
+  const cards = await bestList(cat.query);
   const topCommanders = cards.slice(0, 3).map((c) => c.name.split(" // ")[0]);
 
   return (
@@ -59,7 +68,10 @@ export default async function BestCommandersPage({ params }: { params: Promise<{
         <CategoryGuide slug={slug} label={cat.label} topCommanders={topCommanders} />
 
         {cards.length === 0 ? (
-          <p className="mt-8 text-sm text-muted">Couldn&apos;t load this list just now — try again in a minute.</p>
+          <p className="mt-8 text-sm text-muted">
+            No legal commanders have this yet.{" "}
+            <Link href="/commanders" className="underline hover:text-gold-bright">Browse all commanders</Link> instead.
+          </p>
         ) : (
           <ol className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
             {cards.map((c, i) => {
