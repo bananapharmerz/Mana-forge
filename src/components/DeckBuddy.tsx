@@ -11,6 +11,7 @@ type ComboSuggestion = {
   priceUsd: number | null;
   reason: string;
   gameChanger: boolean;
+  salt?: { score: number; url: string };
 };
 type AdvisorPick = {
   name: string;
@@ -134,6 +135,7 @@ export default function DeckBuddy({
                 reason={c.reason}
                 price={c.priceUsd}
                 gameChanger={c.gameChanger}
+                salt={c.salt}
                 highlight
                 added={isAdded(c.add)}
                 onOpen={() => {
@@ -195,6 +197,7 @@ function Row({
   reason,
   price,
   gameChanger,
+  salt,
   highlight,
   added,
   onOpen,
@@ -205,6 +208,7 @@ function Row({
   reason: string;
   price: number | null;
   gameChanger: boolean;
+  salt?: { score: number; url: string };
   highlight?: boolean;
   added?: boolean;
   onOpen: () => void;
@@ -228,6 +232,19 @@ function Row({
           </span>
         </button>
         <p className="mt-0.5 text-[10px] leading-tight text-muted">{reason}</p>
+        {salt && (
+          // Players' own rating from Commander Spellbook, credited and linked so it's never read as
+          // Mana Forge's verdict. Handy for the Rule 0 chat before a game.
+          <a
+            href={salt.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="How salty Commander Spellbook players rate this combo, from 0 (not at all) to 4 (extremely)"
+            className="mt-0.5 inline-block text-[10px] text-muted underline decoration-dotted hover:text-gold-bright"
+          >
+            Table salt: {salt.score.toFixed(1)} / 4 on Commander Spellbook
+          </a>
+        )}
         <div className="mt-1 flex items-center justify-between">
           <span className="text-[10px] text-muted">{money(price)}</span>
           {added ? (

@@ -31,6 +31,9 @@ export interface ComboSuggestion {
   priceUsd: number | null;
   reason: string;
   gameChanger: boolean;
+  // Commander Spellbook players' salt rating for the combo (0-4) and the combo's page there. Only
+  // set for Spellbook combos with enough votes; EDHREC backstop combos never get one.
+  salt?: { score: number; url: string };
 }
 
 export interface DeckAdvice {
@@ -61,7 +64,7 @@ export async function adviseDeck(commanderName: string, opts: AdviseOptions): Pr
   const isCmd = (n: string) => norm(n) === norm(commanderName);
 
   // --- Combo pieces to suggest: Commander Spellbook first, EDHREC combos as a backstop ---
-  type Pending = { add: string; partners: string[]; produces: string[]; extraMissing?: string };
+  type Pending = { add: string; partners: string[]; produces: string[]; extraMissing?: string; salt?: { score: number; url: string } };
   const pending: Pending[] = [];
   const addSeen = new Set<string>();
 
@@ -74,7 +77,8 @@ export async function adviseDeck(commanderName: string, opts: AdviseOptions): Pr
     const add = combo.missing[0];
     if (!add || addSeen.has(norm(add))) continue;
     addSeen.add(norm(add));
-    pending.push({ add, partners: combo.have, produces: combo.produces, extraMissing: combo.missing[1] });
+    const salt = combo.salt != null && combo.url ? { score: combo.salt, url: combo.url } : undefined;
+    pending.push({ add, partners: combo.have, produces: combo.produces, extraMissing: combo.missing[1], salt });
   }
 
   if (data) {
@@ -119,6 +123,7 @@ export async function adviseDeck(commanderName: string, opts: AdviseOptions): Pr
       priceUsd: price,
       reason,
       gameChanger: gameChangers.has(norm(pc.add)),
+      ...(pc.salt ? { salt: pc.salt } : {}),
     });
     if (combos.length >= 8) break;
   }
