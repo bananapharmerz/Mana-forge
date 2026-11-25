@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { cardImage, type ScryfallCard } from "@/lib/scryfall";
+import { cardImage, cardPriceUsd, type ScryfallCard } from "@/lib/scryfall";
+import { usd } from "@/lib/livePrice";
 import { scryfallCardToDeckCard, type DeckCard } from "@/lib/deckTypes";
 import { extractPartnerWithName, partnerKindOf } from "@/lib/partnerMechanics";
 import ManaPips from "./ManaPips";
@@ -23,6 +24,9 @@ export default function CommanderCard({
   const partnerName = extractPartnerWithName(card);
   const partner = partnerName ? partnerCards?.[partnerName] : undefined;
   const partnerImg = partner?.imageUrl;
+  // USD with foil fallback, the same rule the rest of the site uses. 0 counts as "no price".
+  const rawPrice = cardPriceUsd(card);
+  const price = rawPrice !== null && rawPrice > 0 ? rawPrice : null;
 
   return (
     <Link
@@ -64,12 +68,29 @@ export default function CommanderCard({
         )}
       </FoilTilt>
       <div className="flex flex-1 flex-col gap-1.5 p-3">
-        <h3 className="line-clamp-1 text-sm font-semibold text-foreground group-hover:text-gold-bright">
+        {/* Nearly every commander's type line starts "Legendary Creature —", so it doesn't help
+            tell cards apart. Keep it as hover and screen-reader text, and show the card's own
+            price below instead, which does differ and helps budget players pick at a glance. */}
+        <h3
+          className="line-clamp-1 text-sm font-semibold text-foreground group-hover:text-gold-bright"
+          title={card.type_line}
+        >
           {card.name}
+          <span className="sr-only">, {card.type_line}</span>
         </h3>
-        <p className="line-clamp-1 text-xs text-muted">{card.type_line}</p>
-        <div className="mt-auto pt-1">
+        <div className="mt-auto flex items-center justify-between gap-2 pt-1">
           <ManaPips colors={card.color_identity} />
+          {/* No price, no label: a "$0.00" would read as "free". */}
+          {price !== null && (
+            <span
+              className="shrink-0 font-mono text-[11px] text-gold-bright"
+              title="Approximate market price of this single card (Scryfall, USD), not a whole deck"
+            >
+              {usd(price)}
+              <span className="ml-1 font-sans text-[10px] text-muted">card</span>
+              <span className="sr-only"> approximate market price for this card</span>
+            </span>
+          )}
         </div>
       </div>
     </Link>
