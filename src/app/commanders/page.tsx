@@ -108,9 +108,26 @@ export default async function CommandersPage({
           activeSlug={categorySlug}
           q={q}
         />
-        <details className="group rounded-md border border-border/60 px-3 py-2" open={moreOpen}>
-          <summary className="cursor-pointer select-none text-xs font-semibold uppercase tracking-wide text-muted hover:text-foreground">
-            More filters <span className="normal-case tracking-normal">(tribe, theme, partners, product, set)</span>
+        <details className="group/more rounded-md border border-border/60 px-3 py-2" open={moreOpen}>
+          {/* A gold chevron that flips when open, the same as the Premium FAQ: with no clear icon people
+              expect "More filters" to open a new page (NN/g's accordion tests). The browser's own
+              triangle is hidden so there's only one marker. */}
+          <summary className="flex cursor-pointer select-none list-none items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted hover:text-foreground [&::-webkit-details-marker]:hidden">
+            <span>
+              More filters <span className="normal-case tracking-normal">(tribe, theme, partners, product, set)</span>
+            </span>
+            <svg
+              aria-hidden
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4 shrink-0 text-gold transition-transform group-open/more:rotate-180 motion-reduce:transition-none"
+            >
+              <path d="M5 7.5l5 5 5-5" />
+            </svg>
           </summary>
           <div className="mt-3 flex flex-col gap-4">
         <CategoryFilterGroup
