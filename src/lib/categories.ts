@@ -107,6 +107,16 @@ export const typalCategories: CommanderCategory[] = [
   { slug: "golems", label: "Golems", query: "is:commander t:golem" },
   { slug: "raccoons", label: "Raccoons", query: "is:commander t:raccoon" },
   { slug: "sphinxes", label: "Sphinxes", query: "is:commander t:sphinx" },
+  // Star Trek (Nov 13, 2026) brought new species types that nobody has typal pages for yet. They
+  // sit here at the end so the popularity order above stays intact; only species with at least
+  // three legendary creatures on Scryfall made the cut (Cardassians, Romulans and friends wait).
+  { slug: "klingons", label: "Klingons", query: "is:commander t:klingon" },
+  { slug: "vulcans", label: "Vulcans", query: "is:commander t:vulcan" },
+  { slug: "borg", label: "Borg", query: "is:commander t:borg" },
+  { slug: "ferengi", label: "Ferengi", query: "is:commander t:ferengi" },
+  { slug: "bajorans", label: "Bajorans", query: "is:commander t:bajoran" },
+  { slug: "betazoids", label: "Betazoids", query: "is:commander t:betazoid" },
+  { slug: "trill", label: "Trill", query: "is:commander t:trill" },
 ];
 
 // Mirrors EDHREC's "Themes" tab, ordered by their real all-time deck-count popularity,
