@@ -112,13 +112,18 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
   const q = ((await searchParams).q ?? "").trim().slice(0, 80);
   const session = await auth();
   const uid = session?.user?.id;
-  const [found, movers, valuable, stats, watches] = await Promise.all([
+  const [found, movers, valuableRaw, stats, watches] = await Promise.all([
     q ? searchCardPrices(q) : Promise.resolve([] as PriceHit[]),
     weeklyMovers(6),
     mostValuable(8),
     trackerStats(),
     uid ? db.priceWatch.findMany({ where: { userId: uid }, orderBy: { createdAt: "desc" } }) : Promise.resolve([]),
   ]);
+  // A row with no name or no real price reads as broken and makes people doubt the numbers next
+  // to it, so drop it and show seven good rows instead of a blank eighth (no "$0.00" stand-ins).
+  const valuable = valuableRaw.filter(
+    (c): c is typeof c & { usd: number } => Boolean(c.name?.trim()) && typeof c.usd === "number" && Number.isFinite(c.usd) && c.usd > 0,
+  );
   const me = uid ? await db.user.findUnique({ where: { id: uid }, select: { tier: true } }) : null;
   const ids = watches.map((w) => w.scryfallId);
   const [prices, history, cards, played] = await Promise.all([
@@ -202,7 +207,7 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
                 <li key={c.scryfallId} className="flex items-center gap-2">
                   <span className="w-4 text-right text-[11px] text-muted">{i + 1}</span>
                   <Link href={`/prices/card/${c.scryfallId}`} className="min-w-0 flex-1 truncate text-foreground hover:text-gold-bright hover:underline" title={c.setName ?? undefined}>{c.name}</Link>
-                  <span className="font-mono text-gold-bright">{usd(c.usd ?? 0)}</span>
+                  <span className="font-mono text-gold-bright">{usd(c.usd)}</span>
                 </li>
               ))}
             </ol>
