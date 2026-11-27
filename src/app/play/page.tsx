@@ -176,9 +176,11 @@ export default function PlayLandingPage() {
 
   return (
     <>
+    {/* "No app needed" up front: people who hear the name and search an app store can land on an
+        unrelated app, so say plainly that the table runs right here in the browser. */}
     <PageHeader
       title="Play with friends"
-      description="A free, shared virtual tabletop for Commander games in your browser: life totals, hands and the battlefield stay in sync for everyone at the table."
+      description="A free, shared virtual tabletop for Commander games, right in your browser. No app needed: life totals, hands and the battlefield stay in sync for everyone at the table."
       width="max-w-5xl"
     />
     <div className="mx-auto grid max-w-5xl gap-10 px-4 py-10 sm:px-6 md:grid-cols-[minmax(0,420px)_1fr]">
