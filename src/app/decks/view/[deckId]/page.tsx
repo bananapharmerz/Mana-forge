@@ -270,6 +270,35 @@ export default async function ViewDeckPage({
               </div>
             ))}
           </div>
+
+          {/* Almost every visit ended at the bottom of the list with nowhere to go. One small
+              "what next" block gives readers a way forward: more decks for this commander, the
+              builder, and for guests a free account (sign-up brings them back here). Plain
+              links only, no tracking and no extra queries. */}
+          <nav aria-label="Where next" className="card-frame mt-10 p-5">
+            <h2 className="font-display text-xl font-semibold text-foreground">Where next?</h2>
+            <ul className="mt-3 flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:gap-x-6">
+              {deck.commander?.name && (
+                <li>
+                  <Link href={`/decks/${encodeURIComponent(deck.commander.name)}`} className="font-semibold text-gold-bright underline-offset-4 hover:underline">
+                    More {deck.commander.name} decks →
+                  </Link>
+                </li>
+              )}
+              <li>
+                <Link href="/deck-builder" className="font-semibold text-gold-bright underline-offset-4 hover:underline">
+                  Build your own deck →
+                </Link>
+              </li>
+              {!userId && (
+                <li>
+                  <Link href={`/signup?callbackUrl=${encodeURIComponent(`/decks/view/${row.id}`)}`} className="font-semibold text-gold-bright underline-offset-4 hover:underline">
+                    Sign up free to save it →
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </nav>
         </div>
       </div>
     </div>
